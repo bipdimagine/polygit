@@ -134,8 +134,9 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	else {
 		$file_to_date = $origin_path;
 	}
-	
-	my $path_file_origin = 'https://'.$ENV{HTTP_HOST}.'/NGS/demultiplex/';
+	my $chemin =$h_files->{$file};
+	$chemin =~ s/^.*ngs\///; 
+	my $path_file_origin = 'https://'.$ENV{HTTP_HOST}.'/NGS/'.$chemin;
 	my $path_file = $h_files->{$file};
 	
 	my ($substring, $color, $date_text);
@@ -201,6 +202,7 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	
 	my $name = $file;
 	$name =~ s/\.html//;
+
 	my $b_view = qq{ <a title="$name" target="_blank" href="$path_file_origin"><center>VIEW</center></a> };
 	#my $b_view = qq{<button onclick='' style="color:black">View</button>};
 	
@@ -208,7 +210,7 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	my (@l_FastqScreen, @l_FastqScreen_patfilename, $run_name, $run_name_db);
 	
 	#CAS demultiplex RUN
-	my $path_run = 'https://'.$ENV{HTTP_HOST}.'/sequencing/ngs/';
+	my $path_run = $path_file_origin;#; 'https://'.$ENV{HTTP_HOST}.'/sequencing/ngs/';
 #	warn "\n";
 	if ($path_run =~ /&json=/) {
 	#	warn $path_file_origin;
