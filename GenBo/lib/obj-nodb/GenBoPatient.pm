@@ -4036,9 +4036,12 @@ has fastq_screen_file_html_url => (
 		my $self = shift;
 		my $h;
 		my $fastq_screen_html = $self->fastq_screen_file_html();
+	
 		return if not $fastq_screen_html or not -e $fastq_screen_html;
 		$fastq_screen_html =~ s/\/\//\//g;
-		$fastq_screen_html =~ s/\/data-isilon\/sequencing\/ngs\///g;
+		my $root_dir = $self->buffer->config_path("root","project_data")."/". $self->buffer->config->{project_data}->{ngs};
+		$root_dir =~ s/\/\//\//g;
+		$fastq_screen_html =~ s/$root_dir//g;
 		my $polyweb_url = 'https://'.$ENV{HTTP_HOST}."/".$self->getProject->buffer->config->{polyweb_url}->{polyweb_NGS};
 		return $polyweb_url.'/'.$fastq_screen_html;
 	},
