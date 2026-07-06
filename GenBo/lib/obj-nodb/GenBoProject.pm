@@ -7117,7 +7117,7 @@ has get_hash_patients_description_rna_seq_junction_analyse => (
 sub get_gtf_genes_annotations_igv {
 	my ($self) = @_;
 	if ($self->getVersion() =~ /HG19/) {
-		my $igv_dir = $self->buffer->config_path("root","public_data").'/igv/';
+		my $igv_dir = $self->buffer->config_path("root","public_data").'/igv/HG19/';
 		if (defined $self->gencode_version() && $self->gencode_version() ne '-1') {
 			my $file = $igv_dir.'/gencode.'.$self->gencode_version().'.gtf.gz';
 			return $file if (-e $file);
