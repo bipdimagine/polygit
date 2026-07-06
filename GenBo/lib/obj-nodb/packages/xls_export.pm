@@ -617,6 +617,7 @@ sub export {
 		$self->write_header_on_page( $worksheet, $number_page );
 		$self->write_on_page( $worksheet, $number_page );
 	}
+	$self->workbook->close();
 }
 
 sub store_cnvs_infos {
