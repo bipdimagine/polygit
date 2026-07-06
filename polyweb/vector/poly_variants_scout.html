@@ -1349,30 +1349,7 @@
 			                        }
 			                        if (data.status === "finished") {
 			                            clearInterval(interval);
-			                            var html_table = data.html;
-			                            document.getElementById(content_id).innerHTML = "";
-			                            var myNode = document.getElementById(content_id);
-			                            var myPanel = $(html_table);
-			                            myPanel.appendTo(myNode);
-			                            enable_table_search('table_genes');
-			                            var phenotypes = data.phenotypes;
-			                            var list_phenos = String(phenotypes).split(',');
-			                            for (var i = 0; i < list_phenos.length; i++) {
-			                                var pheno = list_phenos[i];
-			                                if (pheno != '') {
-			                                    updateCountPhenotype(pheno);
-			                                }
-			                            }
-			                            export_session_id = data.xls_session;
-			                            dijit.byId('waiting').hide();
-			                            if (content_id != "content_res") { 
-											const modal_obj = document.getElementById(dialog_id);
-											const modal = bootstrap.Modal.getOrCreateInstance(modal_obj);
-											modal_obj.addEventListener('hidden.bs.modal', function () {
-    											document.body.classList.remove('modal-open');
-											    document.body.style.overflow = 'auto';
-											});
-										}
+			                            return load_html(content_id, url, data);
 			                        }
 			                    },
 			                });
@@ -1384,6 +1361,34 @@
 			            dijit.byId('waiting').hide();
 			        }
 			    });
+			}
+			
+			function load_html(content_id, url, data) {
+				const xhr = new XMLHttpRequest();
+				xhr.onload = function () {
+				    document.getElementById(content_id).innerHTML = this.responseText;
+				    enable_table_search('table_genes');
+				    var phenotypes = data.phenotypes;
+                    var list_phenos = String(phenotypes).split(',');
+                    for (var i = 0; i < list_phenos.length; i++) {
+                        var pheno = list_phenos[i];
+                        if (pheno != '') {
+                            updateCountPhenotype(pheno);
+                        }
+                    }
+					dijit.byId('waiting').hide();
+                    if (content_id != "content_res") {
+                    	var dialog_id = 'dialog_' + content_id; 
+						const modal_obj = document.getElementById(dialog_id);
+						const modal = bootstrap.Modal.getOrCreateInstance(modal_obj);
+						modal_obj.addEventListener('hidden.bs.modal', function () {
+							document.body.classList.remove('modal-open');
+						    document.body.style.overflow = 'auto';
+						});
+					}
+				};
+				xhr.open("GET", url+"?load_html="+data.session_id);
+				xhr.send();
 			}
 			
 			function change_slider_reads(val){

@@ -93,6 +93,7 @@ if ($launch_job) {
 
 my $login = $cgi->param('login');
 my $pwd   = $cgi->param('pwd');
+my $load_html = $cgi->param('load_html');
 my $promoter_ai_value = $cgi->param('promoter_ai_value');
 my $ncboost_value = $cgi->param('ncboost_value');
 my $max_gnomad_ac = $cgi->param('gnomad');
@@ -118,6 +119,18 @@ my $session_id = $cgi->param('session_id');
 my $dejavu_variants = new dejavu_variants();
 $dejavu_variants->user_name($login);
 $dejavu_variants->pwd($pwd);
+
+
+if ($load_html) {
+	my $buffer = new GBuffer;
+	print $cgi->header(-type => 'text/html; charset=utf-8');
+	my $file = $buffer->config_path("root","global_search").'/'.$load_html.'.html';
+	open my $fh, '<', $file or die $!;
+	print while (<$fh>);
+	close $fh;
+	unlink($file);
+	exit(0);
+}
 
 if ($export_xls) {
 	export_xls($dejavu_variants, $session_id);
@@ -304,8 +317,16 @@ if ($region or $only_genes) {
 			push(@l_regions, \@l_this_region);
 		}
 		
-		my $fork2 = scalar(@l_regions);
-		$fork2 = 10 if $fork2 >= 10;
+		my ($fork2, $fork_sql);
+		if (scalar(@l_regions) == 1) {
+			$fork2 = 1;
+			$fork_sql = $dejavu_variants->fork();
+		}
+		else {
+			$fork2 = scalar(@l_regions);
+			$fork2 = 10 if $fork2 >= 10;
+			$fork_sql = 1;
+		}
 		MCE::Loop->init(
 		    max_workers => $fork2,
 		    chunk_size  => 'auto',
@@ -333,6 +354,8 @@ if ($region or $only_genes) {
 		    }
 		);
 		
+		#$dejavu_variants->view_all_projects(1);
+		
 		#TODO: optimiser ici - 1 chromosome peut avoir plusieurs region pour ne faire qu une requete
 		
 		my $worker = sub {
@@ -347,7 +370,7 @@ if ($region or $only_genes) {
 				foreach my $interval (@$list_this_region) {
 					my ($start_filter, $end_filter) = split('-', $interval);
 					$end_filter = $start_filter +1 if not $end_filter;
-					push(@list_sql_pos, "pos38 >= $start_filter and pos38 <= $end_filter");
+					push(@list_sql_pos, "(pos38 >= $start_filter and pos38 <= $end_filter)");
 					$found_pos++;
 				}
 				if ($found_pos) {
@@ -356,9 +379,11 @@ if ($region or $only_genes) {
 				
 				my $i = 0;
 				my $sql_parquets = $dejavu_variants->sql_projects_parquet();
+				
+				my $this_fork = $dejavu_variants->fork();
 				my $sql = "
-					PRAGMA threads=1;
-					WITH base AS ( SELECT * FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos ),
+					PRAGMA threads=$fork_sql;
+					WITH base AS ( SELECT project, chr38, pos38, allele, he, ho FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos ),
 					agg AS (
 					    SELECT 
 					        chr38, pos38, allele,
@@ -621,15 +646,17 @@ $html .= "</tbody>";
 $html .= "</table>";
 $html =~ s/glyphicon-minus/fa fa-minus/g;
 
-
-
+my $html_file = $buffer->config_path("root","global_search").'/'.$export_session_id.'.html';
+open (HTML, '>'.$html_file);
+print HTML $html;
+close(HTML);
+$html = '';
 
 if ($launch_job) {
 	my $hRes;
 	$hRes->{status} = "finished";
-	$hRes->{html}   = $html;
+	$hRes->{session_id} = $export_session_id;
 	$hRes->{phenotypes} = join(',', @lPhenos);
-	$hRes->{xls_session} = $export_session_id;
 	if ($h_errors_found) {
 		$hRes->{errors}  = join(', ', values %$h_errors_found);
 	}
@@ -639,7 +666,8 @@ if ($launch_job) {
 }
 else {
 	my $hRes;
-	$hRes->{html} = $html;
+	$hRes->{session_id} = $export_session_id;
+	#$hRes->{html} = $html;
 	if ($h_errors_found) {
 		$hRes->{errors}  = join(', ', values %$h_errors_found);
 	}
