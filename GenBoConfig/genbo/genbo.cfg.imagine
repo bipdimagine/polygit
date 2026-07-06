@@ -276,7 +276,7 @@ wisecondor:/software/distrib/miniconda3/bin/wisecondor/WisecondorX
 
 #bowtie2
 #bowtie2:/software/distrib/miniconda3/bin/bowtie2
-bowtie2:/software/distrib/bowtie2-2.3.0/bowtie2
+bowtie2:run_singularity.sh bowtie2.sif bowtie2 
 
 
 #cellranger
