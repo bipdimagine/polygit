@@ -749,6 +749,7 @@
         			document.getElementById('promoter_ai').checked = false;
         			document.getElementById('ncboost').checked = false;
         			//document.getElementById('phylop').checked = false;
+        			document.getElementById('b_keep_pathogenic').checked = true;
 					var cookie_user = dojo.cookie("username");
 					var cookie_pwd = dojo.cookie("passwd");
 	            	if (cookie_user && cookie_pwd) {
@@ -1216,6 +1217,8 @@
 				if (min_reads != '-' && min_reads > 0) {
 			    	options['min_reads'] = min_reads;
 				}
+				
+				if (document.getElementById('b_keep_pathogenic').checked == true) { options['keep_pathogenic'] = 1; }
 				
 				var found_included = false;
 				var listOnlyProjects = [];
@@ -1967,6 +1970,15 @@
 					    					<form>
 											    <input style="width:140px;font-size:12px;" type="string" id="select_genes" name="select_genes" placeholder="CDK6, BRCA2">
 											</form>
+										</div>
+									</td>
+								</tr>
+		                		<tr>
+		                			<td><span style="font-size:11px;">Keep variants<br>clinvar pathogenic&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+		                			<td>
+										<div class="hide-on-collapse" style="margin-top: 15px;">
+					    					<input class="form-check-input" type="checkbox" value="" id="b_keep_pathogenic" checked>
+											<label class="form-check-label" for="b_keep_pathogenic" style="vertical-align:middle;font-size:9px;"></label>
 										</div>
 									</td>
 								</tr>
