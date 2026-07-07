@@ -42,6 +42,12 @@ else {
 foreach my $project_name (@pp){
 my $buffer = new GBuffer;
 my $project = $buffer->newProject( -name => $project_name);
+if ($cmd =~/\.pl/){
+	unless (-e $cmd){
+		$cmd = "/data-bipd/".$cmd;	
+	}
+	
+}
 unless ($cmd){
 	foreach my $patient (@{$project->getPatients}){
 		print $patient->name."\n";
