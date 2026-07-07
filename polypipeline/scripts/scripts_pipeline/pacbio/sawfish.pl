@@ -10,10 +10,6 @@ use Data::Dumper;
 use Getopt::Long;
 use Carp;
 use Storable qw(store retrieve freeze);
-use Term::ANSIColor;
-use Thread::Queue;
-use Set::IntSpan::Fast::XS;
-use String::ProgressBar;
 use List::Util qw(sum);
 use autodie qw(system);
 
@@ -56,10 +52,13 @@ use autodie qw(system);
 
  
 my $fork = 5;
+my $force;
+
 GetOptions(
 	'project=s'   => \$project_name,
 	"patient=s" => \$patient_name,
 	"fork=s" => \$fork,
+	"force=s"  =>\$force,
 );
 die("miss fork") unless $fork;
 
@@ -95,7 +94,17 @@ if ($patient->isMale) {
 }
 my $vcf = $dir_out."/".$patient->name.".vcf.gz" ;
  $vcf = $patient->vcfFileName("deepvariant") unless -e $vcf;
-
+my $prod_file = $dir_out."/".$patient->name.".vcf.gz";
+if (-e $prod_file){
+	if ($force){
+		unlink $prod_file;
+		unlink $prod_file.".tbi";
+	}
+	else {
+		warn "already done";
+		exit(0);
+	}
+}
 my $cmd = qq{$singularity $sawfish sawfish discover --threads $fork --ref $ref  --bam $bam_out  --expected-cn $expected --cnv-excluded-regions $excluded --output-dir $dir_pipeline --maf-sample-name $vcf };
 
 my $cmd2 = qq{$singularity $sawfish sawfish joint-call --threads $fork --sample $dir_pipeline --output-dir $dir_opt2 };

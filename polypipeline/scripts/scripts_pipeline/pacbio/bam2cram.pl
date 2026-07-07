@@ -17,12 +17,13 @@ use Getopt::Long;
  my $project_name;
  my $patient_name;
 my $fork = 64;
+my $force;
 GetOptions(
 	'bam=s'   => \$bam_out,
 	"cram=s" => \$cram_out,
 	"project=s" => \$project_name,
-	"patient=s" => \$patient_name
-	
+	"patient=s" => \$patient_name,
+	"force=s" => \$force,
 );
 
 my $buffer = GBuffer->new();
@@ -33,12 +34,23 @@ my $bam_out = $dir_out."/".$patient->name.".bam";
 die($bam_out) unless -e $bam_out;
 my $ref               = $project->genomeFasta();
 my $cram_out = $patient->getCramFileName("pbmm2");
+if (-e $cram_out){
+	if ($force){
+		unlink $cram_out;
+		unlink $cram_out.".cai";
+	}
+	else {
+		warn "already";
+		exit(0);
+	}
+}
+$fork =30 if $fork > 40;
 my $cmd2 = "cd $dir_out && samtools view -C -T $ref -o $cram_out $bam_out -@ $fork && samtools index  $cram_out -@ $fork";
 system("$cmd2") unless -e $cram_out;
 die() unless -e $cram_out;
  my $filename = $cram_out;
  $filename =~ s/cram/idxstats/;
-  system("samtools idxstats $cram_out  -\@ 20  > $filename");
+system("samtools idxstats $cram_out  -\@ $fork  > $filename");
 
 
 exit(0);

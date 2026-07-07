@@ -14,11 +14,13 @@ my $final_vcf;
 my $log_file;
 my $patient_name;
 my $fork;
+my $force;
 
 GetOptions(
 	'project=s'   => \$project_name,
 	"patient=s"=>\$patient_name,
 	"fork=s" =>\$fork,
+	"force=s"  =>\$force,
 );
 my $date = `date`;
 chomp($date);
@@ -49,6 +51,7 @@ exit(0) if -e $vcf_out;
 my $gvcf_out =  $patient->getVariationsFileName("deepvariant");#$dir_out."/".$patient->name.".deep.gvcf.gz";
 my $dir_gvcf_tmp = $dir_out."tmp.".time;
 mkdir $dir_gvcf_tmp;
+$fork=64 unless $fork;
 $fork=64 if $fork>64;
 
 if  ($patient->getRun->isPacBio){
@@ -58,7 +61,18 @@ elsif  ($patient->getRun->isNanopore){
 	$model = "ONT_R104";
 }
 my $vcf = $patient->getVariationsFileName("deepvariant");
+if (-e $vcf){
+	if ($force){
+		unlink $vcf;
+		unlink ($vcf.".tbi");
+	}
+	else {
+		exit(0);
+	}
+}
+
 my $gvcf = $patient->gvcfFileName("deepvariant");
+
  $cmd = qq{ulimit -n 65535 && $singularity $deepvariant run_deepvariant  --model_type=$model --intermediate_results_dir=$dir_gvcf_tmp --ref=$ref --reads=$bam_out --output_vcf=$vcf --output_gvcf=$gvcf --num_shards=$fork};
 
 print $cmd."\n";
