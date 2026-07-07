@@ -5296,6 +5296,7 @@ sub noSqlCoverage {
 	my ( $self, $mode ) = @_;
 
 	#confess();
+	$mode ="r" unless $mode;
 	if ($mode eq "close" or $mode eq "d") {
 		 $self->{nosql}->{noSqlCoverage}->close if exists $self->{nosql}->{noSqlCoverage};
 		 delete $self->{nosql}->{noSqlCoverage};
