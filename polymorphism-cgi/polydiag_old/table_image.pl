@@ -155,7 +155,7 @@ $url_image.="?project=".$project_name."&limit=$limit&span=$padding&utr=$utr&intr
 my @ths;
 my@tds;
 html::print_cgi_header($cgi,$out,undef,"Coverage View [$project_name]");
-my $no =  $project->noSqlCoverage();
+my $no =  $project->noSqlCoverage('r');
 
 my $patients = $project->getPatients();
 my $nb =0;

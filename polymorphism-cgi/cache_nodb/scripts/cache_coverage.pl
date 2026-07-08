@@ -167,7 +167,8 @@ change_table_status($steps++);
 
 
 $projectP->disconnect();
-polydiag::cache_cnv( $project_name, $fork );
+#TODO: here
+#polydiag::cache_cnv( $project_name, $fork );
 change_table_status($steps++);
 
 $projectP->disconnect();
