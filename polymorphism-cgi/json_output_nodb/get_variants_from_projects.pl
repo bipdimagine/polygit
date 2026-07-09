@@ -102,7 +102,6 @@ my $max_dejavu = $cgi->param('dejavu');
 my $max_dejavu_ho = $cgi->param('dejavu_ho');
 my $min_ratio = $cgi->param('min_perc_all');
 my $min_reads = $cgi->param('min_reads');
-my $only_my_projects = $cgi->param('only_my_projects');
 my $only_ill = $cgi->param('only_ill');
 my $only_strict_ill = $cgi->param('only_strict_ill');
 my $models = $cgi->param('models');
@@ -113,10 +112,12 @@ my $use_phenotype = $cgi->param('use_phenotype');
 my $exclude_projects = $cgi->param('exclude_projects');
 my $only_project = $cgi->param('only_project');
 my $only_patient = $cgi->param('only_patient');
+my $view_all_projects = $cgi->param('view_all_projects');
 my $export_xls = $cgi->param('export_xls');
 my $session_id = $cgi->param('session_id');
 
 my $dejavu_variants = new dejavu_variants();
+$dejavu_variants->view_all_projects(1) if $view_all_projects;
 $dejavu_variants->user_name($login);
 $dejavu_variants->pwd($pwd);
 
@@ -140,11 +141,6 @@ if ($export_xls) {
 print $cgi->header('text/json-comment-filtered');
 print "{\"progress\":\".";
 
-if (not $only_my_projects) {
-	#TODO: faire en sorte de prendre tous les projets en hash - ne marche pas la
-	$dejavu_variants->{is_magic_user} = 1;
-	print '.all_projects.';
-}
 if ($exclude_projects) {
 	my @lExcl = split(',', $exclude_projects);
 	foreach my $p_name (@lExcl) {
@@ -158,7 +154,6 @@ if ($only_project) {
 	$dejavu_variants->{hash_only_project}->{$only_project} = $patient_name;
 }
 
-$dejavu_variants->hash_users_projects() if $only_my_projects;
 exit(0) if not $dejavu_variants->hash_users_projects();
 print '.nb_proj.'.scalar(keys %{$dejavu_variants->hash_users_projects()});
 
@@ -318,7 +313,7 @@ if ($region or $only_genes) {
 		}
 		
 		my ($fork2, $fork_sql);
-		if (scalar(@l_regions) == 1) {
+		if ($dejavu_variants->is_magic_user() or scalar(@l_regions) == 1) {
 			$fork2 = 1;
 			$fork_sql = $dejavu_variants->fork();
 		}
@@ -353,9 +348,6 @@ if ($region or $only_genes) {
 		        }
 		    }
 		);
-		
-		#$dejavu_variants->view_all_projects(1);
-		
 		
 		my $worker = sub {
 			my ($mce, $chunk_ref, $chunk_id) = @_;
@@ -494,14 +486,15 @@ if ($region or $only_genes) {
 ### PART 3 - check variants from calling variables
 
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
-print '...html...nbVar:'.scalar(keys %{$hVariantsDetails}).'.';
+my $nb_var = scalar(keys %{$hVariantsDetails});
+print '...html...nbVar:'.$nb_var.'.';
 my $nb_genes = scalar(keys %{$hGenes});
 if ($only_genes) {
 	foreach my $gene_id (keys %$hGenes)	{
 		delete $hGenes->{$gene_id} if not exists $dejavu_variants->{hash_only_genes}->{$gene_id};
 	}
 }
-my $nb_genes = scalar(keys %{$hGenes});
+$nb_genes = scalar(keys %{$hGenes});
 print '.nbGenes:'.$nb_genes.'.';
 
 #warn Dumper $hVariantsDetails;
@@ -554,8 +547,14 @@ mce_loop {
 } sort keys %{$hGenes};	
 MCE::Loop->finish();
 
-save_variants_in_session_export($dejavu_variants, $hGenes, $hVariantsDetails);
-my $export_session_id = $dejavu_variants->xls_export_session->save();
+my $export_session_id;
+if ($nb_genes > 0 and $nb_var > 0) { 
+	save_variants_in_session_export($dejavu_variants, $hGenes, $hVariantsDetails);
+	$export_session_id = $dejavu_variants->xls_export_session->save();
+}
+else {
+	$export_session_id = 'no_results_'.time;
+}
 
 my @lPhenos = sort keys %$h_phenos;
 my $html;
@@ -1089,7 +1088,7 @@ sub get_dejavu_he_ho {
 	if ($alt eq 'A' or $alt eq 'T' or $alt eq 'G' or $alt eq 'C') {
 		$res = $project->getChromosome($chr_id)->rocks_dejavu->dejavu($rocks_id);
 		return if not $res;
-		return if $only_my_projects and not pass_dejavu_filter_only_my_projects($res);
+		return if not pass_dejavu_filter_only_my_projects($res);
 		($nb_pat_he, $nb_pat_ho) = get_dv_he_ho_from_request($res);
 		my $h;
 		$h->{details} = $res;
@@ -1103,7 +1102,7 @@ sub get_dejavu_he_ho {
 		return if not $res;
 		foreach my $dv_rocks_id (keys %{$res}) {
 			if (exists $h_res_duck->{$chr_id.'!'.$dv_rocks_id}) {
-				return if $only_my_projects and not pass_dejavu_filter_only_my_projects($res->{$dv_rocks_id});
+				return if not pass_dejavu_filter_only_my_projects($res->{$dv_rocks_id});
 				($nb_pat_he, $nb_pat_ho) = get_dv_he_ho_from_request($res->{$dv_rocks_id});
 				my $h;
 				$h->{details} = $res->{$dv_rocks_id};
