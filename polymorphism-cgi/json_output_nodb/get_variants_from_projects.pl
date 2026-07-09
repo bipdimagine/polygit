@@ -35,7 +35,7 @@ use xls_export;
 
 my $cgi = new CGI();
 
-my $fork = 6;
+my $fork = 8;
 my $launch_job = $cgi->param('launch_job');
 
 my $outfile;

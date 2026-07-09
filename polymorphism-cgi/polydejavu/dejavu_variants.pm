@@ -404,6 +404,21 @@ sub check_variants_from_gene {
 		        	print '.' if ($ii % 5000 == 0);
 		            my $var_id = $chr->transform_rocksid_to_varid($rocks_id);
 		            my $var    = $p->_newVariant($var_id);
+		            
+		            #TODO: HERE
+#		            if (not $var->isVariation()) {
+#		            	my @ltmp = split('_', $var_id);
+#		            	my @ltmp2 = split('-', $ltmp[-1]);
+#		            	if (lc($ltmp2[0]) eq 'inv') {
+#							bless $var , 'GenBoInversion';
+#							$var->{start} = $ltmp[1]; 
+#							$var->{length} = $ltmp2[1];
+##							delete $var->{annotation};
+##							$var->annotation();
+##							warn "\n\n";
+##							warn Dumper $var->{annotation};
+#		            	}
+#		            }
 					
 					my $is_pathognic;
 					$is_pathognic = 1 if $self->hash_variant_pathogenic() and exists $self->{hash_variant_pathogenic}->{$rocks_id};
@@ -425,6 +440,7 @@ sub check_variants_from_gene {
 		                	my $var_annot;
 		                	eval {
 			                    $var_annot = $var->variationTypeInterface($gene);
+#			                    warn ref($var).' - '.$var->id.' -> '.$var_annot;
 			                    foreach my $annot (split(',', $var_annot)) {
 			                        $annot =~ s/ /_/g;
 			                        if (exists $h_cons->{lc($annot)}) {
@@ -455,14 +471,18 @@ sub check_variants_from_gene {
 						$found++;
 					}
 					if ($found) {
+						if (not $var->isVariation()) {
+							$var_allele = 'indel';
+							my @ltmp = split('-', $gnomad_id);
+							if (lc($ltmp[-2]) eq 'cnv') {
+								$gnomad_id = $var_id;
+#								$var_allele = 'cnv';
+							}
+							else { $start = $ltmp[1]; }
+						}
 						$hres->{var_pos}->{$chr_id}->{$start}->{$var_allele}->{var_id} = $var_id;
 						$hres->{var_pos}->{$chr_id}->{$start}->{$var_allele}->{ref_all} = $ref_allele;
 						$hres->{var_pos}->{$chr_id}->{$start}->{$var_allele}->{gnomad_id} = $gnomad_id;
-						if (not $var->isVariation()) {
-							my @ltmp = split('-', $gnomad_id);
-							my $start_indel = $ltmp[1];
-							$hres->{var_pos}->{$chr_id}->{$start_indel} = $hres->{var_pos}->{$chr_id}->{$start};
-						}
 					}
 		            $var = undef;
 		        }
@@ -729,7 +749,6 @@ sub get_from_duckdb_project_patients_infos_global {
 	my $sql_parquets = $self->sql_projects_parquet();
 	my ($h_gnomadid, $h_projects_patients);
 	
-	
 	foreach my $chr_id (sort keys %$h_var_pos) {
 		my $sql = qq{
 			PRAGMA threads=$fork;
@@ -753,7 +772,6 @@ sub get_from_duckdb_project_patients_infos_global {
 		print $in ";\n";
 		print '.temp.done.';
 		
-		
 		print $in qq{
 			WITH filtered AS ( SELECT * FROM $sql_parquets where chr38='$chr_id' )
 			SELECT f.project, f.chr38, f.chr19, f.pos38, f.pos19, f.he, f.allele, f.patients, f.dp_ratios
@@ -766,49 +784,38 @@ sub get_from_duckdb_project_patients_infos_global {
 		my $header = $csv_in->getline($out);
 		while (my $row = $csv_in->getline($out)) {
 		    my ($project_id,$this_chr38,$this_chr19,$this_pos38,$this_pos19,$he,$var_all,$patients,$dp_ratios) = @$row;
+		    $var_all = 'indel' if ($var_all ne 'T' and $var_all ne 'G' and $var_all ne 'A' and $var_all ne 'C');
+		    next if (not exists $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all});
 		    
-		    #OLD - avec $var_all
-#		    next if not exists $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all};
-#		    my $var_id    = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{var_id};
-#		    my $gnomad_id = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{gnomad_id};
-#		    my $ref       = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{ref_all};
-#		    $h_gnomadid->{$gnomad_id}->{chr19} = $this_chr19;
-#		    $h_gnomadid->{$gnomad_id}->{pos19} = $this_pos19;
-#		    $h_gnomadid->{$gnomad_id}->{ref_all} = $ref;
-#		    $h_gnomadid->{$gnomad_id}->{var_all} = $var_all;
-		    
-		    next if not exists $h_var_pos->{$this_chr38}->{$this_pos38};
-		    foreach my $var_all (keys %{$h_var_pos->{$this_chr38}->{$this_pos38}}) {
-			    my $var_id    = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{var_id};
-			    my $gnomad_id = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{gnomad_id};
-			    my $ref       = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{ref_all};
-			    $h_gnomadid->{$gnomad_id}->{chr19} = $this_chr19;
-			    $h_gnomadid->{$gnomad_id}->{pos19} = $this_pos19;
-			    $h_gnomadid->{$gnomad_id}->{ref_all} = $ref;
-			    $h_gnomadid->{$gnomad_id}->{var_all} = $var_all;
-		    
-			    my $project_name;
-			    if (exists $self->{hash_projects_ids_names}->{$project_id}) {
-			    	$project_name = $self->{hash_projects_ids_names}->{$project_id}->{name};
-			    }
-			    else {
-			    	$project_name = $self->buffer->getQuery->getProjectNameFromId($project_id);
-			    	$self->{hash_projects_ids_names}->{$project_id}->{name} = $project_name;
-					my $list_patients = $self->buffer->getQuery->getPatients($project_id);
-					foreach my $h_pat (@$list_patients) {
-						$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{family} = $h_pat->{family};
-						$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{name} = $h_pat->{name};
-						$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{status} = $h_pat->{status};
-						$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{sex} = $h_pat->{sex};
-						$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{father} = $h_pat->{father};
-						$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{mother} = $h_pat->{mother};
-						$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{patient_id}} = $self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}};
-					}
-					$self->{hash_projects_ids_names}->{$project_name} = $self->{hash_projects_ids_names}->{$project_id};
-			    }
-			    $h_projects_patients->{$var_id}->{$project_name} = $self->get_table_project_patients_infos($project_name, $he, $patients, $dp_ratios);
-			    $iii++;
-			}
+		    my $var_id    = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{var_id};
+		    my $gnomad_id = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{gnomad_id};
+		    my $ref       = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{ref_all};
+		    $h_gnomadid->{$gnomad_id}->{chr19} = $this_chr19;
+		    $h_gnomadid->{$gnomad_id}->{pos19} = $this_pos19;
+		    $h_gnomadid->{$gnomad_id}->{ref_all} = $ref;
+		    $h_gnomadid->{$gnomad_id}->{var_all} = $var_all;
+	    
+		    my $project_name;
+		    if (exists $self->{hash_projects_ids_names}->{$project_id}) {
+		    	$project_name = $self->{hash_projects_ids_names}->{$project_id}->{name};
+		    }
+		    else {
+		    	$project_name = $self->buffer->getQuery->getProjectNameFromId($project_id);
+		    	$self->{hash_projects_ids_names}->{$project_id}->{name} = $project_name;
+				my $list_patients = $self->buffer->getQuery->getPatients($project_id);
+				foreach my $h_pat (@$list_patients) {
+					$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{family} = $h_pat->{family};
+					$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{name} = $h_pat->{name};
+					$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{status} = $h_pat->{status};
+					$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{sex} = $h_pat->{sex};
+					$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{father} = $h_pat->{father};
+					$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}}->{mother} = $h_pat->{mother};
+					$self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{patient_id}} = $self->{hash_projects_ids_names}->{$project_id}->{patients}->{$h_pat->{name}};
+				}
+				$self->{hash_projects_ids_names}->{$project_name} = $self->{hash_projects_ids_names}->{$project_id};
+		    }
+		    $h_projects_patients->{$var_id}->{$project_name} = $self->get_table_project_patients_infos($project_name, $he, $patients, $dp_ratios);
+		    $iii++;
 		    print '.' if $iii % 500 == 0;
 		}
 		print '.';
