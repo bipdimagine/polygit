@@ -531,7 +531,7 @@ is		=> 'ro',
 
 sub cached_cnv{
 	my ($self,$patient,$debug) = @_;
-		my $no =  $self->project->noSqlCoverage();
+		my $no =  $self->project->noSqlCoverage('w');
 		my $hash;
 		unless ($debug){
 		eval{
@@ -546,7 +546,8 @@ sub cached_cnv{
 		 eval{
 		 	$no->set($patient->name."_cnv",$self->id,$hash);
 		 };
-		
+		$no->close();
+		delete $self->project->{nosql}->{noSqlCoverage};
 		  return $hash;
 		 
 }

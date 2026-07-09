@@ -784,7 +784,7 @@ sub setListPrimers {
 sub getListPrimers {
 	my ($self,$multi) = @_;
 	return $self->{list_primers} if exists $self->{list_primers};
-		my $no = $self->project->noSqlCoverage();
+		my $no = $self->project->noSqlCoverage('r');
 		my $list = $no->get($self->project->name,$self->id);
 		if ($list){
 			$self->{list_primers} = $list;

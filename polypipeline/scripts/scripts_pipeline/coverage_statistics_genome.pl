@@ -50,6 +50,10 @@ else { $patients = $project->getPatients(); }
 
 if ($project->isGenome && $json) {
 	my $hjson;
+	
+	$patients = undef;
+	if ($patient_name) { push(@$patients, $project->getPatient($patient_name)); }
+	else { $patients = $project->getPatients(); }
 	foreach my $patient (@{$patients}){
 		my $pid = $patient->id;
 			my $all_sum;
@@ -110,8 +114,12 @@ if ($project->isGenome){
 		 $res->{$patient}->{nb} += $h->{nb};
 		}
 	);
-	
-	foreach my $patient (@{$patients}){
+
+
+$patients = undef;
+if ($patient_name) { push(@$patients, $project->getPatient($patient_name)); }
+else { $patients = $project->getPatients(); }	
+foreach my $patient (@{$patients}){
 	foreach my $chr (@{$project->getChromosomes}){
 			my $intervals = $buffer->divide_by_chunks(1,$chr->length,50_000_000);
 			#warn $from." ".$to;
@@ -172,15 +180,22 @@ $pm->run_on_finish(
 #		 warn  $patient." ".$res->{$patient}->{sum};
 		}
 	);
-foreach my $patient (@{$patients}){
-	my $all_sum;
 	
+$patients = undef;
+if ($patient_name) { push(@$patients, $project->getPatient($patient_name)); }
+else { $patients = $project->getPatients(); }
+	
+foreach my $patient (@{$patients}){
+			$patient->project->disconnect();
+	my $all_sum;
+	$patient->alignmentMethods();
 	foreach my $chr (@{$project->getChromosomes}){
 			#next if $chr->name ne "1";
 			my $intspan = $patient->getCapture->genomic_span($chr);
 			my @t = split(",",$intspan->as_string);
 			next if $intspan->is_empty();
 			my $pid = $pm->start and next;
+			$patient->project->disconnect();
 			my $array = $patient->depthIntspan($chr->name,$intspan);
 			#warn $from." ".$to;
 			#warn Dumper $intervals;
@@ -209,12 +224,16 @@ foreach my $patient (@{$patients}){
 		#warn $chr->name." ".$all_sum/$nb." ".(($s5/$nb)*100)." ".(($s30/$nb)*100);
 		$pm->finish( 0, {s20=>$s20,s5=>$s5,s15=>$s15,s30=>$s30,s100=>$s100,patient=>$patient->name,nb=>$nb,sum=>$sum} );
 		}
+		$pm->wait_all_children();
 	}
-$pm->wait_all_children();
 }
 
 
 my $hjson; 
+	
+$patients = undef;
+if ($patient_name) { push(@$patients, $project->getPatient($patient_name)); }
+else { $patients = $project->getPatients(); }
 
 foreach my $patient (@{$patients}){
 	my $name = $patient->name;

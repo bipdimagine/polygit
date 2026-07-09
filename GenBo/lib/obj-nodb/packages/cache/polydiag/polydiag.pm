@@ -96,16 +96,17 @@ my $himpact_sorted = {
 sub cache_delete_coverage_file {
 	my ( $project_name, $fork ) = @_;
 	my $buffer1 = new GBuffer;
-	my $projectP =
-	  $buffer1->newProject( -name => $project_name, -verbose => 1 );
-	my $no     = $projectP->noSqlCoverage();
-	my $output = $projectP->getCacheDir() . "/coverage_lite";
-	#warn $output;
+	my $projectP = $buffer1->newProject( -name => $project_name, -verbose => 1 );
+	my $output = $projectP->getCacheDir() . "/coverage_lite/";
+	warn $output;
 	system("rm $output/*.lite");
 	#unlink $output . "/" . $projectP->name() . ".lite";
 	#unlink $output . "/primers.lite" if -e $output . "/primers.lite";
-	my $no = $projectP->noSqlCoverage();
-	$no->put( $projectP->name(), "test", "tutu" );
+	my $no = $projectP->noSqlCoverage('c');
+	#warn $project_name;
+	foreach my $p (@{$projectP->getPatients()}) {
+		$no->put( $p->name, "test", "tutu" );
+	}
 	$no->close();
 }
 
@@ -115,7 +116,7 @@ sub cache_coverage_primers {
 	my $projectP =
 	  $buffer1->newProject( -name => $project_name, -verbose => 1 );
 	my $pm2 = new Parallel::ForkManager($fork);
-	my $no  = $projectP->noSqlCoverage();
+	my $no  = $projectP->noSqlCoverage('w');
 	my $total;
 	$pm2->run_on_finish(
 		sub {
@@ -150,7 +151,7 @@ sub cache_coverage_list_primers {
 	my $buffer1 = new GBuffer;
 	my $projectP =
 	  $buffer1->newProject( -name => $project_name, -verbose => 1 );
-	my $no = $projectP->noSqlCoverage();
+	my $no = $projectP->noSqlCoverage('w');
 	
 	foreach my $capture ( @{ $projectP->getCaptures } ) {
 		next if $capture->isPcr();
@@ -169,7 +170,7 @@ sub compute_coverage_diagnostic1 {
 	my $project = $buffer->newProject( -name => $project_name, -verbose => 1 );
 	$project->disconnect();
 	my $patient = $project->getPatient($patient_name);
-	my $no      = $project->noSqlCoverage();
+	my $no      = $project->noSqlCoverage('w');
 	$no->clear( $patient->name );
 	$no->clear( $patient->name . "_cnv" );
 	$no->close();
@@ -187,7 +188,7 @@ sub compute_coverage_diagnostic2 {
 	my $project = $buffer->newProject( -name => $project_name, -verbose => 1 );
 	$project->disconnect();
 	my $patient = $project->getPatient($patient_name);
-	my $no      = $project->noSqlCoverage();
+	my $no      = $project->noSqlCoverage('w');
 	my @trs =
 	  map { $project->newTranscript($_) } @{ $project->bundle_transcripts() };
 	preload_coverage::load_coverage_primers( $project, [$patient], \@trs );
@@ -201,7 +202,7 @@ sub compute_coverage_diagnostic3 {
 	my $buffer   = new GBuffer;
 	my $project  = $buffer->newProject( -name => $project_name, -verbose => 1 );
 	my $patient  = $project->getPatient($patient_name);
-	my $no       = $project->noSqlCoverage();
+	my $no       = $project->noSqlCoverage('w');
 	my @paddings = ( 0, 5, 10, 15, 20, 30 );
 	my @utrs     = ( 0, 1 );
 	my @trs =
@@ -240,6 +241,7 @@ sub compute_coverage_diagnostic4 {
 	foreach my $k (keys %$hash){
 		warn $k;
 		$no->put($project->name,$k,$hash->{$k});
+		$no->put($project->name.'-min',$k,$hash->{$k});
 	}
 	
 	$no->close();
@@ -797,7 +799,7 @@ sub cache_cnv {
 	}
 	preload_coverage::load_cnv_score( $projectP, $projectP->getPatients,
 		\@transcripts );
-		$projectP->noSqlCoverage->close;
+		#$projectP->noSqlCoverage->close;
 
 }
 

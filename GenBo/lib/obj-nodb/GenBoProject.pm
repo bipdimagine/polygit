@@ -2534,7 +2534,7 @@ sub getGenomeIndex {
 		  . "$method doesnt exist. Die.\n\n" )
 	  unless -e $self->dirGenome() . "/$method";
 	$dir = $self->dirGenome() . "/$method";
-	$dir .= "/hg19"   if ( $method eq "bowtie2" );
+	$dir .= "/all"   if ( $method eq "bowtie2" );
 	$dir .= "/genome" if ( $method eq "hisat2" );
 	$dir .= "/latest" if ( $method eq "cellranger-star");
 	return $dir;
