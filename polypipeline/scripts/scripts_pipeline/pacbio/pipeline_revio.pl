@@ -51,7 +51,8 @@ warn "sawfish ok";
 
 my $cmd_coverage = qq{perl $Bin/../coverage_genome.pl -project=$project_name -patient=$patient_name -fork=$fork -$stforce};
 system($cmd_coverage);
-my $cmd_wsiecondor = qq{perl $Bin/../wisecondor.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
+my $cmd_wsiecondor = qq{$Bin/wisecondor.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
 system($cmd_wsiecondor);
-
+my $cmd_wsiecondor2 = qq{$Bin/calling_wisecondor.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
+system($cmd_wsiecondor2);
 

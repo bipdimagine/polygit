@@ -116,7 +116,7 @@ warn "$cmd && $cmd2";
 warn "$dir_opt2/genotyped.sv.vcf.gz";
 system("$cmd && $cmd2" ) unless -e "$dir_opt2/genotyped.sv.vcf.gz";
 #die();
-my $prod_file = $dir_out."/".$patient->name.".vcf.gz";
+my $prod_file = $patient->vcfFileName("sawfish");# unless -e $vcf;
 my $cmd3 = "cp $dir_opt2/genotyped.sv.vcf.gz  $prod_file && tabix -p vcf $prod_file";
 system($cmd3);
 die() unless -e $prod_file.".tbi";
