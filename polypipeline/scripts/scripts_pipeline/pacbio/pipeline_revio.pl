@@ -49,9 +49,9 @@ my $cmd_sawfish = qq{$Bin/sawfish.pl -project=$project_name -patient=$patient_na
 system($cmd_sawfish);
 warn "sawfish ok";
 
-my $cmd_coverage = qq{$Bin/../coverage_genome.pl -project=$project_name -patient=$patient_name -fork=$fork -$stforce};
+my $cmd_coverage = qq{perl $Bin/../coverage_genome.pl -project=$project_name -patient=$patient_name -fork=$fork -$stforce};
 system($cmd_coverage);
-my $cmd_wsiecondor = qq{$Bin/../wisecondor.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
+my $cmd_wsiecondor = qq{perl $Bin/../wisecondor.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
 system($cmd_wsiecondor);
 
 
