@@ -60,10 +60,18 @@ if (-e $dir_prod){
 		warn "already run add -force=1";
 		exit(0);
 	}
+	else {
+		if (-d $dir_prod."/1/"){
+			system("rm $dir_prod/*/*");
+		}
+		else {
+			system("rm $dir_prod/*");
+		}
+	}
 	
 }
 
-my $dir = $project->getAlignmentPipelineDir($patient_name."_depth");
+my $dir = $project->getAlignmentPipelineDir($patient_name."_depth".time);
 my $process;
 my $pm = new Parallel::ForkManager($fork);
 $pm->run_on_finish(
@@ -161,6 +169,9 @@ foreach my $chr (@{$project->getChromosomes}){
 
 $fbout->close();
 
+unless ($project->isCapture){
+	system("$Bin/coverage_statistics_genome.pl -project=$project_name -patient=$patient_name -fork=$fork");
+}
 exit(0);	
 
 
