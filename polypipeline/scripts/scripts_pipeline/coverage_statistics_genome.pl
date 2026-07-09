@@ -39,6 +39,7 @@ GetOptions(
 
 my $buffer = new GBuffer;
 my $project = $buffer->newProject ( -name => $project_name , -version =>$version);
+$project->preload(); 
 my $pm   = new Parallel::ForkManager($fork);
 my $tabix = $buffer->software("tabix");
 my $bgzip = $buffer->software("bgzip");
