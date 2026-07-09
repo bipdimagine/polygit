@@ -1,8 +1,7 @@
 #!/usr/bin/env perl
 use FindBin qw($Bin);
 use strict;
-
-use lib "$Bin/../../../GenBo/lib/obj-nodb/";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../packages/";
 #use Set::IntSpan;
 use GBuffer; 
@@ -10,9 +9,6 @@ use Data::Dumper;
 use Getopt::Long;
 use Carp;
 use Storable qw(store retrieve freeze);
-use Term::ANSIColor;
-use Thread::Queue;
-use Set::IntSpan::Fast::XS;
 use String::ProgressBar;
 use List::Util qw(sum);
 

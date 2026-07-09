@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use FindBin qw($Bin);
 use strict;
-use lib "$Bin/../../../GenBo/lib/obj-nodb/";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../packages/";
 #use Set::IntSpan;
 use GBuffer; 
