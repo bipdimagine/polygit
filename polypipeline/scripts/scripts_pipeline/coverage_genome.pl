@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use strict;
 use lib "$Bin/../../../GenBo/lib/obj-nodb/";
@@ -28,6 +28,7 @@ my $use_samtools;
 my $log_file;
 my $version;
 my $align;
+my $force;
 GetOptions(
 	"fork=s"   => \$fork,
 	"project=s" =>\$project_name,
@@ -35,6 +36,7 @@ GetOptions(
 	"version=s" =>\$version,
 	"align=s" =>\$align,
 	"verbose=i" =>\$verbose,
+	"force=s" => \$force,
 );
 unless($patient_name){
 	$patient_name = $name;
@@ -51,7 +53,15 @@ if($align){
 }
 
 
+my $dir_prod = $patient->NoSqlDepthDir."/".$patient->name . ".depth.lmdb";
 
+if (-e $dir_prod){
+	unless ($force){
+		warn "already run add -force=1";
+		exit(0);
+	}
+	
+}
 
 my $dir = $project->getAlignmentPipelineDir($patient_name."_depth");
 my $process;
@@ -77,6 +87,9 @@ $project->preload();
 	
 	my @tall = (0) x (50_000);
 	my $id = time;
+
+	
+	
 foreach my $chr (@{$project->getChromosomes}) {
 	$id ++;
 	$process->{$id} = 1;
@@ -93,7 +106,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 	foreach my $r (@$regions){
 		#warn Dumper $r if $chr->name eq "Y";
 		$nb ++;
-		my $rspan =  Set::IntSpan::Fast::XS->new();
+		my $rspan =  Set::IntSpan::Fast->new();
 		$rspan->add_range($r->{start},$r->{end});
 		my $aspan= $rspan->intersection($intspan);
 		if ($aspan->is_empty){

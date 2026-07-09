@@ -37,12 +37,13 @@ use IO::Handle;
 use xls_export;
 use session_export;
 use MIME::Base64;
+use GenBoDuckDejaVuSv;
 
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/html_polygenescout.pm";
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update_variant_editor.pm";
 require "$Bin/../GenBo/lib/obj-nodb/packages/cache/polydiag/update.pm";
 require  "$Bin/../GenBo/lib/obj-nodb/GenBoDuckDejaVuCnv.pm";
-require  "$Bin/../GenBo/lib/obj-nodb/GenBoDuckDejaVuSv.pm";
+#require  "$Bin/../GenBo/lib/obj-nodb/GenBoDuckDejaVuSv.pm";
 
 my $io = IO::Handle->new();
 $io->autoflush(1);

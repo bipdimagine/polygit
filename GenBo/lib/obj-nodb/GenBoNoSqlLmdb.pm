@@ -158,11 +158,13 @@ sub lmdb {
 	
 
 	my $filename = $self->dir."/".$name;
-	
 	#	my $filename = $self->filename;
 		
 		if ($self->mode eq "c"){
 			#$self->clean_files();
+			warn "------";
+			#system("rm ")
+			system ("rm $filename/*")	if -d $filename;
   			unlink $filename  if -e $filename;
  	 }
 	
@@ -176,7 +178,9 @@ sub lmdb {
 	 		my $filename =  $self->dir."/$name";
 	 		#warn "read only ".$self->dir."/$name";
 	 		 my $flag =LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP;
+	 		 warn $flag;
 	 		 $flag =   MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP if -d $filename;
+	 		 warn $flag;
 	 		if ($self->test  ){
 	 		$env = LMDB::Env->new("$filename", {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
@@ -186,7 +190,7 @@ sub lmdb {
       			#flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
  	 			flags => $flag,
  	 			});
- 			system("/software/bin/vmtouch -t $filename -q  ") if -e "/software/bin/vmtouch";
+ 			system("vmtouch -t $filename -q  ") ;#if -e "/software/bin/vmtouch";
 	 		}
 	 		else {
 	 		$env = LMDB::Env->new($self->dir."/$name", {
@@ -199,7 +203,7 @@ sub lmdb {
  			 });
 	 		}
  	 		my $sname = $self->dir."/$name";
- 	   		system("/software/bin/vmtouch -t $sname -q  ") if $self->vmtouch;
+ 	   		system("vmtouch -t $sname -q  ") if $self->vmtouch;
 	 	}
 		else {
 			#die();
@@ -207,20 +211,24 @@ sub lmdb {
 				unless (-e  $self->dir."/$name"){
 						mkdir $self->dir."/$name";
 				}
+				my $flag = 0;
 				unless (-d $self->dir."/$name"){
+					$flag  =  LMDB_File::MDB_NOSUBDIR;
+				}
+				
 					$env = LMDB::Env->new($self->dir."/$name", {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
       			mode   => 0777,
-      			flags => LMDB_File::MDB_NOSUBDIR	,
+      			flags => $flag	,
  	 			});
 				
-				}
-				else {
-					$env = LMDB::Env->new($self->dir."/$name", {
-      					mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
-      					mode   => 0777,
- 	 			});
-				}
+				#}
+				#else {
+				#	$env = LMDB::Env->new($self->dir."/$name", {
+      			#		mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
+      			#		mode   => 0777,
+ 	 			#});
+				#}
 				
 					
 			
