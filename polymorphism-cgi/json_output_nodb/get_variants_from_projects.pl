@@ -396,9 +396,6 @@ if ($region or $only_genes) {
 				    chomp $line;
 				    my ($project_id,$this_chr38,$this_pos38,$allele,$he,$ho) = split(/,/, $line);
 			    	next if $project_id eq 'project';
-		
-			    	next if not $allele =~ /[ATGC]+/;
-		
 			    	my $rocksid = sprintf("%010d", $this_pos38).'!'.$allele;
 			    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id} = undef;
 			    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{he} += $he;
