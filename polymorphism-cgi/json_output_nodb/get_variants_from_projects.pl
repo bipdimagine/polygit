@@ -297,7 +297,7 @@ if ($region or $only_genes) {
 		foreach my $this_region (@l_regions_tmp) {
 			my ($chr_id, $start, $end) = split('-', $this_region);
 			if (not exists $h_regions->{$chr_id}) { $h_regions->{$chr_id} = Set::IntSpan::Fast::XS->new(); }
-			$h_regions->{$chr_id}->add_range($start, $end);
+			$h_regions->{$chr_id}->add_range($start, $end) if $start and $end;
 		}
 		
 		my @l_regions;
@@ -404,7 +404,7 @@ if ($region or $only_genes) {
 			    	print '.' if ($i % 100000 == 0);
 				}
 				close($fh);
-				print '.found.'.$i.'.';
+#				print '.found.'.$i.'.';
 				
 				
 				$i = 0;
@@ -412,9 +412,9 @@ if ($region or $only_genes) {
 				my $no = $chr->rocksdb('gnomad');
 				
 				my @l_var_chr = keys %{$hres->{h_rocks_to_view}->{$chr_filter}};
-				print ".begin_prepare_rocks.";
+#				print ".begin_prepare_rocks.";
 				#$no->prepare(\@l_var_chr);
-				print ".end_prepare_rocks.";
+#				print ".end_prepare_rocks.";
 				
 				foreach my $rocksid (@l_var_chr) {
 					eval {
@@ -437,12 +437,13 @@ if ($region or $only_genes) {
 					}
 				}
 				$no->close();
-				print '.found_filtred.'.$i.'.';
+#				print '.found_filtred.'.$i.'.';
 				
 				
 				#ADD CLINVAR PATHOGENIC
 				if ($keep_pathogenic) {
 					my $sql_clinvar = "
+						PRAGMA threads=$fork_sql;
 						WITH dejavu AS (
 							SELECT *, chr38 || '!' || LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'index', LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'rocksid' FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos
 						)
@@ -469,7 +470,7 @@ if ($region or $only_genes) {
 				    	print '.' if ($i % 100000 == 0);
 					}
 					close($fh2);
-					print '.with_clinvar.'.$i.'.';
+#					print '.with_clinvar.'.$i.'.';
 				}
 			}
 		    MCE->gather($hres);
@@ -483,6 +484,8 @@ if ($region or $only_genes) {
 ### PART 3 - check variants from calling variables
 
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
+$h_rocks_to_view = undef;
+
 my $nb_var = scalar(keys %{$hVariantsDetails});
 print '...html...nbVar:'.$nb_var.'.';
 my $nb_genes = scalar(keys %{$hGenes});
@@ -502,7 +505,7 @@ print '.nbGenes:'.$nb_genes.'.';
 my ($h_html_genes, $h_phenos);
 MCE::Loop->init(
    max_workers => $fork,
-   chunk_size => 1,
+   chunk_size => 'auto',
    gather => sub {
         my ($data) = @_;
         foreach my $pheno_name (keys %{$data->{phenotypes}}) {
@@ -552,6 +555,10 @@ if ($nb_genes > 0 and $nb_var > 0) {
 else {
 	$export_session_id = 'no_results_'.time;
 }
+
+$hGenes = undef;
+$hVariantsDetails = undef;
+
 
 my @lPhenos = sort keys %$h_phenos;
 my $html;
@@ -641,11 +648,13 @@ $html .= "</tbody>";
 $html .= "</table>";
 $html =~ s/glyphicon-minus/fa fa-minus/g;
 
+print '.write_html.';
 my $html_file = $buffer->config_path("root","global_search").'/'.$export_session_id.'.html';
 open (HTML, '>'.$html_file);
 print HTML $html;
 close(HTML);
 $html = '';
+print '.END';
 
 if ($launch_job) {
 	my $hRes;

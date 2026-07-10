@@ -178,9 +178,9 @@ sub lmdb {
 	 		my $filename =  $self->dir."/$name";
 	 		#warn "read only ".$self->dir."/$name";
 	 		 my $flag =LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP;
-	 		 warn $flag;
+#	 		 warn $flag;
 	 		 $flag =   MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP if -d $filename;
-	 		 warn $flag;
+#	 		 warn $flag;
 	 		if ($self->test  ){
 	 		$env = LMDB::Env->new("$filename", {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry

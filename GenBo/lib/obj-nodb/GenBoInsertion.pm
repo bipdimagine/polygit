@@ -291,7 +291,7 @@ sub protein_nomenclature {
 			if ($self->isFrameshift($prot->getTranscripts->[0])){
 			return "p.".$self->changeAA($prot).$pos."fs";
 		}
-		
+		return if not $pos;
 		my $aa1 = $prot->getSequence($pos);
 		my $aa2 = $prot->getSequence($pos+1);
 		$aa2 ="" unless $aa2; 

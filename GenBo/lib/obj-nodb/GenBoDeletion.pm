@@ -343,6 +343,7 @@ sub protein_nomenclature {
 		confess() unless $prot->isProtein();
 		my $pos = $self->getProteinPosition($prot);
 		my $seq1 = $self->annotation->{ $prot->id }->{coding}->{sequences}->{aa};
+		return if not $seq1;
 		my @seqa = split("",$seq1);
 
 			
@@ -354,6 +355,9 @@ sub protein_nomenclature {
 		
 		my $aa1 = $seqa[0];
 		my $aa2 = $seqa[-1];
+		
+		return if not $pos;
+		
 		my $p1  = $pos+length($seq1);
 		return "p.$aa1".$pos."_".$aa2.$p1."del";
 		
