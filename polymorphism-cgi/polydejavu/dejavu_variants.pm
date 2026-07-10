@@ -704,7 +704,7 @@ sub get_from_duckdb_project_patients_infos_global {
 	
 	foreach my $chr_id (sort keys %$h_var_pos) {
 		my $sql = qq{
-			PRAGMA threads=1;
+			PRAGMA threads=2;
 			CREATE TEMP TABLE positions( pos38 INT );
 			INSERT INTO positions VALUES
 		};
@@ -725,7 +725,7 @@ sub get_from_duckdb_project_patients_infos_global {
 		print $in ";\n";
 		
 		print $in qq{
-			PRAGMA threads=1;
+			PRAGMA threads=2;
 			WITH filtered AS ( SELECT * FROM $sql_parquets where chr38='$chr_id' )
 			SELECT f.project, f.chr38, f.chr19, f.pos38, f.pos19, f.he, f.allele, f.patients, f.dp_ratios
 			FROM filtered f JOIN positions p ON f.pos38 = p.pos38;
