@@ -1,8 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use strict;
-
-use lib "$Bin/../../../GenBo/lib/obj-nodb/";
+use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../packages/";
 #use Set::IntSpan;
 use GBuffer; 
@@ -10,12 +9,8 @@ use Data::Dumper;
 use Getopt::Long;
 use Carp;
 use Storable qw(store retrieve freeze);
-use Term::ANSIColor;
-use Thread::Queue;
-use Set::IntSpan::Fast::XS;
 use String::ProgressBar;
 use List::Util qw(sum);
-
 
 
  my $project_name;
@@ -54,7 +49,7 @@ use List::Util qw(sum);
 };
 
  
- my $fork = 5;
+my $fork = 5;
 GetOptions(
 	'project=s'   => \$project_name,
 	"patient=s" => \$patient_name,
@@ -65,38 +60,57 @@ die("miss fork") unless $fork;
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
-my $wise  = $project->getSoftware('wisecondor');
+
 my $patient = $project->getPatient($patient_name);
  my $bam = $patient->getBamFile() ;
  my $npz =  $patient->fileWiseCondor();
- 
+ my $run = $patient->getRun();
  my $ref = $project->get_wisecondor_reference;
+my $wise_sif  = "wisecondor.sif";
+my $singularity = "run_singularity.sh";
+my $wise  = "$singularity $wise_sif WisecondorX";
  #warn $ref;
  #die();
  #5kb.nova.npz
  #$ref = "/data-isilon/public-data/repository/HG38/wisecondor/novaseqx/5kb/5kb.npz";
  my $blfile = $project->public_data_root . "/". $project->annotation_genome_version . "/wisecondor/blacklist.bed";
+ #my $blfile = "/data-pure/public-data/blacklist/blacklist.bed";
+ #$blfile = "/data-pure/public-data/blacklist/blacklist.spectre.bed";
+ 
+ $blfile = $project->buffer()->config_path("root","public_data")."/repository/HG38//blacklist/encode.blacklist.1.bed";
  my $blacklist = "";
  $blacklist = "--blacklist ".$blfile if -e $blfile;
- warn $blacklist;
+# warn $blacklist;
  #'"/data-beegfs/npz/reference/ref5Kb.npz";
- #$ref = "/data-beegfs/wisecondor-ref/ref.5000.def.npz";
+ 
+ 
+ my $repository = $project->buffer()->config_path("root","public_data").'/repository/HG38/wisecondor-ref/new_version/novaseq';
+my $dir = $project->buffer()->config_path("root","public_data").'/repository/HG38/wisecondor-ref/new_version/';
+#$ref = $repository ."/reference.10000.default.npz";
+if ($run->machine eq "REVIO" or $run->machine eq "SEQUEL"){
+	$dir .= "revio/";
+}
+else {
+	$dir .= "novaseq/"
+}
+ $ref = $dir."reference.10k.npz";
+warn $ref;
  my $out = $project->getCallingPipelineDir("wiseCondor")."/".$patient->name;
- my $cmd = "$wise predict  $npz $ref $out --beta 1  --bed ".$blacklist;
+ my $cnd_wise ="exec_singularity.sh wisecondor.gemini.sif wisecondorx ";
+ 
+ my $cmd = "$cnd_wise predict  $npz $ref $out  --beta 1 --bed  ".$blacklist;
  warn $cmd;
  system("$cmd");
- 
- my $bgzip = $buffer->software("bgzip");
- my $tabix = $buffer->software("tabix");
+ my $bgzip = "bgzip";#$buffer->software("bgzip");
+ my $tabix = "tabix";#$buffer->software("tabix");
 my $outbed1 = $out."_bins.bed";
 
 my $prod_file = $project->getVariationsDir("wisecondor")."/".$patient->name."_bins.bed.gz";
-
 system("$bgzip $outbed1 && mv $outbed1.gz $prod_file ; $tabix -f -p bed -S 1 $prod_file ");
 
 $outbed1 = $out."_aberrations.bed";
 $prod_file = $project->getVariationsDir("wisecondor")."/".$patient->name."_aberrations.bed.gz";
 system("$bgzip $outbed1 && mv $outbed1.gz $prod_file ; $tabix -f -p bed -S 1 $prod_file ");
-
+warn $ref;
  exit(0);
  
