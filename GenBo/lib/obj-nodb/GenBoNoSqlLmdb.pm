@@ -173,14 +173,14 @@ sub lmdb {
   			confess("not find database $filename ".$self->dir."/".$self->name ) unless -e $filename;
  	 }
 	 my $env;
-	
+		warn $self->dir."/$name";
 	 	if ($self->mode eq "r"){
 	 		my $filename =  $self->dir."/$name";
 	 		#warn "read only ".$self->dir."/$name";
 	 		 my $flag =LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP;
-	 		 warn $flag;
+
 	 		 $flag =   MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP if -d $filename;
-	 		 warn $flag;
+
 	 		if ($self->test  ){
 	 		$env = LMDB::Env->new("$filename", {
       			mapsize => 100 * 1024 * 1024 * 1024, # Plenty space, don't worry
@@ -190,7 +190,7 @@ sub lmdb {
       			#flags => LMDB_File::MDB_NOSUBDIR | MDB_RDONLY | MDB_NOLOCK | MDB_NOTLS | MDB_FIXEDMAP,
  	 			flags => $flag,
  	 			});
- 			system("vmtouch -t $filename -q  ") ;#if -e "/software/bin/vmtouch";
+ 			#system("vmtouch -t $filename -q  ") ;#if -e "/software/bin/vmtouch";
 	 		}
 	 		else {
 	 		$env = LMDB::Env->new($self->dir."/$name", {
@@ -211,6 +211,7 @@ sub lmdb {
 				unless (-e  $self->dir."/$name"){
 						mkdir $self->dir."/$name";
 				}
+				warn $self->dir."/$name";
 				my $flag = 0;
 				unless (-d $self->dir."/$name"){
 					$flag  =  LMDB_File::MDB_NOSUBDIR;
