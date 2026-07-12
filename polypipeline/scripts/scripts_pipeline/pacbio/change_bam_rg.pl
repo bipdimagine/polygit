@@ -15,13 +15,15 @@ my $project_name;
 my $patient_name;
 my $no_exec;
 my $force;
+my $threads = 20;
 
 GetOptions(
-	'project=s'   => \$project_name,
-	'patient=s'   => \$patient_name,
-	'no_exec'	 => \$no_exec,
-	'force'	   => \$force,
-);
+	'project=s'		=> \$project_name,
+	'patient=s'		=> \$patient_name,
+	'no_exec'		=> \$no_exec,
+	'force'			=> \$force,
+	"cpu|threads|fork=i"	=> \$threads,
+) || confess("\nError in command line arguments");
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
@@ -42,7 +44,30 @@ warn "Output BAM: $ubam" . "\n";
 warn "Temp directory: $dir_tmp" . "\n";
 warn "Input BAMs: " . join(", ", @{$patient->uBams_revio()}) . "\n\n";
 
-# Vérification préliminaire: le BAM de sortie existe-t-il déjà avec le bon SM?
+
+# Vérifications préliminaires
+warn "=== Preliminary Check ===" . "\n\n";
+# Vérifier le nombre de reads total des ubams Revio
+my $nb_reads_revio = 0;
+foreach my $bam (@{$patient->uBams_revio()}){
+	$nb_reads_revio += -s $bam;
+	my $pbi = $bam.".pbi";
+	#warn "run_singularity.sh pbbam.sif pbindexdump $pbi"; 
+	open(my $fh, "-|", "run_singularity.sh pbbam.sif pbindexdump $pbi") or confess "Impossible de lancer pbdump: $!";
+	while (my $line = <$fh>) {
+		if ($line =~ /"numReads"\s*:\s*(\d+)/) {
+			$nb_reads_revio += $1;
+			last;
+		}
+		# sécurité : on ne lit que les 30 premières lignes
+		last if $. > 30;
+	}
+	close($fh);
+}
+#warn "Total number of reads from Revio ubams : $nb_reads_revio \n";	
+
+
+# Le BAM de sortie existe-t-il déjà avec le bon SM ?
 if (-e $ubam && !$force) {
 	warn "=== Preliminary Check ===" . "\n\n";
 	warn colored("Output BAM already exists: $ubam", 'yellow');
@@ -60,16 +85,22 @@ if (-e $ubam && !$force) {
 	}
 	close($fh_check);
 	
+	# Vérifier le nombre de reads dans le BAM existant
+	my ($nb_reads_merged) = `samtools idxstats -@ $threads $ubam` =~ /^\*\t\d+\t\d+\t(\d+)/m;
+#	warn "Nombre de reads ubam mergé : $nb_reads_merged \n";	
+	
 	if (defined $existing_sm && $existing_sm eq $pname) {
 		warn colored("  Existing SM: '$existing_sm' (matches patient name)", 'green'), "\n";
-		warn colored("\nOutput BAM already exists with correct SM. ", 'green'), "Use --force to overwrite.\n\n";
-		exit(0);
+		if ($nb_reads_merged == $nb_reads_revio) {
+			warn colored("\nOutput BAM already exists with correct SM and size. ", 'green'), "Use --force to overwrite.\n\n";
+			exit(0);
+		}
+		warn colored("  Number of reads not matching: sum BAMs Revio $nb_reads_revio vs merged BAM $nb_reads_merged", 'red'), "\n";
 	} else {
 		warn colored("  Existing SM: '$existing_sm' (does NOT match patient name '$pname')", 'red'), "\n";
-		warn colored("  Will proceed with regeneration.\n\n", 'yellow');
 	}
+	warn colored("  Will proceed with regeneration.\n\n", 'yellow');
 } elsif (-e $ubam && $force) {
-	warn "=== Preliminary Check ===" . "\n\n";
 	warn colored("Output BAM already exists: $ubam", 'yellow'), "\n";
 	warn colored("--force specified: will overwrite existing BAM.\n\n", 'yellow');
 }
@@ -203,7 +234,7 @@ foreach my $bam (@{$patient->uBams_revio()}) {
 # Phase 4: Merge des BAMs
 warn "=== Phase 4: Merging ===" . "\n\n";
 warn "Merging " . scalar(@final_bams) . " BAM files...";
-my $cmd = "$samtools merge $ubam -@ 20 " . join(" ", @final_bams);
+my $cmd = "$samtools merge --write-index -f -o $ubam -@ $threads " . join(" ", @final_bams);
 warn "$cmd";
 system($cmd) unless (-e $ubam or $no_exec);
 
@@ -221,6 +252,20 @@ foreach my $tmp_file (@temp_files_to_clean) {
 	}
 }
 
+# Phase 4: Vérification du nombre de reads
+warn "=== Phase 4: Final check ===" . "\n\n";
+unless ($no_exec and ! -e $ubam) {
+	my ($nb_reads_merged) = `samtools idxstats $ubam` =~ /^\*\t\d+\t\d+\t(\d+)/m;
+	warn "Nombre de reads ubam mergé : $nb_reads_merged \n";	
+	chomp($nb_reads_merged);
+	if ($nb_reads_merged != $nb_reads_revio) {
+		#unlink $ubam;
+		confess ("ERROR Le nombre de reads ne correspond pas: ubams Revio $nb_reads_revio vs ubam mergé $nb_reads_merged");
+	}
+}
+
 warn colored("Done! Output: $ubam", 'green') . "\n" unless $no_exec;
-warn colored("Dry run: no merged bam file produced", 'yellow'), "\n"if $no_exec;
+warn colored("Dry run: no merged bam file produced", 'yellow'), "\n" if $no_exec;
+
+
 

@@ -33,9 +33,15 @@ use MCE::Loop;
 use Set::IntSpan;
 use xls_export;
 
+
+## LIMIT RAM utilisee - 20go
+#use BSD::Resource; 
+#my $limit_ram = 20000 * 1024 * 1024;
+#setrlimit(RLIMIT_AS, $limit_ram, $limit_ram) or die "\n\nTmpossible fixer limite RAM: $!";
+
 my $cgi = new CGI();
 
-my $fork = 6;
+my $fork = 8;
 my $launch_job = $cgi->param('launch_job');
 
 my $outfile;
@@ -297,7 +303,7 @@ if ($region or $only_genes) {
 		foreach my $this_region (@l_regions_tmp) {
 			my ($chr_id, $start, $end) = split('-', $this_region);
 			if (not exists $h_regions->{$chr_id}) { $h_regions->{$chr_id} = Set::IntSpan::Fast::XS->new(); }
-			$h_regions->{$chr_id}->add_range($start, $end);
+			$h_regions->{$chr_id}->add_range($start, $end) if $start and $end;
 		}
 		
 		my @l_regions;
@@ -404,18 +410,12 @@ if ($region or $only_genes) {
 			    	print '.' if ($i % 100000 == 0);
 				}
 				close($fh);
-				print '.found.'.$i.'.';
-				
 				
 				$i = 0;
 				my $chr = $dejavu_variants->project->getChromosome($chr_filter);
 				my $no = $chr->rocksdb('gnomad');
 				
 				my @l_var_chr = keys %{$hres->{h_rocks_to_view}->{$chr_filter}};
-				print ".begin_prepare_rocks.";
-				#$no->prepare(\@l_var_chr);
-				print ".end_prepare_rocks.";
-				
 				foreach my $rocksid (@l_var_chr) {
 					eval {
 						my $h_gad = $no->value($rocksid);
@@ -437,12 +437,11 @@ if ($region or $only_genes) {
 					}
 				}
 				$no->close();
-				print '.found_filtred.'.$i.'.';
-				
 				
 				#ADD CLINVAR PATHOGENIC
 				if ($keep_pathogenic) {
 					my $sql_clinvar = "
+						PRAGMA threads=$fork_sql;
 						WITH dejavu AS (
 							SELECT *, chr38 || '!' || LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'index', LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'rocksid' FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos
 						)
@@ -469,7 +468,7 @@ if ($region or $only_genes) {
 				    	print '.' if ($i % 100000 == 0);
 					}
 					close($fh2);
-					print '.with_clinvar.'.$i.'.';
+#					print '.with_clinvar.'.$i.'.';
 				}
 			}
 		    MCE->gather($hres);
@@ -481,8 +480,8 @@ if ($region or $only_genes) {
 
 
 ### PART 3 - check variants from calling variables
-
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
+
 my $nb_var = scalar(keys %{$hVariantsDetails});
 print '...html...nbVar:'.$nb_var.'.';
 my $nb_genes = scalar(keys %{$hGenes});
@@ -494,15 +493,12 @@ if ($only_genes) {
 $nb_genes = scalar(keys %{$hGenes});
 print '.nbGenes:'.$nb_genes.'.';
 
-#warn Dumper $hVariantsDetails;
-#die;
-
 ### PART 4 - print HTML 
 
 my ($h_html_genes, $h_phenos);
 MCE::Loop->init(
    max_workers => $fork,
-   chunk_size => 1,
+   chunk_size => 'auto',
    gather => sub {
         my ($data) = @_;
         foreach my $pheno_name (keys %{$data->{phenotypes}}) {
@@ -544,29 +540,41 @@ mce_loop {
 } sort keys %{$hGenes};	
 MCE::Loop->finish();
 
+
 my $export_session_id;
-if ($nb_genes > 0 and $nb_var > 0) { 
-	save_variants_in_session_export($dejavu_variants, $hGenes, $hVariantsDetails);
-	$export_session_id = $dejavu_variants->xls_export_session->save();
+if ($nb_genes > 0 and $nb_var > 0) {
+	my $hash_session_global; 
+	print '.xls.prepare.';
+	($hash_session_global->{hash_variants_global}, $hash_session_global->{hash_specific_infos}->{datas}->{projects_patients_infos}) = return_hashes_variants_in_session_export($dejavu_variants, $hGenes, $hVariantsDetails);
+	print '.session.'; 
+	$export_session_id = $dejavu_variants->xls_export_session->save_with_storable($hash_session_global);
+	undef $hash_session_global;
+	undef $hVariantsDetails;
+	undef $hGenes;
+	print '.saved';
 }
 else {
 	$export_session_id = 'no_results_'.time;
 }
+my $gencode_version = $project->gencode_version();
+my ($gencode, $annot_version) = split('\.', $project->annotation_version());
 
 my @lPhenos = sort keys %$h_phenos;
+
+my $html_file = $buffer->config_path("root","global_search").'/'.$export_session_id.'.html';
 my $html;
 
-if ($dejavu_variants->alert_too_much_results()) {
-	$html .= "<div style='width:100%;overflow-x:auto;background-color:white !important;'><table><tr>";
-	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Too much results... partial results !</span></b></i>&nbsp;&nbsp;</td>";
-	$html .= "</tr></table></div><br>"
-}
-
-if ($dejavu_variants->alert_ncboost_min_cadd_25()) {
-	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
-	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Only variants with cadd score >= 25 for ncboost filter !</span></b></i>&nbsp;&nbsp;</td>";
-	$html .= "</tr></table></div><br>"
-}
+#if ($dejavu_variants->alert_too_much_results()) {
+#	$html .= "<div style='width:100%;overflow-x:auto;background-color:white !important;'><table><tr>";
+#	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Too much results... partial results !</span></b></i>&nbsp;&nbsp;</td>";
+#	$html .= "</tr></table></div><br>"
+#}
+#
+#if ($dejavu_variants->alert_ncboost_min_cadd_25()) {
+#	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
+#	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Only variants with cadd score >= 25 for ncboost filter !</span></b></i>&nbsp;&nbsp;</td>";
+#	$html .= "</tr></table></div><br>"
+#}
 if ($h_errors_found) {
 	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
 	$html .= "<td><b><pan style='color:red;'>ERRORS: </span></b>&nbsp;&nbsp;</td>";
@@ -584,10 +592,8 @@ else {
 	$html .= "<td><b><nobr>Score Phenotype</nobr></b>&nbsp;&nbsp;</td>";
 	$html .= "<td><button type='button' class='btn btn-outline-danger' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:red;'><nobr>$use_phenotype</nobr></span></b></button></td>";
 	
-	my $gencode_version = $project->gencode_version();
 	$html .= "<td><b>Gencode</b>&nbsp;&nbsp;</td>";
 	$html .= "<td><button type='button' class='btn btn-outline-success' style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>$gencode_version</span></b></button></td>";
-	my ($gencode, $annot_version) = split('\.', $project->annotation_version());
 	foreach my $cat_name (sort keys %{$buffer->public_data->{$annot_version}}) {
 		next if lc($cat_name) eq 'polyscore';
 		next if $cat_name eq 'cldb';
@@ -602,6 +608,9 @@ else {
 	}
 	$html .= "</tr></table></div>";
 }
+undef $project;
+undef $buffer;
+undef $dejavu_variants;
 
 $html .= "<div style='width:100%;margin-top:10px;overflow-x:auto;'><table><tr>";
 $html .= "<td><b>Export Results</b>&nbsp;&nbsp;</td>";
@@ -618,6 +627,8 @@ if ($h_phenos) {
 	}
 }
 $html .= "</tr></table></div>";
+undef $h_phenos; 
+
 
 my $nb_genes = scalar keys %$h_html_genes;
 my $data_search = 'false';
@@ -641,11 +652,14 @@ $html .= "</tbody>";
 $html .= "</table>";
 $html =~ s/glyphicon-minus/fa fa-minus/g;
 
-my $html_file = $buffer->config_path("root","global_search").'/'.$export_session_id.'.html';
-open (HTML, '>'.$html_file);
+undef $h_html_genes;
+
+print '.write_html.';
+open (HTML, ">$html_file");
 print HTML $html;
-close(HTML);
-$html = '';
+close (HTML);
+undef $html;
+print '.END';
 
 if ($launch_job) {
 	my $hRes;
@@ -658,6 +672,7 @@ if ($launch_job) {
 	open(my $out, ">", $outfile);
 	print $out encode_json($hRes);
 	close $out;
+	exit(0);
 }
 else {
 	my $hRes;
@@ -676,7 +691,7 @@ else {
 #TODO: erreur certains VAR IDS ne passent pas les filtres (ex: 19_35739335_G_A dans KMT2B et filtres par defaut)
 sub export_xls {
 	my ($dejavu_variants, $session_id) = @_;
-	$dejavu_variants->xls_export_session->load($session_id);
+	$dejavu_variants->xls_export_session->load_with_storable($session_id);
 	my $list_datas_annotations = $dejavu_variants->xls_export_session->prepare_generic_datas_variants();
 	my $list_header = $dejavu_variants->xls_export_session->list_generic_header();
 	$dejavu_variants->xls_export_session->add_page('Results', $list_header, $list_datas_annotations);
@@ -719,7 +734,7 @@ sub export_xls {
 	exit(0);
 }
 
-sub save_variants_in_session_export {
+sub return_hashes_variants_in_session_export {
 	my ($dejavu_variants, $hgenes, $hVariantsDetails) = @_;
 	my (@lVar, $h_variants, $h_patients);
 	foreach my $gene_id (keys %{$hGenes}) {
@@ -837,13 +852,14 @@ sub save_variants_in_session_export {
 					push(@{$h_patients->{$var_id}}, $h_tmp);
 				}
 			}
+			undef $var;
 		}
 	}
 	$dejavu_variants->project->buffer->dbh_deconnect();
 #	$dejavu_variants->xls_export_session->store_variants_infos(\@lVar, $dejavu_variants->project());
-	$dejavu_variants->xls_export_session->{hash_variants_global} = $h_variants;
-	$dejavu_variants->xls_export_session->store_specific_infos('projects_patients_infos', $h_patients);
-	return;	
+#	$dejavu_variants->xls_export_session->{hash_variants_global} = $h_variants;
+#	$dejavu_variants->xls_export_session->store_specific_infos('projects_patients_infos', $h_patients);
+	return ($h_variants, $h_patients);	
 }
 
 sub launch_ncboost {

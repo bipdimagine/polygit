@@ -124,7 +124,6 @@ unless ($nreads == $v){
 	unlink $ubam;
 	die();
 }
-die();
 
  
 

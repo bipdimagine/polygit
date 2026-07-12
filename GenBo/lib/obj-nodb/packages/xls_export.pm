@@ -13,6 +13,7 @@ use Excel::Writer::XLSX;
 use Compress::Snappy;
 use Storable qw(store retrieve freeze dclone thaw);
 use session_export;
+use Storable qw(store retrieve);
 
 
 has only_main_transcripts => (
@@ -1319,6 +1320,31 @@ sub load {
 	$self->{hash_cnvs_global} = $session->load_compress('hash_cnvs_global');
 	$self->{hash_junctions_global} = $session->load_compress('hash_junctions_global');
 	$self->{hash_specific_infos} = $session->load_compress('hash_specific_infos');
+}
+
+sub save_with_storable {
+	my ($self, $h_res_global) = @_;
+	my $session = new session_export();
+	$session->save('xls_title', $self->title_page());
+	my $session_id = $session->session_id();
+	my $file_store = $session->tmp_dir().'/'.$session_id.'.bin';
+	store($h_res_global, $file_store);
+	$session->save('storable_file', $file_store);
+	return $session_id;
+}
+
+
+sub load_with_storable {
+	my ( $self, $sid ) = @_;
+	my $session = new session_export();
+	$session->load_session( $sid );
+	$self->{title_page} = $session->load('xls_title');
+	my $storable_file = $session->load('storable_file');
+	my $h_res_global = retrieve($storable_file);
+	$self->{hash_variants_global} = $h_res_global->{'hash_variants_global'} if exists $h_res_global->{'hash_variants_global'};
+	$self->{hash_cnvs_global} = $h_res_global->{'hash_cnvs_global'} if exists $h_res_global->{'hash_cnvs_global'};
+	$self->{hash_junctions_global} = $h_res_global->{'hash_junctions_global'} if exists $h_res_global->{'hash_junctions_global'};
+	$self->{hash_specific_infos} = $h_res_global->{'hash_specific_infos'} if exists $h_res_global->{'hash_specific_infos'};
 }
 
 1;
