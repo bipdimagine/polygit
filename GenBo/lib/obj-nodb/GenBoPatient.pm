@@ -2354,7 +2354,6 @@ sub getNoSqlDepth {
 	unless ( -e $dir ) {
 		system("mkdir $dir;chmod a+rwx $dir");
 	}
-	warn $dir." ".$self->name . ".depth.lmdb";
 	$buffer->{lmdb_hash}->{depth}->{ $self->name } = GenBoBinaryFile->new(
 		name => $self->name . ".depth.lmdb",
 		dir  => $dir,

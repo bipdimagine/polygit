@@ -1024,7 +1024,7 @@ sub dejavu_details_by_patnames   {
 
 sub getCoverageInInterval {
 	my ($self, $patient) = @_;
-	return sprintf("%.2f",$self->get_coverage($patient)->coverage($self->start() +1, $self->end() -1)->{mean});
+	return sprintf("%.2f",$patient->depth($self->getChromosome->name(), $self->start() +1, $self->end() -1));
 }
 
 sub getHashSpliceAiNearStartEnd {
