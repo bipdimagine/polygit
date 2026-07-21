@@ -20,7 +20,7 @@ if(FALSE)
 	tabNFO[,"bam"] = unlist(allNFO$inputs$bam)
 	
 	esp = allNFO$project$gencode$release
-	GCv = allNFO$project$gencode$version
+	Vers = allNFO$project$gencode$version
 }
 
 ###############################################################################################################
@@ -37,6 +37,8 @@ rmdup<-function(I)
 splitBamSamTools<-function(B)	#	splitBamSamTools(B)
 {
 	chrs = system(paste("samtools view -@ 20 -H ", bams[B], " | perl -lne '/SN:(\\S+)/ and print $1'", sep=""), intern=TRUE)
+	chrs = chrs[!grepl("[.]", chrs)]
+	
 	if(!is.null(ReName))
 	{
 		write(paste("\t#\t => Bams Rename", sep=""), file="")
@@ -93,18 +95,21 @@ bed2rds<-function(S)
 
 formatJunc<-function(x)
 {
-	posJ = c(x[!is.na(x)][c(2:(sum(!is.na(x))-1))])
-	juncs = NULL
-	for(J in 1:(length(posJ)-1))	juncs = c(juncs, posJ[J], posJ[J+1])
-	resPairsPos = matrix(unlist(juncs), ncol=2, byrow=TRUE)
-	return(resPairsPos)
-	#	resPairsPos = apply(resPairsPos, 1, function(x) paste(x, sep="_", collapse="_"))
+	if(sum(!is.na(x))>2)  # bug des coordonnees toutes à NA
+	{
+	  posJ = c(x[!is.na(x)][c(2:(sum(!is.na(x))-1))])
+	  juncs = NULL
+	  for(J in 1:(length(posJ)-1))	juncs = c(juncs, posJ[J], posJ[J+1])
+	  resPairsPos = matrix(unlist(juncs), ncol=2, byrow=TRUE)
+	  return(resPairsPos)
+	  #	resPairsPos = apply(resPairsPos, 1, function(x) paste(x, sep="_", collapse="_"))
+	}
 }
 
 coordsJunc<-function(P)
 {
 	write(paste("\t#\t coordsJunc: ", P, "/", length(listBedRds), " - ", gsub(".rds", "", basename(listBedRds[P])), sep=""), file="")
-	tmpBed = readRDS(listBedRds[P])
+  tmpBed = readRDS(listBedRds[P])
 	tmpRes = apply(tmpBed, 1, function(x) formatJunc(x))
 	if(is.list(tmpRes))
 	{
@@ -129,11 +134,6 @@ coordsJunc<-function(P)
 	coords = coords[as.numeric(coords[,"CountJun"])>=limCountJun,,drop=FALSE]	#	limCountJun=2
 	write(paste("Filtrage ",gsub(".rds", "", basename(listBedRds[P])),  " a limCountJun=", limCountJun, " :", totRawJunc, " => ", nrow(coords), "[", signif(100*((nrow(coords)-totRawJunc)/totRawJunc), digit=4), "%]", sep=""), file="")
 	
-	patient_name = gsub("_chr.*", "", listBedRds[P])
-	AllJuncPath_patient = paste(AllJuncPath, "/", patient_name, "/", sep="")
-	if(!file.exists(AllJuncPath_patient))	dir.create(AllJuncPath_patient)
-	
-	
 	if(nrow(coords)>0) saveRDS(coords, paste(AllJuncPath, "/", basename(listBedRds[P]), sep=""))
 }
 
@@ -145,14 +145,7 @@ caracterizeJuncs<-function(C)	#	patient par patient
 {
 	nom = gsub(".rds", "", gsub("AllJunctionsCounts", "AllRes", basename(listCoordsBed[C])))
 	write(paste("\t#\t", C, "/", length(listCoordsBed), "-", nom, sep=""), file="")
-	
-	
-	patient_name = gsub("_chr.*", "", nom)
-	
-	geneListsPath_tmp_patient = paste(geneListsPath, "/", patient_name, "/", sep="")
-	if(!file.exists(geneListsPath_tmp_patient))	dir.create(geneListsPath_tmp_patient)
-	
-	
+
 	bedtest = readRDS(listCoordsBed[C])
 	
 	Chr = gsub(addChr, "", gsub("_.*", "", rownames(bedtest)[1]))
@@ -170,7 +163,7 @@ caracterizeJuncs<-function(C)	#	patient par patient
 	
 	resIngene = apply(bedtest, 1, function(x) testINgene(x))
 	genesList = unique(unlist(resIngene))
-	saveRDS(genesList, paste(geneListsPath_tmp_patient, gsub("AllJunctionsCounts", "ENSg", basename(listCoordsBed[C])), sep=""))
+	saveRDS(genesList, paste(geneListsPath, gsub("AllJunctionsCounts", "ENSg", basename(listCoordsBed[C])), sep=""))
 }
 
 ###############################################################################################################
@@ -1131,14 +1124,14 @@ condenseResPat<-function(R)
 
 Stats<-function(idprojet, esp, nCPU, align)
 {
-	pathRes = paste("/data-isilon/sequencing/ngs/", idprojet, "/", esp, "/RNAseqSEA/", sep="")
+	pathRes = paste(projBasePath, idprojet, "/", esp, "/RNAseqSEA/", sep="")
 	pathBamJuncs = paste(pathRes, "/BamJuncs/", sep="")
 	
 	resStatsPath = paste(pathRes, "/Stats/", sep="")
 	if(!file.exists(resStatsPath))	dir.create(resStatsPath)
 	
 #	nreads / ech
-	bams = list.files(paste("/data-isilon/sequencing/ngs/", idprojet, "/", esp, "/align/", align, "/", sep=""), full.names=TRUE, pattern="\\.bam$")
+	bams = list.files(paste(projBasePath, idprojet, "/", esp, "/align/", align, "/", sep=""), full.names=TRUE, pattern="\\.bam$")
 	nMappedReads = NULL
 	for(B in 1:length(bams))
 	{
@@ -1253,7 +1246,7 @@ cfgParse<-function()
 ###############################################################################################################
 #	Formatage des res
 
-formatResAll<-function(pathAllResAnalysis)
+formatResAll<-function(pathAllResAnalysis) #  pathAllResAnalysis="/data-isilon/sequencing/ngs/NGS2021_4105/HG19_MT/analysis/AllRes"
 {
   write(paste("#\tFormatage des resultats", sep=""), file="")
   fichs = list.files(pathAllResAnalysis, full.names=TRUE, recursive=FALSE)
@@ -1273,11 +1266,12 @@ formatResAll<-function(pathAllResAnalysis)
 		allResSE = allResSE[order(as.numeric(allResSE[,"Junc_SE_Start"])),,drop=FALSE]
 		allResSE = allResSE[order(allResSE[,"Chr"]),,drop=FALSE]
 		
-		#colnames(allResSE)[1] = paste("#", colnames(allResSE)[1], sep="")
+		colnames(allResSE)[1] = paste("#", colnames(allResSE)[1], sep="")
 		write.table(allResSE, file=paste(pathAllResAnalysis, "allResSE.txt", sep=""), sep="\t", quote=FALSE, row.names=FALSE)
-		#system(paste("bgzip ", pathAllResAnalysis, "allResSE.txt", sep=""))
-		#system(paste("tabix -S 1 -s ", grep("Chr", colnames(allResSE)), " -b ", grep("Junc_SE_Start", colnames(allResSE)), " -e ", grep("Junc_SE_End", colnames(allResSE)), " ", pathAllResAnalysis, "allResSE.txt.gz", sep=""))
-		#unlink(fichs_resAll_SE)
+		system(paste("bgzip -@ 40 ", pathAllResAnalysis, "allResSE.txt", sep=""))
+		system(paste("tabix -S 1 -s ", grep("Chr", colnames(allResSE)), " -b ", grep("Junc_SE_Start", colnames(allResSE)), " -e ", grep("Junc_SE_End", colnames(allResSE)), " ", pathAllResAnalysis, "allResSE.txt.gz", sep=""))
+
+		unlink(fichs_resAll_SE)
 	}
 	
 	if(length(fichs_resAll_RI)>0)
@@ -1292,15 +1286,12 @@ formatResAll<-function(pathAllResAnalysis)
 		allResRI = allResRI[order(as.numeric(allResRI[,"Junc_RI_Start"])),]
 		allResRI = allResRI[order(allResRI[,"Chr"]),]
 		
-		#colnames(allResRI)[1] = paste("#", colnames(allResRI)[1], sep="")
+		colnames(allResRI)[1] = paste("#", colnames(allResRI)[1], sep="")
 		write.table(allResRI, file=paste(pathAllResAnalysis, "allResRI.txt", sep=""), sep="\t", quote=FALSE, row.names=FALSE)
-		#system(paste("bgzip ", pathAllResAnalysis, "allResRI.txt", sep=""))
-		#system(paste("tabix -S 1 -s ", grep("Chr", colnames(allResRI)), " -b ", grep("Junc_RI_Start", colnames(allResRI)), " -e ", grep("Junc_RI_End", colnames(allResRI)), " ", pathAllResAnalysis, "allResRI.txt.gz", sep=""))
-		#unlink(fichs_resAll_RI)
+		system(paste("bgzip -@ 40 ", pathAllResAnalysis, "allResRI.txt", sep=""))
+		system(paste("tabix -S 1 -s ", grep("Chr", colnames(allResRI)), " -b ", grep("Junc_RI_Start", colnames(allResRI)), " -e ", grep("Junc_RI_End", colnames(allResRI)), " ", pathAllResAnalysis, "allResRI.txt.gz", sep=""))
+		unlink(fichs_resAll_RI)
 	}
-	
-#	system(paste("bgzip ", pathAllResAnalysis, "allResRI.txt", sep=""))
-#	system(paste("bgzip ", pathAllResAnalysis, "allResSE.txt", sep=""))
 	
 	write(paste("#\t\t Compression et suppression res RI / SE par sample", sep=""), file="")
 	resPat = list.files(pathAllResAnalysis, full.names=TRUE, recursive=FALSE, pattern="\\.txt$")

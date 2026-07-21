@@ -11,12 +11,23 @@
 #	/software/bin/run_cluster.pl -cpu=40 -cmd="Rscript /data-isilon/Cagnard/RNAseqSEA/RNAseqSEA_AllT/RNAseqSEA_AllT_formatRefs.r nCPU=20 esp=MM38 GCv=25 viaGTFgz=/data-isilon/public-data/MM38/igv/gencode.M25.gtf.gz"
 #	/software/bin/run_cluster.pl -cpu=40 -cmd="Rscript /data-isilon/Cagnard/RNAseqSEA/RNAseqSEA_AllT/RNAseqSEA_AllT_formatRefs.r nCPU=20 esp=MM39 GCv=32 viaGTFgz=/data-isilon/public-data/MM39/igv/gencode.M32.gtf.gz"
 
-#	/software/bin/run_cluster.pl -cpu=40 -cmd="Rscript /data-isilon/Cagnard/RNAseqSEA/RNAseqSEA_AllT/RNAseqSEA_AllT_formatRefs.r nCPU=40 esp=HG38 GCv=43 viaGTFgz=/data-isilon/Cagnard/RNAseqSEA/HG38_genecode43.gtf.gz"
+#	/software/bin/run_cluster.pl -cpu=40 -cmd="Rscript /data-isilon/Cagnard/RNAseqSEA/RNAseqSEA_AllT/RNAseqSEA_AllT_formatRefs.r nCPU=40 esp=MM39 GCv=36 viaGTFgz=/data-isilon/Cagnard/RNAseqSEA/gtf/gencode.vM36.annotation.gtf.gz"
+# /software/bin/run_cluster.pl -cpu=40 -cmd="Rscript /data-isilon/Cagnard/RNAseqSEA/RNAseqSEA_AllT/RNAseqSEA_AllT_formatRefs.r nCPU=40 esp=HG38 GCv=47 viaGTFgz=/data-isilon/Cagnard/RNAseqSEA/gtf/gencode.v47.annotation.gtf.gz"
+# /software/bin/run_cluster.pl -cpu=40 -cmd="Rscript /data-isilon/Cagnard/RNAseqSEA/RNAseqSEA_AllT/RNAseqSEA_AllT_formatRefs.r nCPU=40 esp=HG19 GCv=47 viaGTFgz=/data-isilon/Cagnard/RNAseqSEA/gtf/gencode.v47lift37.annotation.gtf.gz"
 
 
-#	esp = "HG19"; GCv = "43"; nCPU=20; viaGTFgz = "/data-isilon/public-data/HG19/igv/gencode.43.gtf.gz"
+#	/software/bin/run_cluster.pl -cpu=40 -cmd="Rscript /data-isilon/Cagnard/RNAseqSEA/RNAseqSEA_AllT/RNAseqSEA_AllT_formatRefs.r nCPU=20 esp=HG19 GCv=31 viaGTFgz=/data-isilon/public-data/HG19/igv/gencode.31.gtf.gz"
 
-RNAseqSEApath = "/data-isilon/Cagnard/RNAseqSEA/"
+
+#######################################################
+#
+#   Creation de la ref Junc a partir du GTF
+#
+#######################################################
+
+#	esp = "MM39"; GCv = "36"; nCPU=40; viaGTFgz = "/data-isilon/Cagnard/RNAseqSEA/gtf/gencode.vM36.annotation.gtf.gz"; base="gencode"
+
+RNAseqSEApath = "/data-pure/public-data/RNAseqSEA/"
 
 args = commandArgs(trailingOnly=TRUE)
 tmpArgs = t(rbind(apply(as.matrix(unlist(args)), 1, function(x) unlist(strsplit(x, "=")))))
@@ -24,12 +35,12 @@ if(sum(grepl("GCv", tmpArgs[,1]))>0)	GCv = tmpArgs[grep("GCv", tmpArgs[,1], igno
 if(sum(grepl("esp", tmpArgs[,1]))>0)	esp = tmpArgs[grep("esp", tmpArgs[,1], ignore.case=TRUE),2]
 if(sum(grepl("viaGTFgz", tmpArgs[,1]))>0)	viaGTFgz = tmpArgs[grep("viaGTF", tmpArgs[,1], ignore.case=TRUE),2]
 if(sum(grepl("nCPU", tmpArgs[,1]))>0)	nCPU = as.numeric(tmpArgs[grep("nCPU", tmpArgs[,1], ignore.case=TRUE),2])
+if(sum(grepl("base", tmpArgs[,1]))>0)	base = tmpArgs[grep("base", tmpArgs[,1], ignore.case=TRUE),2]
 
-system(command=paste("cp ", viaGTFgz, " ", RNAseqSEApath, "/Refs/", sep=""), intern=TRUE)
-viaGTFz = paste(RNAseqSEApath, "/Refs/", basename(viaGTFgz), sep="")
-system(command=paste("gunzip ", viaGTFz, sep=""), intern=TRUE)
-viaGTF = gsub(".gz$", "", viaGTFz)
-nomStruct = paste(esp, "_genecode", GCv, sep="")
+system(command=paste("cp ", viaGTFgz, " ", RNAseqSEApath, "/rds/", sep=""), intern=TRUE)
+system(command=paste("gunzip ", viaGTFgz, sep=""), intern=TRUE)
+viaGTF = gsub(".gz$", "", viaGTFgz)
+nomStruct = paste(esp, "_", base, GCv, sep="")
 library(rtracklayer)
 tmpGTF = as.data.frame(readGFF(viaGTF))
 cols = c("seqid", "strand", "gene_id", "transcript_id", "exon_id", "start", "end", "gene_name", "level")
@@ -49,10 +60,10 @@ if(sum(grepl("[.]", refBED[,"ensembl_gene_id"]))>0)
 	refBED[,"ensembl_transcript_id"] = gsub("[.].*", "", refBED[,"ensembl_transcript_id"])
 	refBED[,"ensembl_exon_id"] = gsub("[.].*", "", refBED[,"ensembl_exon_id"])
 }
-saveRDS(refBED, paste("/data-isilon/Cagnard/RNAseqSEA/Refs/", nomStruct, ".rds", sep=""))
+saveRDS(refBED, paste("/data-pure/public-data/RNAseqSEA/rds/", nomStruct, ".rds", sep=""))
 
 #	II 
-tmpAllJuncPath = paste(RNAseqSEApath, "/Refs/tmp_", nomStruct, sep="")
+tmpAllJuncPath = paste(RNAseqSEApath, "/rds/tmp_", nomStruct, sep="")
 if(!file.exists(tmpAllJuncPath))	dir.create(tmpAllJuncPath)
 
 junGene<-function(E)
@@ -108,8 +119,8 @@ TabAllJunc = TabAllJunc[,c("chromosome_name", "junction_chrom_start", "junction_
 
 TabAllJunc = TabAllJunc[order(as.numeric(TabAllJunc[,"junction_chrom_start"])),]
 TabAllJunc = TabAllJunc[order(TabAllJunc[,"chromosome_name"]),]
-write.table(TabAllJunc, file=paste(RNAseqSEApath, "/Refs/Junc_", nomStruct, ".bed", sep=""), sep="\t", quote=FALSE)
-saveRDS(TabAllJunc, file=paste(RNAseqSEApath, "/Refs/Junc_", nomStruct, ".rds", sep=""))
+write.table(TabAllJunc, file=paste(RNAseqSEApath, "/rds/Junc_", nomStruct, ".bed", sep=""), sep="\t", quote=FALSE)
+saveRDS(TabAllJunc, file=paste(RNAseqSEApath, "/rds/Junc_", nomStruct, ".rds", sep=""))
 
 unlink(tmpAllJuncPath, recursive=TRUE)
 
