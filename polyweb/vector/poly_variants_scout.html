@@ -744,12 +744,13 @@
 	            setTimeout(function() {
         			document.getElementById("select_pos").value = "";
         			document.getElementById("select_genes").value = "";
-        			dijit.byId("slider_reads").set("value", 0);
+        			dijit.byId("slider_reads").set("value", 1);
         			document.getElementById("hreads").value = 0;
         			document.getElementById('promoter_ai').checked = false;
         			document.getElementById('ncboost').checked = false;
         			//document.getElementById('phylop').checked = false;
         			document.getElementById('b_keep_pathogenic').checked = true;
+        			document.getElementById('b_view_all_var').checked = false;
 					var cookie_user = dojo.cookie("username");
 					var cookie_pwd = dojo.cookie("passwd");
 	            	if (cookie_user && cookie_pwd) {
@@ -1028,6 +1029,16 @@
 						return;
 		    		}
 				}
+				
+				var use_all_projects = 0;
+				if (document.getElementById('b_view_all_var').checked == true) {
+					if (document.getElementById("select_genes").value === "") {
+						show_error("<center><nobr><b><h4><span style='color:red;'>ERROR...</span></b></h4>View ALL variants option is only available when searching for a single gene.</nobr></center><br>");
+						return;
+					}
+					options['view_all_projects'] = 1;
+					use_all_projects = 1;
+				}
 	    
 	    		if (document.getElementById("select_genes").value !== "") {
 		    		var genes = document.getElementById("select_genes").value;
@@ -1035,6 +1046,13 @@
 		    		genes = genes.replaceAll(" ", ",");
 		    		genes = genes.replaceAll(";", ",");
 		    		genes = genes.replaceAll(",,", ",");
+		    		if (use_all_projects == 1) {
+		    			var l_genes = genes.split(',');
+		    			if (l_genes.length > 1) {
+			    			show_error("<center><nobr><b><h4><span style='color:red;'>ERROR...</span></b></h4> Only one gene with option 'View All variants'.</nobr></center><br>");
+							return;
+		    			}
+		    		}
     				options['only_genes'] = genes;
     				selected_minimum_value = true;
 				}
@@ -1327,9 +1345,25 @@
 									    //timeout 15 minutes
 									    var max_minutes = '15';
 									    var max_time = 15 * 60 * 1000;
-									    if (document.getElementById("select_genes").value !== "") {
+									    var genes = document.getElementById("select_genes").value;
+									    if (document.getElementById('b_view_all_var').checked == true) {
 									    	max_time = 30 * 60 * 1000;
 									    	max_minutes = '30';
+									    }
+									    else if (genes !== "") {
+									    	var list_genes = genes.split(',');
+									    	if (list_genes <= 3) {
+										    	max_time = 10 * 60 * 1000;
+										    	max_minutes = '10';
+									    	}
+									    	else if  (list_genes <= 10) {
+										    	max_time = 15 * 60 * 1000;
+										    	max_minutes = '15';
+									    	}
+									    	else {
+										    	max_time = 30 * 60 * 1000;
+										    	max_minutes = '30';
+									    	}
 									    }
 									    if (elapsed > max_time) {
 									        clearInterval(interval);
@@ -1987,6 +2021,15 @@
 										</div>
 									</td>
 								</tr>
+		                		<tr>
+		                			<td><span style="font-size:11px;">View ALL variants<br>-- only 1 gene --<br>(not only my projects)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+		                			<td>
+										<div class="hide-on-collapse" style="margin-top: 15px;">
+					    					<input class="form-check-input" type="checkbox" value="" id="b_view_all_var" checked>
+											<label class="form-check-label" for="b_view_all_var" style="vertical-align:middle;font-size:9px;"></label>
+										</div>
+									</td>
+								</tr>
 							</table>
 						</div>
 		            </a>
@@ -2004,9 +2047,13 @@
 		            <h2>Welcome to PolyDejaVu New Generation</h2>
 		            <p class="text-muted">Choose your filters in dashboard.</p>
 		            <br>
+		            <p class="text-muted"><b><i><span style='color:green;'>May 2026</span></b></p>
 		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> Gene score from phenotype defined (by default, your favorite phenotype).</p>
 		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> Minimum read(s) option available in patients filters.</p>
 		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> View other(s) variant(s) of a patient (He Comp).</p>
+		            <p class="text-muted"><b><i><span style='color:green;'>July 2026</span></b></p>
+		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> Keep variants clinvar pathogenic (Positions / Genes section).</p>
+		            <p class="text-muted"><b><i><span style='color:red;'>New:</span></b> View ALL variants (Positions / Genes section).</p>
 		        </div>
 		    </main>
 		</div>	

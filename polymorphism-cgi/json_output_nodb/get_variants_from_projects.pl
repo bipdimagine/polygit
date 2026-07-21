@@ -493,22 +493,15 @@ if ($only_genes) {
 $nb_genes = scalar(keys %{$hGenes});
 print '.nbGenes:'.$nb_genes.'.';
 
-### PART 4 - print HTML 
-
-my ($h_html_genes, $h_phenos);
+### PART 4 - print HTML  GENES
+my ($h_genes_out_html, $h_phenos);
 MCE::Loop->init(
    max_workers => $fork,
    chunk_size => 'auto',
    gather => sub {
         my ($data) = @_;
-        foreach my $pheno_name (keys %{$data->{phenotypes}}) {
-        	$h_phenos->{$pheno_name}->{tag} = $data->{phenotypes}->{$pheno_name}->{tag};
-        }
-        delete $data->{phenotypes};
-        foreach my $score (sort {$b <=> $a} keys %$data) {
-	        foreach my $gene_id (sort keys %{$data->{$score}}) {
-	        	$h_html_genes->{$score}->{$gene_id} = $data->{$score}->{$gene_id} if $data->{$score}->{$gene_id};
-	        }
+        foreach my $gene_id (keys %{$data}) {
+        	$h_genes_out_html->{$gene_id} = $data->{$gene_id};
         }
    }
 );
@@ -516,29 +509,169 @@ mce_loop {
 	my ($mce, $chunk_ref, $chunk_id) = @_;
 	my $hres;
 	foreach my $gene_id (@$chunk_ref) {
-		next if $gene_id eq 'intronic';
-		if ($only_genes) {
-			next if not exists $h_only_genes->{$gene_id};
-		}
-		
-		my @l_gene_id_tmp = split('_', $gene_id);
-		print '.';
 		my @list_variants = keys %{$hGenes->{$gene_id}};
-		my ($this_html, $this_h_pheno, $max_score_gene);
-		eval {
-			($this_html, $this_h_pheno, $max_score_gene) = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
-			$hres->{$max_score_gene}->{$gene_id} = $this_html;
-			foreach my $pheno_name (keys %$this_h_pheno) {
-				$hres->{phenotypes}->{$pheno_name}->{tag} = $this_h_pheno->{$pheno_name};
-			}
-		};
-		if ($@) {
-			$hres->{'-99'}->{$gene_id} = qq{ERROR with $gene_id};
-		}
-    }
+		$hres->{$gene_id} = $dejavu_variants->print_html_gene_only($gene_id, \@list_variants, $hVariantsDetails);
+	}
 	MCE->gather($hres);
 } sort keys %{$hGenes};	
 MCE::Loop->finish();
+
+#warn Dumper $h_genes_out_html;
+#die;
+
+#Le HTML est dans $hres->{$gene_id}->{html} !!
+
+### PART 4 - print HTML VARIANTS
+my $nb_var_todo = 0;
+my @l_var_todo;
+foreach my $gene_id (sort keys %{$hGenes}) {
+	foreach my $var_id (keys %{$hGenes->{$gene_id}}) {
+		my $h;
+		next if not exists $hVariantsDetails->{$var_id};
+		next if not $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat};
+		$h->{var_id} = $var_id;
+		$h->{h_gene} = $h_genes_out_html->{$gene_id};
+		push(@l_var_todo, $h);
+		$nb_var_todo++;
+	}
+}
+print '.nbVar:'.$nb_var_todo.'.';
+
+#list_html_variants
+MCE::Loop->init(
+   max_workers => $fork,
+   chunk_size => 'auto',
+   gather => sub {
+        my ($data) = @_;
+        print '|';
+        foreach my $gene_id (keys %{$data->{genes}}) {
+        	foreach my $html_var (@{$data->{genes}->{$gene_id}}) {
+        		push(@{$h_genes_out_html->{$gene_id}->{list_html_variants}}, $html_var);
+        	}
+        }
+        foreach my $pheno_name (keys %{$data->{phenotypes}}) {
+        	my $name = $data->{$pheno_name}->{name};
+        	$h_phenos->{$pheno_name}->{name} = $name;
+        	foreach my $gene_id (keys %{$data->{$pheno_name}->{genes}}) {
+        		$h_phenos->{$pheno_name}->{genes}->{$gene_id} = undef;
+        	}
+        }
+   }
+);
+mce_loop {
+	my ($mce, $chunk_ref, $chunk_id) = @_;
+	print '.';
+	my $hres;
+	foreach my $h (@$chunk_ref) {
+		my $gene_id = $h->{h_gene}->{id};
+		my ($this_out, $this_h_pheno) = $dejavu_variants->print_html_variant_only($h->{var_id}, $h->{h_gene}, $hVariantsDetails);
+		push(@{$hres->{genes}->{$gene_id}}, $this_out);
+		foreach my $pheno (keys %$this_h_pheno) {
+			my $name = $this_h_pheno->{$pheno};
+			$hres->{phenotypes}->{$pheno}->{name} = $name;
+			$hres->{phenotypes}->{$pheno}->{genes}->{$gene_id} = undef;
+		}
+	}
+	MCE->gather($hres);
+} @l_var_todo;	
+MCE::Loop->finish();
+
+
+
+#warn Dumper $h_genes_out_html;
+my $h_html_genes;
+
+foreach my $gene_id (keys %$h_genes_out_html) {
+	next if not exists $h_genes_out_html->{$gene_id}->{list_html_variants};
+	
+	#TODO: recuperer le bg_color
+	my $bg_color = "background-color:#607D8B";
+	my $nb_ok = scalar(@{$h_genes_out_html->{$gene_id}->{list_html_variants}});
+	my $panel_id = "panel_".$gene_id;
+	$panel_id .= "_he_comp" if $dejavu_variants->only_genes() and $dejavu_variants->hash_only_project() and $dejavu_variants->hash_only_patients();
+	my $out = qq{<div class="panel-heading panel-face panel-grey"	style="$bg_color;height:43px;padding:10px;border:0px;width:100%;">};
+	$out .= $h_genes_out_html->{$gene_id}->{html};
+	my $table_id = 'table_'.$panel_id;
+	$out .= qq{</div>};
+	$out .= qq{<div style="height:3px;" loading="lazy"></div>};
+	$out .= qq{<div loading="lazy" class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="$panel_id" loading="lazy">};
+	if ($dejavu_variants->only_genes() and $dejavu_variants->hash_only_project() and $dejavu_variants->hash_only_patients() and $nb_ok >= 5) {
+		$out .= qq{<table loading="lazy" id='$table_id' data-filter-control='true' data-virtual-scroll="true" data-toggle="table" data-show-extended-pagination="false" data-cache="false" data-pagination-loop="true" data-pagination-v-align="both" data-pagination-h-align="left" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="5" data-page-list="[5, 10, 20]" data-resizable='true' class='table table-striped table-borderless table-bootstraptable' style='font-size:9px;'>};
+	}
+	elsif ($nb_ok >= 20) {
+		$out .= qq{<table loading="lazy" id='$table_id' data-filter-control='true' data-virtual-scroll="true" data-toggle="table" data-show-extended-pagination="false" data-cache="false" data-pagination-loop="true" data-pagination-v-align="top" data-pagination-h-align="left" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="10" data-page-list="[5, 10, 20]" data-resizable='true' class='table table-striped table-borderless table-bootstraptable' style='font-size:9px;'>};
+	}
+	else {
+		$out .= qq{<table class="table table-striped table-borderless" style="vertical-align:middle;text-align: center;font-size: 8px;font-family:  Verdana;line-height: 25px;min-height: 25px;height: 25px;box-shadow: 3px 3px 5px #555;">};
+	}
+	$out .= "<thead><tr style='background-color:aliceblue;color:black'>";
+	$out .= qq{<th data-field="1"></th>};
+	$out .= qq{<th data-field="2" data-sortable="true" data-filter-control="input" data-filter-control-placeholder="">Position</th>};
+	$out .= qq{<th data-field="3" data-filter-control="input" data-filter-control-placeholder="">Project / Patient</th>};
+	$out .= qq{<th data-field="4">gnomAD</th>};
+	$out .= qq{<th data-field="5">DejaVu</th>};
+	$out .= qq{<th data-field="6" data-filter-control="input" data-filter-control-placeholder="">Clinvar</th>};
+	$out .= qq{<th data-field="7" data-filter-control="input" data-filter-control-placeholder="">Annotation</th>};
+	$out .= "</tr></thead>";
+	$out .= "<tbody>";
+	
+	$out .= join(' ', @{$h_genes_out_html->{$gene_id}->{list_html_variants}});
+	
+	$out .= "</tbody>";
+	$out .= qq{</table>};
+	$out .= qq{</div>};
+	
+	my $score = $h_genes_out_html->{$gene_id}->{max_score};
+	$h_html_genes->{$score}->{$gene_id} = $out;
+}
+
+
+
+
+#my ($h_html_genes, $h_phenos);
+#MCE::Loop->init(
+#   max_workers => $fork,
+#   chunk_size => 'auto',
+#   gather => sub {
+#        my ($data) = @_;
+#        foreach my $pheno_name (keys %{$data->{phenotypes}}) {
+#        	$h_phenos->{$pheno_name}->{tag} = $data->{phenotypes}->{$pheno_name}->{tag};
+#        }
+#        delete $data->{phenotypes};
+#        foreach my $score (sort {$b <=> $a} keys %$data) {
+#	        foreach my $gene_id (sort keys %{$data->{$score}}) {
+#	        	$h_html_genes->{$score}->{$gene_id} = $data->{$score}->{$gene_id} if $data->{$score}->{$gene_id};
+#	        }
+#        }
+#   }
+#);
+#mce_loop {
+#	my ($mce, $chunk_ref, $chunk_id) = @_;
+#	my $hres;
+#	foreach my $gene_id (@$chunk_ref) {
+#		next if $gene_id eq 'intronic';
+#		if ($only_genes) {
+#			next if not exists $h_only_genes->{$gene_id};
+#		}
+#		
+#		my @l_gene_id_tmp = split('_', $gene_id);
+#		my @list_variants = keys %{$hGenes->{$gene_id}};
+#		print '.'.scalar(@list_variants).'.';
+#		my ($this_html, $this_h_pheno, $max_score_gene);
+#		eval {
+#			($this_html, $this_h_pheno, $max_score_gene) = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
+#			$hres->{$max_score_gene}->{$gene_id} = $this_html;
+#			foreach my $pheno_name (keys %$this_h_pheno) {
+#				$hres->{phenotypes}->{$pheno_name}->{tag} = $this_h_pheno->{$pheno_name};
+#			}
+#		};
+#		if ($@) {
+#			$hres->{'-99'}->{$gene_id} = qq{ERROR with $gene_id};
+#		}
+#    }
+#	MCE->gather($hres);
+#} sort keys %{$hGenes};	
+#MCE::Loop->finish();
 
 
 my $export_session_id;
@@ -621,7 +754,7 @@ my $cmd_all = qq{show_phenotype('');};
 $html .= "<td><button type='button' class='btn btn-outline-success' onClick=\"$cmd_all\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'><b><span style='color:green;'>All</span></b></button></td>";
 if ($h_phenos) {
 	foreach my $pheno (@lPhenos) {
-		my $pheno_tag = $h_phenos->{$pheno}->{tag};
+		my $pheno_tag = $h_phenos->{$pheno}->{name};
 		my $cmd = qq{show_phenotype('$pheno_tag');};
 		$html .= "<td><button type='button' class='btn btn-outline-primary' onClick=\"$cmd\" style='margin-right:5px;border: solid 0.5 black;font-size:12px;'>$pheno <i>(<b><span id='span_nb_".$pheno."'>?</span></b>)</i></button></td>";
 	}
