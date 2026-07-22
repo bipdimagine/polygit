@@ -3186,7 +3186,7 @@ sub array_sequencing_text {
 	   foreach my $m (keys %{$self->sequencing_infos->{$pid}}){
 	   	next if $m eq "max";
 	   	my $a = $self->sequencing_infos->{$pid}->{$m};
-	   		push(@res,$m.":".$a->[2]."(".$a->[0]."/".$a->[1].")");
+	   		push(@res,'  '.$patient->name().':'.$m.":".$a->[2]."(".$a->[0]."/".$a->[1].")");
 	   }
 	 return \@res;
 }

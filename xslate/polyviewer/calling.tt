@@ -74,8 +74,8 @@
 <div data-dojo-type="dijit/Tooltip" data-dojo-props="connectId:'<: $table_id :>',position:['after']" class="dijitTooltip" >
 	<div style="min-width:300px;width:auto;height:auto;">
 		<center>
-			<b><u><: $patient_name :></u></b><br><br>
-			<b><u>Calling Method(s):</u><: $text_caller :></b><br>
+			<b><u>Selected <: $patient_name :></u></b><br><br>
+			<b>Calling Method(s)</b><br><br><: $text_caller :><br>
 		</center>
 	</div>
 </div>
