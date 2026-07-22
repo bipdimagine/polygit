@@ -473,7 +473,12 @@ sub check_variants_from_gene {
 					}
 					if ($found) {
 						if (not $var->isVariation()) {
-							$var_allele = 'indel';
+							if ($var->isInsertion) {
+								$var_allele = '+'.$var_allele;
+							}
+							elsif ($var->isDeletion) {
+								$var_allele = $var->length();
+							}
 							my @ltmp = split('-', $gnomad_id);
 							if (lc($ltmp[-2]) eq 'cnv') {
 								$gnomad_id = $var_id;
@@ -737,7 +742,6 @@ sub get_from_duckdb_project_patients_infos_global {
 		my $header = $csv_in->getline($out);
 		while (my $row = $csv_in->getline($out)) {
 		    my ($project_id,$this_chr38,$this_chr19,$this_pos38,$this_pos19,$he,$var_all,$patients,$dp_ratios) = @$row;
-		    $var_all = 'indel' if ($var_all ne 'T' and $var_all ne 'G' and $var_all ne 'A' and $var_all ne 'C');
 		    next if (not exists $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all});
 		    
 		    my $var_id    = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{var_id};
