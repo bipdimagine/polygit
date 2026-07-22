@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use Carp;
 use strict;
@@ -244,7 +244,6 @@ MCE::Loop::init {
 	warn "====";
 	warn "$Bin/filter_cnv.pl -project=$projectname -fork=1";
 	system("$Bin/filter_cnv.pl -project=$projectname -fork=1");
-	
 	exit(0);
 
 
@@ -897,7 +896,7 @@ sub getDupSeg
 }
 sub save_parquet_rocksdb {
 	my ($cnvs) = @_;
-	my $dir_tmp = "/data-beegfs/tmp/";
+	my $dir_tmp = $buffer->config_path("tmp");#"/data-beegfs/tmp/";
 	my $filename = "$dir_tmp".$project->name.".csv";
 	my $fh;		
 	open( $fh, ">", $filename) or die "Impossible d'ouvrir $filename: $!";

@@ -23,11 +23,8 @@ use Cache_Commons;
 use Sys::Hostname;
 use GenBoNoSqlRocksVector;
 use Text::CSV;
-use Devel::Size qw(size total_size);
 use MCE::Loop;
 use Storable qw(dclone);  # pour cloner le project par process si nécessaire
-use Devel::Size qw(total_size);
-use Storable qw(dclone);
  my $host = hostname();
 use Scalar::Util qw(looks_like_number);
 use lib "$RealBin/../../../GenBo/lib/obj-nodb/polyviewer/";

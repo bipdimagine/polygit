@@ -1,11 +1,11 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use Carp;
 use strict;
 use JSON;
 use Data::Dumper;
 use CGI qw/:standard :html3/;
-use Set::IntSpan::Fast::XS;
+use Set::IntSpan::Fast;
 use Set::IntervalTree;
 use List::Util qw[min max];
 use FindBin qw($Bin);
@@ -57,7 +57,7 @@ my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"cnv");
 my $parquet_file_quality = $project->getCacheCNV()."/".$project->name.".".$project->id.".cnv_quality.parquet";
 my $parquet_file = $project->getCacheCNV()."/".$project->name.".".$project->id.".parquet";
 
-my $dir_tmp = "/data-beegfs/tmp/";
+my $dir_tmp = $buffer->config_path("tmp");
 my $filename = "$dir_tmp".$project->name.time.".quality.csv";
 my $fh;
 open( $fh, ">", $filename) or die "Impossible d'ouvrir $filename: $!";
@@ -91,19 +91,20 @@ foreach my $row (@$array_ref) {
 	$nb++;
 	 my $cnv = $rocks->get($row->{id});
 	  my @t =  keys %{$cnv->{score}};
-	 #next  if @t > 1;
+	 next  unless @t ;
 	 #next unless exists $cnv->{score}->{score_caller_sr};
 	 my $l = $cnv->{len};
 	 #if ($l > 10_000) {
 		my $start = $cnv->{start};
 		my $end = $cnv->{end};
-		
+		warn  $row."---";
 		my $region = $cnv->{chromosome}.":$start-$end";
+		warn $region;
 		my $res_blacklist = $tabix_blacklist->query("chr".$region);
-		
-		my $cnv_span = Set::IntSpan::Fast::XS->new("$start-$end");
+		warn "$start-$end";
+		my $cnv_span = Set::IntSpan::Fast->new("$start-$end");
 		my $cnv_len = $end - $start + 1;
-		my $bl_span = Set::IntSpan::Fast::XS->new();
+		my $bl_span = Set::IntSpan::Fast->new();
 		if ($res_blacklist){
 			while (my $line = $res_blacklist->next) {
     		my ($b_chr, $b_start, $b_end) = split /\t/, $line;
@@ -114,21 +115,22 @@ foreach my $row (@$array_ref) {
 		my $overlap_bp = scalar($intersect->as_array);   # taille totale des bases recouvertes
 		my $overlap_pct = $overlap_bp / $cnv_len * 100;
 		$row->{blacklist} = int($overlap_pct);
-		
+		my $debug;
+		$debug =1 if ( $row->{id} eq "183516!DEL_1_1499843_1502456");
 		#return $tree if not $res;
 			my $s;
-		my $sumr;
-		my $sumz;
+		my $sumr = 0;
+		my $sumz = 0;
 		my $nr =0;
 		my $nz;
 		
 		my $na =0 ;
 		 warn $l if $start == 177950001;
-		if ($l > 5000 && $patient->isRevio){
+		if ($l > 10000 && $patient->isRevio){
 			my ($v,$break,$delta)  = analyze_cnv_noise($patient,$cnv);
 		
-			$row->{blacklist} = 70 if $v > 30 && $break > 20;
-			$row->{blacklist} = 80 if( $v > 40 && $break > 30) or $delta > 50 ;
+			$row->{blacklist} = 70 if $v > 30 or $break > 20;
+			$row->{blacklist} = 80 if( $v > 40 or $break > 30) or $delta > 50 ;
 			#	warn Dumper $v;
 			
 		}
@@ -143,9 +145,10 @@ foreach my $row (@$array_ref) {
 	#	warn $a." == ".$b;
 	#	die();
 		#	my ($a,$b) = split(" ",$p);
-			$na ++ if $a eq "NaN";
-			next if $a eq "NaN";
+			$na ++ if lc($a) eq "nan";
+			next if lc($a) eq "nan";
 			$nr++;
+			warn $sumz." ".$a if $debug;
 			$sumr += $a;
 			$sumz += $b;
 			
@@ -173,7 +176,6 @@ foreach my $row (@$array_ref) {
 		$row->{caller_sr} = 1 if exists $cnv->{score}->{score_caller_sr};
 		$row->{caller_depth}= 1 if exists $cnv->{score}->{score_caller_depth};
 		$row->{caller_coverage} = 1 if exists $cnv->{score}->{score_caller_coverage};
-		
 		my @t;
 		foreach my $k (@$col){
 			push(@t,$row->{$k});
@@ -301,6 +303,9 @@ my $fraction = $count/(@values-1);
 
 my $nbbp = $r->{nb_breaks};
 	my $pb = ($r->{nb_breaks}/(@values))*100;
+	$mean1+=0.0001;
+	$mean2+=0.0001;
+	warn $mean1." ".$mean2;
 	my $outside_delta = abs($mean1-$mean2)/(($mean1+$mean2)/2);
     warn $cv." - noide: $noise - $pb - ".$mean." ".$mean1." ".$mean2." : ".($outside_delta*100);# if $pos_start == 55675001;
   #  warn Dumper @values if $pb> 20;

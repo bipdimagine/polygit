@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use Carp;
 use strict;
@@ -506,7 +506,7 @@ sub getScoreCallers {
 }
 sub save_csv {
 	my ($project,$snps) = @_;
-	my $dir_tmp = "/data-beegfs/tmp/";
+		my $dir_tmp = $buffer->config_path("tmp");#"/data-beegfs/tmp/";
 	my $filename = "$dir_tmp/".$project->name.".csv";
 	my $fh;		
 	open( $fh, ">", $filename) or die "Impossible d'ouvrir $filename: $!";
