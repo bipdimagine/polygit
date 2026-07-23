@@ -578,13 +578,9 @@ MCE::Loop->finish();
 
 
 
-#warn Dumper $h_genes_out_html;
 my $h_html_genes;
-
 foreach my $gene_id (keys %$h_genes_out_html) {
 	next if not exists $h_genes_out_html->{$gene_id}->{list_html_variants};
-	
-	#TODO: recuperer le bg_color
 	my $bg_color = "background-color:#607D8B";
 	my $nb_ok = scalar(@{$h_genes_out_html->{$gene_id}->{list_html_variants}});
 	my $panel_id = "panel_".$gene_id;
@@ -625,55 +621,6 @@ foreach my $gene_id (keys %$h_genes_out_html) {
 	$h_html_genes->{$score}->{$gene_id} = $out;
 }
 
-
-
-
-#my ($h_html_genes, $h_phenos);
-#MCE::Loop->init(
-#   max_workers => $fork,
-#   chunk_size => 'auto',
-#   gather => sub {
-#        my ($data) = @_;
-#        foreach my $pheno_name (keys %{$data->{phenotypes}}) {
-#        	$h_phenos->{$pheno_name}->{tag} = $data->{phenotypes}->{$pheno_name}->{tag};
-#        }
-#        delete $data->{phenotypes};
-#        foreach my $score (sort {$b <=> $a} keys %$data) {
-#	        foreach my $gene_id (sort keys %{$data->{$score}}) {
-#	        	$h_html_genes->{$score}->{$gene_id} = $data->{$score}->{$gene_id} if $data->{$score}->{$gene_id};
-#	        }
-#        }
-#   }
-#);
-#mce_loop {
-#	my ($mce, $chunk_ref, $chunk_id) = @_;
-#	my $hres;
-#	foreach my $gene_id (@$chunk_ref) {
-#		next if $gene_id eq 'intronic';
-#		if ($only_genes) {
-#			next if not exists $h_only_genes->{$gene_id};
-#		}
-#		
-#		my @l_gene_id_tmp = split('_', $gene_id);
-#		my @list_variants = keys %{$hGenes->{$gene_id}};
-#		print '.'.scalar(@list_variants).'.';
-#		my ($this_html, $this_h_pheno, $max_score_gene);
-#		eval {
-#			($this_html, $this_h_pheno, $max_score_gene) = $dejavu_variants->print_html_gene($gene_id, \@list_variants, $hVariantsDetails);
-#			$hres->{$max_score_gene}->{$gene_id} = $this_html;
-#			foreach my $pheno_name (keys %$this_h_pheno) {
-#				$hres->{phenotypes}->{$pheno_name}->{tag} = $this_h_pheno->{$pheno_name};
-#			}
-#		};
-#		if ($@) {
-#			$hres->{'-99'}->{$gene_id} = qq{ERROR with $gene_id};
-#		}
-#    }
-#	MCE->gather($hres);
-#} sort keys %{$hGenes};	
-#MCE::Loop->finish();
-
-
 my $export_session_id;
 if ($nb_genes > 0 and $nb_var > 0) {
 	my $hash_session_global; 
@@ -697,17 +644,6 @@ my @lPhenos = sort keys %$h_phenos;
 my $html_file = $buffer->config_path("root","global_search").'/'.$export_session_id.'.html';
 my $html;
 
-#if ($dejavu_variants->alert_too_much_results()) {
-#	$html .= "<div style='width:100%;overflow-x:auto;background-color:white !important;'><table><tr>";
-#	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Too much results... partial results !</span></b></i>&nbsp;&nbsp;</td>";
-#	$html .= "</tr></table></div><br>"
-#}
-#
-#if ($dejavu_variants->alert_ncboost_min_cadd_25()) {
-#	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
-#	$html .= "<td><b><i><span class='glyphicon glyphicon-alert' style='color:red'></span><span style='color:red;'> Only variants with cadd score >= 25 for ncboost filter !</span></b></i>&nbsp;&nbsp;</td>";
-#	$html .= "</tr></table></div><br>"
-#}
 if ($h_errors_found) {
 	$html .= "<div style='width:100%;overflow-x:auto;'><table><tr>";
 	$html .= "<td><b><pan style='color:red;'>ERRORS: </span></b>&nbsp;&nbsp;</td>";
@@ -838,8 +774,10 @@ sub export_xls {
 				next if exists $h_done->{$var_id.'-'.$h_infos->{project_name}.'-'.$h_infos->{patient_name}.'-'.$h_infos->{'gene'}};
 				my $h;
 				$h->{'variation'} = $var_id;
+				$h->{'my project'} = $h_infos->{my_project};
 				$h->{'project'} = $h_infos->{project_name};
 				$h->{'patient'} = $h_infos->{patient_name};
+				$h->{'sex'} = $h_infos->{sex};
 				$h->{'model'} = $h_infos->{model};
 				$h->{'he_ho'} = $h_infos->{heho};
 				$h->{'gnomad ac'} = $h_infos->{'gnomad ac'};
@@ -860,7 +798,7 @@ sub export_xls {
 				push(@list_datas_patients, $h);
 			}
 		}
-		my @lLinesHeaderPatients = ('Variation', 'Project', 'Patient', 'Model', 'He_Ho', 'Dp', 'Nb Reads', 'Ratio', 'gnomAD AC', 'gnomAD HO', 'Gene(s)', 'Mane Transcript', 'Consequence', 'Nomenclature', 'Prot_Nomenclature');
+		my @lLinesHeaderPatients = ('Variation', 'My Project', 'Project', 'Patient', 'Sex', 'Model', 'He_Ho', 'Dp', 'Nb Reads', 'Ratio', 'gnomAD AC', 'gnomAD HO', 'Gene(s)', 'Mane Transcript', 'Consequence', 'Nomenclature', 'Prot_Nomenclature');
 		$dejavu_variants->xls_export_session->add_page('Projects Patients', \@lLinesHeaderPatients, \@list_datas_patients);
 	}
 	$dejavu_variants->xls_export_session->export();
@@ -1095,50 +1033,6 @@ sub launch_ncboost {
 					  ;
 				";
 			}
-			
-			
-##			if (exists $dejavu_variants->hash_users_projects->{all}) {
-##				$sql .= "SELECT pos, rocksdb_id, score AS ncboost 
-##						FROM read_parquet('$path_ncboost_dejavu/chr=$chr_id/data_0.parquet')
-##						WHERE
-##							score >= $ncboost_value 
-##							AND dejavu <= $max_dejavu 
-##							AND dejavu_ho <= $max_dejavu_ho
-##							AND gnomad_ac <= $max_gnomad_ac
-##							AND gnomad_ho <= $max_gnomad_ac_ho
-##							AND $sql_annot
-##							AND (cadd >= 25);";
-##			}
-##			else {
-#				$sql .= "WITH b_filtered AS (";
-#				my @lproj_sql;
-#				my $zz = 0;
-#				foreach my $file (@l_files) {
-#					
-#					my $sql_part = "SELECT project,chr38,chr19,pos38,pos19,he,allele,patients,dp_ratios FROM read_parquet('$file')
-#						WHERE
-#							chr38='$chr_id'
-#							and max_ratio > 0
-#							and (allele='A' or allele='T' or allele='C' or allele='G')";
-#					push(@lproj_sql, $sql_part);
-#				}
-#				
-#				$sql .= join(' UNION ALL ', @lproj_sql);
-#				$sql .= ")";
-#				$sql .= "SELECT 
-#							a.pos, a.rocksdb_id, a.score AS ncboost 
-#							FROM read_parquet('$path_ncboost_dejavu/chr=$chr_id/data_0.parquet') a
-#							WHERE
-#								a.score >= $ncboost_value 
-#								AND dejavu <= $max_dejavu 
-#								AND dejavu_ho <= $max_dejavu_ho
-#								AND a.gnomad_ac <= $max_gnomad_ac
-#								AND a.gnomad_ho <= $max_gnomad_ac_ho
-#								AND $sql_annot
-#								AND a.pos IN (SELECT pos38 FROM b_filtered)
-#								$sql_region_end;";
-##			}
-			
 			my $i = 0;
 			my $duckdb = $buffer->software('duckdb');
 			open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";

@@ -212,6 +212,7 @@ has hash_users_projects => (
 				$h_projects->{$proj_name}->{description} = '-';
 				$h_projects->{$proj_name}->{name} = $proj_name;
 				$h_projects->{$proj_name}->{id} = $proj_id;
+				$h_projects->{$proj_name}->{is_mine} = undef;
 				my $list_patients = $self->buffer->getQuery->getPatients($proj_id);
 				foreach my $h_pat (@$list_patients) {
 					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{family} = $h_pat->{family};
@@ -225,8 +226,8 @@ has hash_users_projects => (
 				$h_projects->{$proj_id} = $h_projects->{$proj_name};
 			}
 		}
-		else {
-			$self->{is_magic_user} = undef;
+		if (not $self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
+			$self->{is_magic_user} = undef if not $self->view_all_projects();
 			@list_hash = @{$self->buffer->getQuery()->getProjectListForUser($self->user_name(), $self->pwd())};
 			foreach my $hash (@list_hash) {
 				my $proj_name = $hash->{name};
@@ -236,6 +237,7 @@ has hash_users_projects => (
 				$h_projects->{$proj_name}->{description} = $hash->{description};
 				$h_projects->{$proj_name}->{name} = $proj_name;
 				$h_projects->{$proj_name}->{id} = $hash->{id};
+				$h_projects->{$proj_name}->{is_mine} = 1;
 				my $list_patients = $self->buffer->getQuery->getPatients($hash->{id});
 				foreach my $h_pat (@$list_patients) {
 					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{family} = $h_pat->{family};
@@ -492,9 +494,7 @@ sub check_variants_from_gene {
 		            $var = undef;
 		        }
 		        
-#		        print '.before_duck_projects.nbvar.';
 				my ($h_projects_patients, $h_gnomadid) = $self->get_from_duckdb_project_patients_infos_global($h_var_pos, $hres);
-#				print '.after_duck_projects.';
 				print '.';
 		        
 		        foreach my $var_id (keys %{$h_projects_patients}) {
@@ -511,6 +511,9 @@ sub check_variants_from_gene {
 							my $hh;
 							$hh->{project_name} = $project_name;
 							$hh->{patient_name} = $patient_name;
+							$hh->{my_project} = 'no';
+							if (exists $self->hash_users_projects->{$project_name} and $self->hash_users_projects->{$project_name}->{is_mine}) { $hh->{my_project} = 'yes'; }
+							$hh->{sex} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{sex};
 							$hh->{heho} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{heho};
 							$hh->{ratio} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{ratio};
 							$hh->{dp} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{dp};
