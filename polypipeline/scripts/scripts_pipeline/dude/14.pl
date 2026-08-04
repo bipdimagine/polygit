@@ -267,7 +267,7 @@ foreach my $patient (@{$project->getPatients}){
 	warn "******************************************************************** ";
 	warn "*************************** end fork ******************************* ";
 	warn "******************************************************************** ";
-	warn Dumper $all_tab;
+	#warn Dumper $all_tab;
 	#
 			#warn "end patient";
 
@@ -382,7 +382,6 @@ sub select_primers {
 					while (my ( $from, $to ) = $iter->()) {
 						$max_len =  abs($from-$to) if abs($from-$to) > $max_len;
 					}
-				#	warn Dumper @ind;
 					my $nb = scalar($in->as_array);
 #					warn "----- $nb ".scalar(@tprimers) if $debug;
 					unless ($ho){

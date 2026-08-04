@@ -37,7 +37,7 @@ warn "******";
 unless ($project_name) { confess("\n\nERROR: -project option missing... confess...\n\n"); }
 unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n"); }
 
-
+dsdsds
 
 warn "\n### CACHE: strict-denovo model step\n";
 my $nbErrors = 0;
@@ -51,6 +51,8 @@ if ($project->isGenome){
 if ($annot_version) {
 	$project->changeAnnotationVersion($annot_version);
 }
+warn $fasta_file;
+die();
 $project->getPatients();
 my $chr = $project->getChromosome($chr_name);
 mkdir ($project->getCacheBitVectorDir().'/strict-denovo') unless (-d $project->getCacheBitVectorDir().'/strict-denovo');
@@ -65,6 +67,7 @@ if (scalar keys %{$hAllVar} == 0) {
 	exit();
 }
 my $fasta_file = $project->getGenomeFasta();
+
 my $hResults;
 my $hErrors;
 
@@ -104,7 +107,6 @@ $project->preload_patients();
 	$buffer->{dbh} = "-";
 	
 foreach my $family (@{$project->getFamilies()}) {
-	warn "..";
 	
 	foreach my $children  (@{$family->getChildren}) {
 		my $vector_denovo = $family->getVector_individual_denovo($chr,$children)->Clone();

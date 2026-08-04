@@ -42,7 +42,7 @@ my $patient = $project->getPatientOrControl($patient_name);
 my $bcftools = $buffer->software("bcftools");
 my $bgzip = $buffer->software("bgzip");
 my $tabix = $buffer->software("tabix");
-my $dir_gvcf_out= $project->getCallingPipelineDir($patient->name.time.".deepvariant");
+my $dir_gvcf_out= $project->getCallingPipelineDir($patient->name.time.".mtmutect");
 my $gatk = $buffer->software("gatk");
 my $bed = $dir_gvcf_out."/".$patient->name.".bed";
 my $vcf = $patient->getVariationsFileName("mutect-mt");
@@ -53,6 +53,9 @@ my $vcf_out = $dir_gvcf_out."/".$patient->name.".mt.vcf.gz";
 
 my $dir_gvcf_tmp = $dir_gvcf_out."/tmp.".time;
 my $vcf = $patient->getVariationsFileName("mutect-mt");
+system(
+"add_calling_method.sh -project=$project_name -patient=$patient_name -method=mutect-mt"
+);
 my $gatksif = "/data-pure/software/SINGULARITY/gatk.sif";
 
 my $singularity = $buffer->software("singularity-run");

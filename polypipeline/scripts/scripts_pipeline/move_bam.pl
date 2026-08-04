@@ -43,7 +43,7 @@ my $ymd = sprintf("%04d_%02d_%02d_%02d_%02d",$year+1900,$mon+1,$mday,$hour,$min)
 
 
 my $buffer = GBuffer->new();
- my $dir_trash =  $buffer->config->{project_data}->{root}."/TRASH/";
+ my $dir_trash =  $buffer->config_path("project_data")."/TRASH/";
  system("mkdir -p $dir_trash && chmod a+rwx $dir_trash") unless -e $dir_trash;
 my $project = $buffer->newProject( -name => $project_name );
 

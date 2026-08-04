@@ -64,7 +64,7 @@ SR</button></th>
  		<td><: $children.child_gt :></td>
  		<td><: $children.child_pr :></td>
 		<td><: $children.child_sr :></td>
-		<td><: $children.child_norm_dp_before :> ::: <: $children.child_norm_dp :> :: <: $children.child_norm_dp_after :></td>
+		<td><: $children.child_norm_dp :></td>
 		<td><: $children.child_score :></td>
 		<td>
 			: if ($children.child_model == "mother"){

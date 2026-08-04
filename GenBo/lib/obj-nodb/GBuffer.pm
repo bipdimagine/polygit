@@ -45,6 +45,15 @@ has type_db => (
 	default	=> 'PolyprojectNGS',
 );
 
+
+has tmp => (
+	is		=> 'rw',
+	default	=> sub {
+		my $self = shift;
+		 return $self->config_path("root","tmp");
+	},
+);
+
 has verbose => (
 	is		=> 'rw',
 	default	=> sub {
@@ -91,6 +100,8 @@ has config_dir =>(
 	}
 
 );
+# ceci est encore un test 
+#
 has google_auth_issuer =>(
 	is		=> 'ro',
 	lazy	=> 1,
@@ -151,6 +162,7 @@ sub hasHgmdAccess {
 	return 1 if ($self->queryHgmd->getHGMD($user) == 1);
 	return;
 }
+
 has biocluster =>(
 	is		=> 'ro',
 	lazy	=> 1,
@@ -192,12 +204,13 @@ has config => (
 	},
 );
 has hash_config_path => (
-	is		=> 'ro',
+	is		=> 'ro', #
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift; 
 		my $dir = $self->config_dir;
 		my $filename = $dir."paths.cfg";
+		{};
 		if ($self->biocluster) {
 			$filename = $dir."paths.cfg.biocluster";
 		}
@@ -208,6 +221,11 @@ has hash_config_path => (
 		return \%config1;
 	},
 );
+#
+#
+#rtest toujours
+#
+#
 sub config_path {
 	my ($self,$key,$type)=@_;
 	unless ($type){
@@ -506,6 +524,17 @@ has queryHgmd => (
 	},
 );
 
+
+has HGMD_allgenes => (
+	is		=> 'ro',
+	lazy	=> 1,
+	default	=> sub { 
+		my $self = shift;
+		my $config = $self->config;
+		my $query;
+		return $self->queryHgmd->getDataHGMDPro_allgenes_infos();
+	},
+);
 has queryClinvarPathogenic => (
 	is		=> 'ro',
 	lazy	=> 1,

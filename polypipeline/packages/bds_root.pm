@@ -69,6 +69,12 @@ has   'queue' =>(
 		return "" ;
 	}
 );
+has   'biocluster' =>(
+	is =>'rw',
+	default => sub {
+		return undef ;
+	}
+);
 sub command_after {
 	my ($self,$command) = @_;
 	$self->{command_after} = [] unless exists $self->{command_after};
@@ -487,11 +493,17 @@ sub launch_bds_daemon_common{
 	
 	warn "mode  $bds_exe =>  ".$self->nocluster;#  if $self->nocluster == 2;
 	my $libe = "$bds_exe  -reportYaml    pipeline.bds";
-	$libe= "$bds_exe ".$self->queue." -reportYaml    pipeline.bds" if $self->cache == 1;
+	$libe= "$bds_exe ".$self->queue." -reportYaml    pipeline.bds";
+	# if $self->queue;
+#	if ($self->biocluster){
+#		$libe= "$bds_exe ".$self->queue." -reportYaml    pipeline.bds";
+#	}
 	my $daemon = Proc::Daemon->new(
         work_dir => "$dir",
    		exec_command =>$libe,
     );
+	warn $dir;
+	warn $libe;
 	
 	my $pid = $daemon->init;
 	$self->daemon($daemon);

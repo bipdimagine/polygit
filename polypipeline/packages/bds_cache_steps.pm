@@ -21,7 +21,7 @@ sub global_infos   {
 	warn $project->name();;
 	my $fileout = $project->getCacheBitVectorDir()."/global_infos.freeze";
 	my $log_error = $project->getCacheBitVectorDir()."/log/global_infos.log";
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_global_infos.pl -project=$project_name ";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_global_infos.pl -project=$project_name ";
  	my $type = "global_infos";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -40,13 +40,13 @@ sub define_ppn {
 	return 20;
 
 	if (between($kid, 8, 15)) {
-    	$ppn = 10;
+    	$ppn = 64;
    }
    if (between($kid, 15, 30)) {
-    	$ppn = 5;
+    	$ppn = 32;
    }
    if ($kid == 23){
-   	$ppn = 20;
+   	$ppn = 128;
    }
 	
 	if ($self->nocluster){
@@ -66,7 +66,7 @@ sub update_variants  {
 	$ppn = 1 if $ppn < 1;
 	$filein ="";
 	my $fileout = $project->lmdb_cache_variations_dir()."/".$chr_name.'.update';
-	my $cmd = "/usr/bin/perl $Bin/scripts/scripts_cache_update/update_variants_objects.pl -project=$project_name -chr=$chr_name -fork=$ppn";
+	my $cmd = "perl $Bin/scripts/scripts_cache_update/update_variants_objects.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	my $type = "update_variants";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -88,7 +88,7 @@ sub update_chromosomes  {
 	$ppn = 1 if $ppn < 1;
 	$filein ="";
 	my $fileout = $project->lmdb_cache_variations_dir()."/".$chr_name.'.chr_update';
-	my $cmd = "/usr/bin/perl $Bin/scripts/scripts_cache_update/update_chromosomes_vectors.pl -project=$project_name -chr=$chr_name -fork=$ppn && date > $fileout";
+	my $cmd = "perl $Bin/scripts/scripts_cache_update/update_chromosomes_vectors.pl -project=$project_name -chr=$chr_name -fork=$ppn && date > $fileout";
 	my $type = "update_chromosomes";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -111,7 +111,7 @@ sub update_genes  {
 	$ppn = 1 if $ppn < 1;
 #	$filein ="";
 	my $fileout = $project->lmdb_cache_variations_dir()."/".$chr_name.'.genes_update';
-	my $cmd = "/usr/bin/perl $Bin/scripts/scripts_cache_update/update_genes_vectors.pl -project=$project_name -chr=$chr_name -fork=$ppn && date > $fileout";
+	my $cmd = "perl $Bin/scripts/scripts_cache_update/update_genes_vectors.pl -project=$project_name -chr=$chr_name -fork=$ppn && date > $fileout";
 	my $type = "update_genes";
 	my $stepname = $self->patient->name."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -139,7 +139,7 @@ sub store_ids {
 	$ppn = 40 if $self->nocluster;
 	$filein ="";
 	my $fileout = $project->getCacheBitVectorDir()."/lmdb_cache/".$chr_name.".dv.freeze";
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_store_ids.pl -project=$project_name -chr=$chr_name -fork=$ppn";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_store_ids.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	 my $type = "cache_store_ids";
 	 my $stepname = $self->patient->name."@".$type;
@@ -166,7 +166,7 @@ sub store_rna_junction_ids  {
 	$ppn = 1;
 	$filein ="";
 	my $fileout = $project->lmdb_cache_variations_dir().'/chr'.$chr_name.'_store_ids.ok';
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_rna_junctions_store_ids.pl -project=$project_name -chr=$chr_name -fork=$ppn";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_rna_junctions_store_ids.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	 my $type = "cache_store_junctions_ids";
 	 my $stepname = $self->patient->name."@".$type;
@@ -191,7 +191,7 @@ sub store_annotations  {
 	$ppn = 1 if $ppn < 1;
 	
 	my $fileout = $project->getCacheBitVectorDir()."/lmdb_cache/".$chr_name."/genes_index";
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_store_annotations.pl -project=$project_name -chr=$chr_name -fork=$ppn";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_store_annotations.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	my $log_error = $project->getCacheBitVectorDir()."/log/store_anotations_$chr_name.log";
 	 my $type = "store_annotations";
@@ -217,10 +217,10 @@ sub polyviewer  {
 	$ppn = 1 if $ppn < 1;
 	my $fileout = $chr->lmdb_cache_dir()."/lmdb.ok";
 
-	#my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_vector_score.pl -project=$project_name -chr=$chr_name -fork=$ppn";
-	# $cmd .= " && /usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_hash_variant_chromosome.pl -project=$project_name -chr=$chr_name -fork=$ppn && echo ok && sleep 2";
+	#my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_vector_score.pl -project=$project_name -chr=$chr_name -fork=$ppn";
+	# $cmd .= " && perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_hash_variant_chromosome.pl -project=$project_name -chr=$chr_name -fork=$ppn && echo ok && sleep 2";
 	
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/polyviewer.pl -project=$project_name -chr=$chr_name -fork=$ppn";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/polyviewer.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	
 	my $log_error = $project->getCacheBitVectorDir()."/log/store_anotations_$chr_name.log";
@@ -246,7 +246,7 @@ sub  diagHash {
 	$ppn = 1 if $ppn < 1;
 	my $fileout = $project->getCacheBitVectorDir()."/lmdb_cache/".$chr_name."/hashes_variants";
 	
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_hash_variant_chromosome.pl -project=$project_name -chr=$chr_name -fork=$ppn";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_hash_variant_chromosome.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	my $log_error = $project->getCacheBitVectorDir()."/log/store_anotations_$chr_name.log";
 	 my $type = "diagHash";
@@ -272,7 +272,7 @@ sub update_score  {
 	$ppn = 1 if $ppn < 1;
 	my $fileout =   $project->dir_lmdb_score_impact()."/".$chr->name;
 	
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_vector_score.pl -project=$project_name -chr=$chr_name -fork=$ppn";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_vector_score.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	
 	my $log_error = $project->getCacheBitVectorDir()."/log/store_anotations_$chr_name.log";
@@ -302,7 +302,7 @@ sub update_coverage {
 	$ppn = 1 if $ppn < 1;
 	
 	my $fileout =  $project->getCoverageDir()."/lmdb_images_uri/".$chr_name;
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_coverage.pl -project=$project_name -chr=$chr_name -fork=$ppn";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_coverage.pl -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	
 	my $log_error = $project->getCacheBitVectorDir()."/log/store_anotations_$chr_name.log";
@@ -334,7 +334,7 @@ sub transcripts_coverage {
 	my $fileout =  $no2->filename();
 	 my $bin_dev = $self->script_dir();
 	
-	my $cmd = "/usr/bin/perl $bin_dev/transcripts/transcripts_coverage.pl  -project=$project_name -patient=$patient_name -fork=$ppn";
+	my $cmd = "perl $bin_dev/transcripts/transcripts_coverage.pl  -project=$project_name -patient=$patient_name -fork=$ppn";
 	
 	my $log_error = $project->getCacheBitVectorDir()."/log/transcript_coverage__$patient_name.log";
 	 my $type = "transcripts_coverage";
@@ -586,7 +586,7 @@ sub sashimi_plots {
 	my $ppn = $self->nproc;
 	$ppn = int($self->nproc/2) if $self->nocluster;
 	my $bin_dev = $self->script_dir;
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_rna_sashimi_plot.pl -project=$project_name -patient=$name -fork=$ppn -fileout=$fileout";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_rna_sashimi_plot.pl -project=$project_name -patient=$name -fork=$ppn -fileout=$fileout";
 	my $type = "sashimi_plots";
 	my $stepname = $self->patient->name."@".$type;
 	$ppn =20;
@@ -656,7 +656,7 @@ sub update_annotation{
 	
 	my $dir = $project->dir_lmdb_score_impact();
 	my $fileout = $dir."/".$chr_name.".update";
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_annotations.pl -project=$project_name -chr=$chr_name -fork=$ppn && date > $fileout";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/update_annotations.pl -project=$project_name -chr=$chr_name -fork=$ppn && date > $fileout";
 	
 	
 
@@ -691,7 +691,7 @@ sub check_store_annotations {
 #	/data-xfs/polycache//HG19.28/NGS2019_2335/vector//log//check_store_annotations.17.ok
 	my $fileout = $project->getCacheBitVectorDir()."/log/check_store_annotations.$chr_name.ok";
 	my $log_error = $fileout;
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_check_step.pl -step=store_annotations  -project=$project_name -chr=$chr_name -fork=$ppn  ";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_check_step.pl -step=store_annotations  -project=$project_name -chr=$chr_name -fork=$ppn  ";
 	
 	 my $type = "check_store_annot";
 	 my $stepname = $self->patient->name."@".$type;
@@ -723,7 +723,7 @@ sub  strict_denovo{
 	
 	my $fileout = $project->getCacheBitVectorDir()."/strict-denovo/$chr_name.lite";
 	my $fileout2 = $project->getCacheBitVectorDir()."/log/check_strict_denovo.$chr_name.ok";
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_strict_denovo.pl  -project=$project_name -chr=$chr_name -fork=$ppn";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_strict_denovo.pl  -project=$project_name -chr=$chr_name -fork=$ppn";
 	
 	$cmd .= " && test $fileout && perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_check_step.pl -project=$project_name -step=strict_denovo -project=$project_name -chr=$chr_name -fork=$ppn";
 	
@@ -756,7 +756,7 @@ sub  loh {
 	$ppn = 1 if $ppn < 1;
 	
 	my $fileout = $self->project->project_log()."/check_loh.$chr_name.ok";
-	my $cmd = "/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_loh.pl  -project=$project_name -chr=$chr_name -fork=$ppn && touch $fileout";
+	my $cmd = "perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_loh.pl  -project=$project_name -chr=$chr_name -fork=$ppn && touch $fileout";
 #	$cmd .= " && test $fileout";
 #	$cmd .= " && test $fileout  && perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_check_step.pl -project=$project_name -step=loh -chr=$chr_name -fork=$ppn";
 	my $type = "loh";

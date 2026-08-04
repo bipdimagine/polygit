@@ -214,14 +214,14 @@ while (my $line = <VCF>){
 		}
 		my @toto = grep {$_ ne 1 } values %hpatients;
 		if (scalar (@toto) > 1){
-			error("problem in vcf with sample  ".join(":",@toto)); 
+			die("problem in vcf with sample  ".join(":",@toto)); 
 		
 		}
 		
 		print OUT_SNP $line."\n";
 		print OUT_INDEL $line."\n";
 		if ($format == 0){
-			error ("problem vcf format $line "); 
+			die ("problem vcf format $line "); 
 			
 		};
 		next;

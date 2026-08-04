@@ -296,6 +296,7 @@ has dbfile =>  (
 		my $self = shift;
 		my $dir = $self->project->rocks_pipeline_directory().'cnv.mydb.duckdb';
 		warn $dir;
+		confess();
 		return $dir
 	}
 );

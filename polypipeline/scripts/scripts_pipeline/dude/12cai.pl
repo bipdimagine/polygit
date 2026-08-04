@@ -16,7 +16,7 @@ use Carp;
  use JSON::XS;
  use List::MoreUtils qw(natatime uniq samples  );
   use List::Util qw(sum );
- use Tabix;
+ ##@@##
  
 #use GenBoNoSql;
 #use GenBoNoSqlDejaVu;
@@ -44,23 +44,19 @@ my $runs = $project->getRuns();
 
 my $no =  $project->noSqlCnvs("w");
 my $control = $no->get("raw_data","controls");
-warn Dumper $control;
 my $list_controls; 
 my $patient_runs;
 foreach my $run (keys %{$control}) {
-	warn Dumper $run;
 	foreach my $hp (@{$control->{$run}}) {
 		my $name = $hp->{patient};
 		$list_controls->{$hp->{id}}++;
 		$patient_runs->{$hp->{id}} = $run;
 		my $dir = $hp->{file_depth};
-		warn $dir;
-#		
+		next if $dir =~ /HG19/;
 		$hp->{no} = GenBoBinaryFile->new(name=>$name.".depth.lmdb",dir=>$hp->{dir_depth},mode=>"r");
 		my $pr =$hp->{$run}->{project};
 	}
 }
-
 
 foreach my $patient (@{$project->getPatients}){
 			my $r = $patient->getRun();
@@ -113,8 +109,6 @@ foreach my $patient (@{$project->getPatients}){
 			 			if (exists $list_controls->{$patient_id}) {
 			 				my $rid  = $patient_runs->{$patient_id};
 			 				push(@{$covs->{$rid}}, $tcai_count->{$primer_id}->{$patient_id});
-			 				
-			 			
 			 				$hrids->{$rid} ++;
 			 				#$can_count->{$primer_id}->{$rid} +=  $tcai_count->{$primer_id}->{$patient_id};
 			 				#$plexn_count->{$rid} += $tcai_count->{$primer_id}->{$patient_id};
@@ -142,7 +136,7 @@ foreach my $patient (@{$project->getPatients}){
 	my $hdepth;
 	$project->getChromosomes;
 	 $project->buffer->dbh_deconnect();
-foreach my $chr (@{$project->getChromosomes}){
+foreach my $chr (@{$project->getChromosomes}) {
   my $pid      = $pm2->start() and next;	
    $project->buffer->dbh_reconnect();
 	my $nb =0;
@@ -161,7 +155,9 @@ foreach my $chr (@{$project->getChromosomes}){
 						my $name = $hp->{patient};
 						my $dir = $hp->{dir_depth};
 						$hdepth->{$name} =  GenBoBinaryFile->new(name=>$name.".depth.lmdb",dir=>$dir,mode=>"r") unless exists $hdepth->{$name};
+					
 						my $array = $hdepth->{$name}->getDepth($chr->name,$primer->start,$primer->end);
+					
 						my $cov = sum(@$array)/scalar(@$array);
 						if ($chr->name eq "X"){
 							

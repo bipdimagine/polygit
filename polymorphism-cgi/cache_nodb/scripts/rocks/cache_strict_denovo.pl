@@ -248,7 +248,7 @@ foreach my $family (@{$project->getFamilies()}) {
 					my $count_G = () = $sequence =~ /G/g;
 					my @deletions = ($sequence =~ /-(\d+)/g);
 					my @insertions = ($sequence =~ /\+(\d+)/g);
-					print join("\t",$tab[1],$count_A,$count_C,$count_G,$count_T,scalar(@deletions),scalar(@insertions))."\n";
+					#print join("\t",$tab[1],$count_A,$count_C,$count_G,$count_T,scalar(@deletions),scalar(@insertions))."\n";
 					
 					push(@{$hbamba->{$tab[1]}->{COV}}, $tab[3]);
 					push(@{$hbamba->{$tab[1]}->{A}}, $count_A);

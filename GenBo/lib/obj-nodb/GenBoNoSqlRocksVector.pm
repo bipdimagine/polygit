@@ -247,7 +247,7 @@ has vector_type_patient =>(
 sub cache_memory_patient{
 	my ($self,$patient) = @_;
 	
-	#confess() if $patient eq "55661";
+	confess() if $patient eq "55661";
 	return $self->{hash}->{$patient->id} if exists  $self->{hash}->{$patient->id};
 	my $search =$self->id_global_patient($patient,"");
 	chop($search);

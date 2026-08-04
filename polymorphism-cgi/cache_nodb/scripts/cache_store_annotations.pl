@@ -45,6 +45,11 @@ my $nbErrors = 0;
 my $buffer  = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProject( -name => $project_name );
+$buffer->HGMD_allgenes();
+exit(0);
+die();
+#warn Dumper $buffer->queryHgmd->getDataHGMDPro_allgenes_infos();
+#die();
 if ($annot_version) {
 	$project->changeAnnotationVersion($annot_version);
 }

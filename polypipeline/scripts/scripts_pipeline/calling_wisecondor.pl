@@ -93,7 +93,7 @@ if ($run->machine eq "REVIO" or $run->machine eq "SEQUEL"){
 else {
 	$dir .= "novaseq/"
 }
- $ref = $dir."reference.10k.npz";
+ $ref = $dir."reference.5k.npz";
 warn $ref;
  my $out = $project->getCallingPipelineDir("wiseCondor")."/".$patient->name;
  my $cnd_wise ="exec_singularity.sh wisecondor.gemini.sif wisecondorx ";

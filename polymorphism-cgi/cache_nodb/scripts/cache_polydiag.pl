@@ -12,6 +12,10 @@ use String::ProgressBar;
 use Getopt::Long;
 use Carp;
 use GBuffer;
+use GenBoNoSqlRocksTinyPolyviewerVariant;
+#use lib "$RealBin/../../GenBo/lib/obj-nodb/packages/polyviewer";
+use lib "$RealBin/../../GenBo/lib/obj-nodb/polyviewer";
+use PolyviewerVariant;
 require  "$RealBin/../../GenBo/lib/obj-nodb/packages/cache/polydiag/polydiag.pm";
 require  "$RealBin/../../GenBo/lib/obj-nodb/packages/cache/polydiag/update.pm";
 
@@ -89,7 +93,7 @@ $| = 1;
 		warn Dumper $resp;
 		#run_cache_web_polydiag($project,$p);
 		$resp = $resp + 0;
-		
+		test($project,$p);
 	#	$pm->finish( 0, {proc=>$proc} );
 	}
 
@@ -122,6 +126,37 @@ sub run_cache_web_polydiag {
 		}
 	}
 	
+}
+
+
+sub test {
+	my ($project,$patient) = @_;
+	my @transcripts_cgi = @{$project->bundle_transcripts() } ;
+	foreach my $tr_id (@transcripts_cgi) {
+		my $tr = $project->newTranscript($tr_id);
+		my $string ="";
+		my $key = $tr->id;
+		$string = $project->noSqlPolydiag()->get($patient->name,"list_$key")."";
+ 		my $data = [split(";",$string)];
+ 		 	if (scalar(@$data)==0 ){
+ 		my $v = $tr->getGene->getCurrentVector & $patient->getVectorOrigin($tr->getChromosome);
+ 		if ($v->Norm > 0) {
+ 			my $array = $tr->transformBitVectorToList($v);
+ 			my $rocksdb_pv =  GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"r",patient=>$patient,project=>$project);
+ 			foreach my $a  (@$array){
+ 				my $vp =  $rocksdb_pv->get_polyviewer_variant($tr->getChromosome->name."!".$a);
+ 				
+ 				confess() unless $vp;
+ 				my $htr = $vp->{hgenes}->{$tr->getGene->id}->{tr};
+ 				if (exists $vp->{hgenes}->{$tr->getGene->id} ){
+ 					my @t = grep {$tr->name eq $_->{name}} @{$vp->{hgenes}->{$tr->getGene->id}->{tr}};
+ 					warn Dumper @t if (@t) ;
+ 					confess() if (@t) ;
+ 				}
+ 			}
+ 		}
+ 		}
+	}
 }
 
  exit(0);

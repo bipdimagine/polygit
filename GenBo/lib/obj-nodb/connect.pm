@@ -50,6 +50,7 @@ sub getdbh{
 	my $dbh;
 	my $host =  hostname;
 	my $ip2 = $config->{ip2};
+	my $t = time;
 	if ($ip2){
 		($ip2,$ip) = ($ip,$ip2);
 	}
@@ -72,6 +73,7 @@ sub getdbh{
 		$dsn = "DBI:mysql::$ip2;port=$port\n";
 		 $dbh = DBI->connect($dsn, $db_user_name, "$db_password")|| die "Database connection not made: $DBI::errstr";
 	}
+	#cluck "ooooo";
 	return $dbh;
 }  
 

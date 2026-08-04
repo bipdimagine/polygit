@@ -35,7 +35,7 @@ sub cache_store_duck {
 	
 	my $fileout = $self->project->parquet_cache_variants;
 	warn $fileout;
-	my $cmd = "/usr/bin/perl $bin_cache/duck_cache_store_annotations.pl -project=$projectName";
+	my $cmd = "/usr/bin/env perl  $bin_cache/duck_cache_store_annotations.pl -project=$projectName";
 	
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
@@ -48,18 +48,19 @@ sub cache_store_duck {
 
 sub tiny_rocks {
 	my ($self,$hash) = @_;
-	my $filein = $self->patient->project->rocks_directory()."/polyviewer_objects.rocksdb/CURRENT";
+	my $filein = $hash->{filein};
+	#my $filein = $self->patient->project->rocks_directory()."/polyviewer_objects.rocksdb/CURRENT";
 	my $projectName = $self->project->name();
+	my $chr = $self->patient();
 	my $ppn = $self->define_ppn();
+	my $chr_name = $chr->name();
 	my $type = "tiny_rocks";
 	my $stepname = $projectName."@".$type;
-#	my $fileout = $self->project->project_log()."/dejavu_parquet.log";
-	# my $dir_parquet = $self->project->rocks_directory_beegfs()."/tiny_rocks/".$self->project->name.".store";;
-	my $fileout = $self->project->tiny_rocks_cache_dir()."/".$self->project->name.".store";
+	my $fileout = $chr->project->rocks_directory("genbo")."/".$chr->name.".genbo.rocks.rocksdb/CURRENT";#
 	warn "\n\n";
 	warn $fileout;
 	warn "\n\n";
-	my $cmd = "/usr/bin/perl $bin_cache/tiny_rocks.pl  -project=$projectName ";
+	my $cmd = "/usr/bin/env perl  $bin_cache/tiny_rocks.pl  -project=$projectName -chr=$chr_name -fork=$ppn";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
@@ -85,7 +86,7 @@ sub store_ids {
 	$ppn = 15;
 	$filein ="";
 	my $fileout = $project->rocks_directory("logs")."/cache_store_ids.".$chr_name.".ok";
-	my $cmd = "/usr/bin/perl $bin_cache/cache_store_ids.pl -project=$project_name -chr=$chr_name -fork=$ppn -file=$fileout &&  test -e  $fileout";
+	my $cmd = "$bin_cache/cache_store_ids.pl -project=$project_name -chr=$chr_name -fork=$ppn -file=$fileout &&  test -e  $fileout";
 	 my $type = "cache_store_ids";
 	 my $stepname = $self->patient->name."@".$type;
 	 my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>20,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -108,7 +109,7 @@ sub store_annotations  {
 	my $ppn = $self->define_ppn($chr->karyotypeId);
 	$ppn = 1 if $ppn < 1;
 	my $fileout =  $project->rocks_directory("logs")."/cache_store_annotations.".$chr_name.".ok";
-	my $cmd = "/usr/bin/perl $bin_cache/cache_store_annotations.pl -project=$project_name -chr=$chr_name -fork=$ppn -file=$fileout &&  test -e  $fileout";
+	my $cmd = "/usr/bin/env perl  $bin_cache/cache_store_annotations.pl -project=$project_name -chr=$chr_name -fork=$ppn -file=$fileout &&  test -e  $fileout";
 	
 	 my $type = "store_annotations";
 	 my $stepname = $self->patient->name."@".$type;
@@ -139,7 +140,7 @@ sub  strict_denovo{
 	$ppn = 1 if $ppn < 1;
 	
 	my $fileout =  $project->rocks_directory("logs")."/cache_strict_denovo.".$chr_name.".ok";
-	my $cmd = "/usr/bin/perl $bin_cache/cache_strict_denovo.pl  -project=$project_name -chr=$chr_name -fork=$ppn -file=$fileout &&  test -e  $fileout";
+	my $cmd = "/usr/bin/env perl  $bin_cache/cache_strict_denovo.pl  -project=$project_name -chr=$chr_name -fork=$ppn -file=$fileout &&  test -e  $fileout";
 
 	
 	
@@ -165,7 +166,7 @@ sub polyviewer  {
 	$ppn = 1 if $ppn < 1;
  
 	my $fileout =  $project->rocks_directory("logs")."/update_hash_variant_chromosome.".$chr_name.".ok";
-	my $cmd = "/usr/bin/perl $bin_cache/update_hash_variant_chromosome.pl -project=$project_name -chr=$chr_name -fork=$ppn -file=$fileout &&  test -e  $fileout";
+	my $cmd = "/usr/bin/env perl  $bin_cache/update_hash_variant_chromosome.pl -project=$project_name -chr=$chr_name -fork=$ppn -file=$fileout &&  test -e  $fileout";
 	
 	
 	my $log_error = $project->getCacheBitVectorDir()."/log/store_anotations_$chr_name.log";
@@ -191,7 +192,7 @@ sub merge_objects {
 	my $dir = $self->project->project_log();
 	my $output   = $self->project->quality_dir;#$self->getCacheDir() . "/check_quality";
 	my $fileout =  $project->rocks_directory("logs")."/merge_objects".".ok";
-	my $cmd = "/usr/bin/perl $bin_cache/merge_polyviewer_db.pl -project=$project_name  -file=$fileout &&  test -e  $fileout";
+	my $cmd = "/usr/bin/env perl  $bin_cache/merge_polyviewer_db.pl -project=$project_name  -file=$fileout &&  test -e  $fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);
@@ -226,7 +227,7 @@ sub merge_patients {
 	my $output   = $self->project->quality_dir;#$self->getCacheDir() . "/check_quality";
 	my $fileout =  $project->rocks_directory("logs")."/merge_objects".".ok";
 
-	my $cmd = "/usr/bin/perl $bin_cache/global_annotation_by_patient.pl -project=$project_name -file=$fileout -fork=$ppn &&  test -e  $fileout";
+	my $cmd = "/usr/bin/env perl  $bin_cache/global_annotation_by_patient.pl -project=$project_name -file=$fileout -fork=$ppn &&  test -e  $fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
 	$job_bds->isLogging(1);

@@ -331,9 +331,10 @@ sub getMean {
 	confess('ici') unless $start;
 	die() unless $end;
 	my $sintspan = Set::IntSpan::Fast->new("$start-$end" );
-
+	warn join(";",$chr,$start,$end);
 	my $a  = $self->getDepth($chr,$start,$end);
-
+	warn Dumper $a;
+	die();
 	my $sum = sum(@$a);
 	my $nb = scalar(@$a);
 	
