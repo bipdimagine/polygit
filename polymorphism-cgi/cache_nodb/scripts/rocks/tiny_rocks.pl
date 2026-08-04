@@ -102,6 +102,7 @@ my  $tiny = GenBoNoSqlRocksTinyPolyviewerVariant->new(mode=>"c",pipeline=>1,proj
 #	
 my $tume = time;
 my $diro = $project->rocks_directory();
+
 my $nb = 0;
 foreach my $chr (@{$project->getChromosomes}) {
 		if ($chr_name) {
@@ -112,7 +113,6 @@ foreach my $chr (@{$project->getChromosomes}) {
 	my @batches;
 	foreach my $f (@{$project->getFamilies}){
 		$rocks->{$f->id} =  $tiny->rocksdb($chr,$f->id);
-		warn $f->id;
 	}
 	#next if $chr->name ne "21";
 	my $no =  GenBoNoSqlRocksVariation->new(dir=>$chr->project->rocks_directory("genbo"),mode=>"r",name=>$chr->name.".genbo.rocks");
@@ -128,15 +128,16 @@ foreach my $pat (@{$project->getPatients}){
 }
 delete $chr->rocks_vector("r")->{rocks};
 my $shared_hash = MCE::Shared->hash();
+my $ck = int ($size/64 ) + 10;
 MCE::Loop::init {
-    chunk_size => 'auto',  # chaque worker recevra un seul élément
-    max_workers => 'auto', 
+    chunk_size => $ck,  # chaque worker recevra un seul élément
+    max_workers => '64', 
      gather => sub {
         my ($mce, $data,$a,$b) = @_;
+        warn "end $mce";
         die unless exists $shared_hash->{$mce};
         delete $shared_hash->{$mce};
         foreach my $id (keys %$data){
-        	
         	foreach my $fid (keys %{$data->{$id}}){
         		$rocks->{$fid}->put_batch_raw($id,$data->{$id}->{$fid});
         	}
@@ -162,10 +163,11 @@ mce_loop {
     my ($mce, $chra,$chunk_id) = @_;
    # my $chr = $chra->[0];
    	$shared_hash->{$chunk_id} ++;
+   	
 	my $hash = compute($chr, $chra->[0], $chra->[-1]+1);
 	#$project->disconnect(1);
 	#delete $project->{rocks};
-
+warn "start $chunk_id";
 	 MCE->gather($chunk_id,$hash,$chra->[0], $chra->[-1]);
 	 #$project->disconnect(1);
 }(0..$size);
@@ -173,6 +175,7 @@ $project->disconnect();
 delete $project->{rocks};
 MCE::Loop->finish;
 confess()  if %$shared_hash;
+
 warn "end chromosome ".$chr->name;
 foreach my $f (@{$project->getFamilies}){
  			$rocks->{$f->id}->close();

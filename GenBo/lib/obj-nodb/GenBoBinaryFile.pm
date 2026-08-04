@@ -307,6 +307,7 @@ sub getDepth {
 	
 	confess('ici ++') unless $start;
 	die() unless $end;
+	
 	my $sintspan = Set::IntSpan::Fast->new("$start-$end" );
 	return $self->_getDepth($chr,$start,$end,$sintspan);
 #	die() unless exists $self->index->{$name};
@@ -330,9 +331,12 @@ sub getMean {
 	confess('ici') unless $start;
 	die() unless $end;
 	my $sintspan = Set::IntSpan::Fast->new("$start-$end" );
-	my $a  = $self->_getDepth($chr,$start,$end,$sintspan);
+
+	my $a  = $self->getDepth($chr,$start,$end);
+
 	my $sum = sum(@$a);
 	my $nb = scalar(@$a);
+	
 	return $sum/($nb);
 #	die() unless exists $self->index->{$name};
 }

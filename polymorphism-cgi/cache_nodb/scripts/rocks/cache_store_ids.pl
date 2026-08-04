@@ -106,6 +106,7 @@ if (-e $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty") {
 	unlink $project->getCacheBitVectorDir()."/lmdb_cache/".$chr->id().".empty";
 }
 warn "\n### CACHE: store ids step\n" if ( $project->cache_verbose() );
+warn $project->rocks_directory("genbo");
 #warn "------------------------";
 #system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc "."/data-isilon/public-data/repository/HG19/gnomad-genome/2.1/lmdb//snps/".$chr->name." "."/data-isilon/public-data/repository/HG19/gnomad-exome/2.1/lmdb//snps/".$chr->name);#/software/bin/vmtouch -t ".$no1->filename." "
 #system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/cadd/1.6/lmdb/".$chr->name.".uc");#/software/bin/vmtouch -t ".$no1->filename." "
@@ -235,6 +236,7 @@ my $final_dir = $project->rocks_directory();
 
 
 my $finalrg = GenBoNoSqlRocksVariation->new(dir=>$project->rocks_directory("genbo"),mode=>"c",name=>$chr_name.".genbo.rocks");
+
 my $final_index_genbo_id = GenBoNoSqlRocksVariation->new(dir=>$project->rocks_directory("index"),mode=>"c",name=>$chr_name);
 #my $final_polyviewer = GenBoNoSqlRocksPolyviewerVariant->new(dir=>$project->rocks_directory("polyviewer"),mode=>"c",name=>$chr_name.".polyviewer_variant");
 my $fp = GenBoNoSqlRocks->new(dir=>$project->rocks_pipeline_directory("polyviewer_raw"),mode=>"c",name=>$chr_name);

@@ -357,55 +357,55 @@ sub run_duckdb_query {
 }
 
 ##seuil: 90%
-#sub dejavu {
-#	my ($self,$type,$chr,$start,$end,$seuil ) = @_;
-#	my $project_id = $self->project->id;
-#	my $p = (100 - $seuil)/100;
-#	my $len = abs($end - $start) +1;
-#	my $vv =   int($len * $p);
-#	my $minl = $len - $vv;
-#	my $maxl = $len + $vv;
-#	my $minx = $start - $vv;
-#	my $maxx = $start + $vv;
-#	my $miny = $end - $vv;
-#	my $maxy = $end + $vv;
-#	my $query = $self->prepare_cnv($type,$chr, $minx, $maxx, $miny, $maxy, $minl, $maxl,$project_id);
-#	my $list = $self->run_duckdb_query($query);
-#	# Récupération des résultats dans un tableau de hash
-#	my @results;
-#	my $nb;
-#	my $hash;
-#	$hash->{nb_patients} = 0;
-#	$hash->{nb_projects} = 0;
-#	$hash->{caller_sr} = 0 ;
-#	$hash->{caller_depth} =0;
-#	$hash->{caller_coverage} = 0;
-#	$hash->{string} = "";
-#	my %pp;
-#	my @dj;
-#	foreach my $row (@$list) {
-#		
-# 		my $start1 = $row->{start};
-# 		my $end1 = $row->{end};	
-# 		my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
-# 		my $project1 = $row->{project};
-# 		my $patient1 = $row->{patient};
-# 		my $caller1 = $row->{callers};
-# 		$pp{$project1} ++;
-#	
-#		$hash->{nb_patients} ++;
-#		$hash->{caller_coverage} ++ if $caller1 & $self->caller_type_flag->{caller_coverage};
-#		$hash->{caller_depth} ++  if $caller1 & $self->caller_type_flag->{caller_depth};
-#		$hash->{caller_sr} ++  if $caller1 & $self->caller_type_flag->{caller_sr};
-# 	
-# 		$identity = int($identity);
-#		my $string ="$identity";
-#		push(@dj,$string) if $string;
-#	}
-#	$hash->{nb_projects} = scalar(keys %pp);
-#	$hash->{string}  = join(",",@dj);
-#	return  $hash;
-#}
+sub dejavu1 {
+	my ($self,$type,$chr,$start,$end,$seuil ) = @_;
+	my $project_id = $self->project->id;
+	my $p = (100 - $seuil)/100;
+	my $len = abs($end - $start) +1;
+	my $vv =   int($len * $p);
+	my $minl = $len - $vv;
+	my $maxl = $len + $vv;
+	my $minx = $start - $vv;
+	my $maxx = $start + $vv;
+	my $miny = $end - $vv;
+	my $maxy = $end + $vv;
+	my $query = $self->prepare_cnv($type,$chr, $minx, $maxx, $miny, $maxy, $minl, $maxl,$project_id);
+	my $list = $self->run_duckdb_query($query);
+	# Récupération des résultats dans un tableau de hash
+	my @results;
+	my $nb;
+	my $hash;
+	$hash->{nb_patients} = 0;
+	$hash->{nb_projects} = 0;
+	$hash->{caller_sr} = 0 ;
+	$hash->{caller_depth} =0;
+	$hash->{caller_coverage} = 0;
+	$hash->{string} = "";
+	my %pp;
+	my @dj;
+	foreach my $row (@$list) {
+		
+ 		my $start1 = $row->{start};
+ 		my $end1 = $row->{end};	
+ 		my $identity = $self->getIdentityBetweenCNV($start,$end,$start1,$end1);
+ 		my $project1 = $row->{project};
+ 		my $patient1 = $row->{patient};
+ 		my $caller1 = $row->{callers};
+ 		$pp{$project1} ++;
+	
+		$hash->{nb_patients} ++;
+		$hash->{caller_coverage} ++ if $caller1 & $self->caller_type_flag->{caller_coverage};
+		$hash->{caller_depth} ++  if $caller1 & $self->caller_type_flag->{caller_depth};
+		$hash->{caller_sr} ++  if $caller1 & $self->caller_type_flag->{caller_sr};
+ 	
+ 		$identity = int($identity);
+		my $string ="$identity";
+		push(@dj,$string) if $string;
+	}
+	$hash->{nb_projects} = scalar(keys %pp);
+	$hash->{string}  = join(",",@dj);
+	return  $hash;
+}
 
 
 has dbh =>  (

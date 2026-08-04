@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use strict;
 
@@ -34,6 +34,7 @@ my $ref =  $project->genomeFasta();
 my $patient = $project->getPatient($patient_name);
 
 
+my $singularity = "exec_singularity.sh";
 
 my $hifi  = "hificnv";# $project->getSoftware('hificnv');
 
@@ -43,13 +44,19 @@ my $tabix  = $project->getSoftware('tabix');
 
  my $bam = $patient->getBamFile() ;
  my $dirout= $project->getCallingPipelineDir("hificnv");
+ my $vcf = $patient->getVariationsFileName("deepvariant");
 my $name = $patient->name;
 my $sex_k = "XX";
 $sex_k = "XY" if $patient->compute_sex() == 1 ;
 
  my $blfile = $project->public_data_root . "/". $project->annotation_genome_version . "/wisecondor/blacklist.bed";
  my $parfile =  $project->public_data_root . "/". $project->annotation_genome_version . "/wisecondor/expected_cn.ucsc.$sex_k.bed";
-my $cmd =qq{$hifi --ref $ref --bam $bam --output-prefix $dirout/$name --exclude $blfile --expected-cn $parfile --threads $fork};
+ my $c1 ="";
+if (-e $vcf){
+	$c1 = qq{--maf $vcf};
+}
+
+my $cmd =qq{exec_singularity.sh hificnv.sif hificnv --ref $ref --bam $bam --output-prefix $dirout/$name --exclude $blfile --expected-cn $parfile --threads $fork $c1 };
 system($cmd);
 my ($vcf1) = `ls $dirout/$name*.vcf.gz`;
 chomp($vcf1);

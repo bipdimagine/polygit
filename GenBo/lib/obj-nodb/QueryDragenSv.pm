@@ -29,7 +29,8 @@ sub parseVcfFileForReference {
 	my $iter = $v1->query($chr->fasta_name . ":" . $reference->start . "-" . $reference->end );
 	return {} unless $iter;
 	while ( my $row = $iter->next ) {
-
+		next if $row =~ /IMPRECISE/;
+		next if $row !~ /PASS/;
 		my $x = $self->parseVCFLine($row);
 		confess( "alt " => Dumper $x) if scalar( @{ $x->{alt} } ) > 1;
 		my $hash;

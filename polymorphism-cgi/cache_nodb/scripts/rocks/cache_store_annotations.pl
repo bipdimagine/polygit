@@ -51,6 +51,7 @@ unless ($chr_name) { confess("\n\nERROR: -chr option missing... confess...\n\n")
 my $buffer  = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProject( -name => $project_name );
+$buffer->HGMD_allgenes();
 	my $hcat = $buffer->config->{'stats_genes'};
 	my %global_hcat;
 	map{push(@{$global_hcat{medium}},$_)} grep {$hcat->{$_} eq "medium" } keys %$hcat unless exists $global_hcat{medium};
@@ -179,7 +180,6 @@ $pm->run_on_finish(
 		unless ( defined($hres) or $exit_code > 0 ) {
 			$nbErrors++;
 			print qq|No message received from child process $exit_code $pid!\n|;
-			warn Dumper $hres;
 			return;
 		}
 		if ( exists $hres->{start} ) { print qq|1- No message received from child process $exit_code $pid!\n|;
@@ -243,11 +243,12 @@ $pm->run_on_finish(
 ##############
 #fork annotation
 ##############
- $project_name = $chr->project->name();
+$project->preload_patients();
  $chr_name     = $chr->name();
 my $true = 0;
 my $idp  = 0;
 $project->disconnect();
+
 while ( $true < 2 ) {   
 	#check if all the region end correctly unless restart region failed
 	my $cpt = 0;
@@ -258,9 +259,8 @@ while ( $true < 2 ) {
 		$process->{ $r->[0] . "-" . $r->[1] } = $r;
 		my $pid;
 		$pid = $pm->start and next;
-		$project->disconnect();
 		my $hres;
-		my $hres = get_annotations( $project_name, $chr_name, $r, $annot_version );
+		my $hres = get_annotations( $project, $chr, $r, $annot_version );
 		$hres->{start} = $r->[0] . "-" . $r->[1];
 		$hres->{idp} = $r->[0] . "-" . $r->[1];
 		delete $hres->{start};
@@ -440,6 +440,7 @@ foreach my $family (@{$project_fam->getFamilies}){
 		$rocks3->put_batch_vector_transmission($children,"ind_mother",$bitv5);
 
 		my $bitv6 = $family->getVectorBothTransmission($chr_fam,$children,1);
+		warn $bitv6;
 		$rocks3->put_batch_vector_transmission($children,"ind_both",$bitv6);
 
 		my $bitv7 = $family->getVector_individual_uniparental_disomy($chr_fam,$children,1);
@@ -466,17 +467,17 @@ system("date > $ok_file") if $ok_file;
 exit(0);
 
 sub get_annotations {
-	my ( $project_name, $chr_name, $region, $annot_version ) = @_;
+	my ( $project, $chr, $region, $annot_version ) = @_;
 	my $hres;
-	my $buffer_tmp = new GBuffer;
 	my $hpatients;
 	$buffer->vmtouch(1);
-	my $project_tmp = $buffer_tmp->newProject( -name => $project_name );
-	$project_tmp->preload_patients();
-	$project_tmp->disconnect();
-	$project_tmp->buffer->disconnect();
+	my $project_tmp = $project;
+	#my $project_tmp = $buffer_tmp->newProject( -name => $project_name );
+	#$project_tmp->preload_patients();
+	#$project_tmp->disconnect();
+	#$project_tmp->buffer->disconnect();
 	if ($annot_version) {
-		$project_tmp->changeAnnotationVersion($annot_version);
+		$project->changeAnnotationVersion($annot_version);
 	}
 	#variation type 
 	 $hres->{variation_type} = {};
@@ -492,19 +493,19 @@ sub get_annotations {
 	}
 	my $intspan_genes_categories = {};
 	my $tree_ratio = Set::IntervalTree->new;
-	foreach my $c ( keys %{ $project_tmp->buffer->config->{scaled_score_ratio} } ) {
-		 	my $value = $project_tmp->buffer->config->{scaled_score_ratio}->{$c};
+	foreach my $c ( keys %{ $project->buffer->config->{scaled_score_ratio} } ) {
+		 	my $value = $project->buffer->config->{scaled_score_ratio}->{$c};
 			$tree_ratio->insert("ratio_".$value,$value,101);
-			foreach my $p (@{$project_tmp->getPatients}){
+			foreach my $p (@{$project->getPatients}){
 				$hpatients->{$p->name}->{"ratio_".$value} = Set::IntSpan::Fast::XS->new();
 			}
 	}
 	
 	my $tree_ratio_lower = Set::IntervalTree->new;
-	foreach my $c ( keys %{ $project_tmp->buffer->config->{lower_scaled_score_ratio} } ) {
-		 	my $value = $project_tmp->buffer->config->{lower_scaled_score_ratio}->{$c};
+	foreach my $c ( keys %{ $project->buffer->config->{lower_scaled_score_ratio} } ) {
+		 	my $value = $project->buffer->config->{lower_scaled_score_ratio}->{$c};
 			$tree_ratio_lower->insert("lower_ratio_".$value,0,$value);
-			foreach my $p (@{$project_tmp->getPatients}){
+			foreach my $p (@{$project->getPatients}){
 					$hpatients->{$p->name}->{"lower_ratio_".$value} = Set::IntSpan::Fast::XS->new();
 			}
 	}
@@ -518,7 +519,7 @@ sub get_annotations {
 	#and store intergenic id;
 	my $id_intergenic = Set::IntSpan::Fast::XS->new();
 
-	my $no = $project_tmp->getChromosome($chr_name)->get_rocks_variations("r");
+	my $no = $project->getChromosome($chr_name)->get_rocks_variations("r");
 #	my $cursor = $no->cursor( $region->[0], $region->[1] );
 	my $nb     = 0;
 	my $l      = abs( $region->[0] - $region->[1] );
@@ -540,8 +541,8 @@ sub get_annotations {
 			confess();
 		}
 		confess() unless $variation->id;
-		$variation->{buffer}  = $buffer_tmp;
-		$variation->{project} = $project_tmp;
+		$variation->{buffer}  = $buffer;
+		$variation->{project} = $project;
 		warn $variation->name if $variation->isInversion();
 		
 
@@ -764,9 +765,9 @@ sub get_annotations {
 		# annotation_mask
 		#####################
 	 		 my $mask = $variation->{annotation}->{all}->{mask} ;
-	 		 foreach my $c ( keys %{$project_tmp->buffer->config->{functional_annotations}}){
+	 		 foreach my $c ( keys %{$project->buffer->config->{functional_annotations}}){
 	 		 		$intspan_global_categories->{$c} = Set::IntSpan::Fast::XS->new() unless exists $intspan_global_categories->{$c};
-	 		 	 if ($mask & $project_tmp->getMaskCoding($c)){
+	 		 	 if ($mask & $project->getMaskCoding($c)){
 	 		 		$intspan_global_categories->{$c}->add($lmdb_index);
 	 		 	}
 	 		 }
@@ -783,7 +784,7 @@ sub get_annotations {
 	 		 		next unless exists $g->panels_name->{'ACMG-Actionable'};
 	 		 		$intspan_global_categories->{$c1}->add($lmdb_index);
 	 		 	}
-	 		 	$project_tmp->buffer->disconnect();
+	 		 	$project->buffer->disconnect();
 	 		 }
 	 		 else {
 	 		 	my $c = "intergenic";
@@ -923,15 +924,14 @@ sub get_annotations {
 	
 	$hres->{frequency} = $intspan_global_categories;
 	$hres->{genes}     = $intspan_genes_categories;
-	my $ints = $project_tmp->getChromosome($chr_name)->intergenic_intspan()->intersection($intspan_region_intergenic);
+	my $ints = $project->getChromosome($chr_name)->intergenic_intspan()->intersection($intspan_region_intergenic);
 	$hres->{intergenic}->{intspan_region} = $ints;
 	$hres->{intergenic}->{id} = $id_intergenic;
 	$hres->{patients} = $hpatients;
 	$hres->{annotations} = $annotation_genes;
 	$no->close();
-	my $chr     = undef;
-	$project_tmp = undef;
-	$buffer_tmp  = undef;
+	$project = undef;
+	$buffer  = undef;
 	return $hres;
 }
 

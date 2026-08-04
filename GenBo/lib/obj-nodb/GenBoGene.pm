@@ -166,6 +166,8 @@ has main_transcripts => (
 
 sub getMainTranscripts{
 	my ($self) = @_;
+	
+	return $self->getTranscripts() unless @{$self->main_transcripts};
 	return $self->project->myflushobjects($self->main_transcripts,"transcripts");
 	
 }
@@ -463,12 +465,15 @@ has hgmd => (
 	lazy => 1,
 	default => sub { 
 		my $self = shift;
-		my $query = $self->buffer->queryHgmd();
-		return unless $query;
-		my $h;
-		 $h = $query->getDataHGMDPro_gene_infos($self->external_name());
-		return unless ($h);
-		return $h->{$self->external_name()};
+		return $self->buffer->HGMD_allgenes->{$self->external_name()};
+#		
+#		my $query = $self->buffer->queryHgmd();
+#		
+#		return unless $query;
+#		my $h;
+#		 $h = $query->getDataHGMDPro_gene_infos($self->external_name());
+#		return unless ($h);
+#		return $h->{$self->external_name()};
 	 },
 );
 

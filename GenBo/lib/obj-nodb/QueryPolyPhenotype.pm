@@ -89,6 +89,8 @@ sub getPanelsId {
 	else {
 		$sql = qq{SELECT panel_id FROM $db.phenotype_panel where phenotype_id = ?; };
 	} 
+	warn $sql." ".$id;
+	
 	 my $sth = $dbh->prepare($sql);
 	$sth->execute($id);
 	my $s = $sth->fetchall_hashref('panel_id');

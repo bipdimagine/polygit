@@ -11,7 +11,7 @@ use Data::Dumper;
 extends "GenBoNoSql";
 use IO::Compress::Gzip qw(gzip $GzipError) ;
 use IO::Uncompress::Gunzip qw(gunzip $GunzipError) ;
-use Tie::LevelDB; 
+#use Tie::LevelDB; 
 use LMDB_File qw(:flags :cursor_op);
  use Digest::MD5 qw(md5 md5_hex md5_base64);
  use Compress::Snappy;

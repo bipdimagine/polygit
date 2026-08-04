@@ -435,9 +435,15 @@ sub load_polyviewer_variant {
   	  	foreach my $chr (@$chra){
     		 my $nbv =0;
  	   		$self->cache_polyviewer_variant($chr,[keys %{$self->{list_index}->{$chr}}]);
+ 	   		warn "$chr";
   	  	}
   	  	delete $shared_hash2->{MCE->chunk_id};
   	  	};
+  	  	if ($@) {
+
+    		warn  "Erreur : $@\n";
+
+		}
   	   MCE->gather(MCE->chunk_id,$self->clean,$chra);
    	  $self->close();
 	
@@ -457,7 +463,7 @@ sub load_polyviewer_variant_1 {
     my @chr = sort { $a cmp $b } keys %{$self->{list_index}};
     $self->{rcache} = {};
 
-    my $pm = Parallel::ForkManager->new(24); # ajuste selon CPU
+    my $pm = Parallel::ForkManager->new(1); # ajuste selon CPU
     my $error;
     my %jobs_done;
 

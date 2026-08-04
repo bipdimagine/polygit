@@ -8,7 +8,10 @@ use warnings;
 use Data::Dumper;
 use JSON::XS;
 use List::Util qw[min max];
-	
+
+
+
+
 has project =>(
 	is		=> 'rw',
 	required=>1,
@@ -27,7 +30,7 @@ has version =>(
 has dir =>(
 	is		=> 'ro',
 	lazy=>1,
-default => sub {
+	default => sub {
 		my ($self)= @_;
 		return $self->project->buffer->config_path("dejavu","sv");;
 }	
@@ -224,7 +227,7 @@ sub get_dejavu_details {
 	my $query = qq{
 		PRAGMA threads=20;
 		SELECT patient,project,$colchr1 as chr1,$colpos1 as pos1,$colchr2 as chr2,$colpos2 as pos2,caller
-		FROM '$parquet_file'
+		FROM read_parquet('$parquet_file', union_by_name = true)
 	  	WHERE
 	  		chr1=$chr1
 	  		and chr2=$chr2

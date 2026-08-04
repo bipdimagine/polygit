@@ -1048,7 +1048,7 @@ sub getPolyViewerVariant {
 		$vp->hgmd($v->hgmd_class);
 		$vp->hgmd_id($v->hgmd_id);
 		if (exists $v->genes_pathogenic_DM->{$gene->{id}} && $v->genes_pathogenic_DM->{$gene->{id}}->{DM} ){
-				$vp->dm($v->isDM);
+				#$vp->dm($v->isDM);
 				$vp->hgmd_phenotype($v->hgmd_phenotype);
 			}
 		

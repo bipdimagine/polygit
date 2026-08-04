@@ -85,19 +85,21 @@ my $wise  = "$singularity $wise_sif WisecondorX";
  
  
  my $repository = $project->buffer()->config_path("root","public_data").'/repository/HG38/wisecondor-ref/new_version/novaseq';
-
-$ref  = $repository ."/reference.5k.npz";
-
+my $dir = $project->buffer()->config_path("root","public_data").'/repository/HG38/wisecondor-ref/new_version/';
 #$ref = $repository ."/reference.10000.default.npz";
 if ($run->machine eq "REVIO" or $run->machine eq "SEQUEL"){
-	$repository = $project->buffer()->config_path("root","public_data").'/repository/HG38/wisecondor-ref/new_version/revio';
-	$ref = $repository ."/reference.5k.npz";
+	$dir .= "revio/";
 }
-
+else {
+	$dir .= "novaseq/"
+}
+ $ref = $dir."reference.5k.npz";
+warn $ref;
  my $out = $project->getCallingPipelineDir("wiseCondor")."/".$patient->name;
  my $cnd_wise ="exec_singularity.sh wisecondor.gemini.sif wisecondorx ";
  
  my $cmd = "$cnd_wise predict  $npz $ref $out  --beta 1 --bed  ".$blacklist;
+ warn $cmd;
  system("$cmd");
  my $bgzip = "bgzip";#$buffer->software("bgzip");
  my $tabix = "tabix";#$buffer->software("tabix");

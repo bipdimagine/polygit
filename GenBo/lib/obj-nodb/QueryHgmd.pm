@@ -176,14 +176,30 @@ sub getDataHGMDPro {
 	return $toto->{$id};
 }
 
+
+
+
 sub getDataHGMDPro_gene_infos {
 	my ($self, $gene_name) = @_;
 	my $database = $self->database();
 	confess("\n\nERROR: need a gene_name for QueryMoose::getDataHGMDPro_gene_infos. Die.\n\n") unless ($gene_name);
 	my $dbh =  $self->getDbh;
 	my $sql = qq{ SELECT * FROM `$database`.allgenes where gene=?; };
+	
 	my $sth = $dbh->prepare($sql);
 	$sth->execute("$gene_name");
+	my $toto = $sth->fetchall_hashref("gene");
+	return $toto;
+}
+
+sub getDataHGMDPro_allgenes_infos {
+	my ($self,) = @_;
+	my $database = $self->database();
+	my $dbh =  $self->getDbh;
+	my $sql = qq{ SELECT * FROM `$database`.allgenes ; };
+	
+	my $sth = $dbh->prepare($sql);
+	$sth->execute();
 	my $toto = $sth->fetchall_hashref("gene");
 	return $toto;
 }

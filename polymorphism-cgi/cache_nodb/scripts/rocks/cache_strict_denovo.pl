@@ -311,7 +311,7 @@ sub construct_strict_denovo {
 				my $debug;
 				$debug =1 if $var ->start  == 61190109;
 				#next if $var->name =~/dup/;
-				warn $var->name ;
+#				warn $var->name ;
 				my $percent;
 				my $r = $var->getRatio($children);
 				if ($r > 40 ) {
@@ -322,7 +322,6 @@ sub construct_strict_denovo {
 					$local_limit = 3;
 				}
 				if ($var->isCnv && $var->isSrPr){
-					warn "coucou";
 					my $to_keep  = 0;
 						foreach my $parent (@{$family->getParents()}) {
 							warn "\t\t toto";
@@ -330,7 +329,6 @@ sub construct_strict_denovo {
 									last  if ($to_keep == 0 );
 								}
 							$vdenovo->Bit_On($vector_id) if $to_keep == 2;
-					warn "end";		
 						}
 					elsif ($var->isSrPr){
 						my $to_keep = 0 ;
@@ -367,9 +365,6 @@ sub construct_strict_denovo {
 					my $nb_alt = $hbamba->{$start}->{DEL}->[0] + $hbamba->{$start}->{DEL}->[1]+$hbamba->{$start+1}->{DEL}->[0] + $hbamba->{$start+1}->{DEL}->[1]+$hbamba->{$start-1}->{DEL}->[0] + $hbamba->{$start-1}->{DEL}->[1];
 				
 					my $min_cov = max (min($hbamba->{$start-1}->{COV}->[0] + $hbamba->{$start-1}->{COV}->[1]),min($hbamba->{$start}->{COV}->[0] + $hbamba->{$start}->{COV}->[1]),min($hbamba->{$start+1}->{COV}->[0] + $hbamba->{$start+1}->{COV}->[1])) ;
-						warn $nb_alt." ".$min_cov." limit ".$local_limit if $debug;
-					warn Dumper $hbamba->{$start}->{DEL} if $debug;
-					warn Dumper $hbamba->{$start-1}->{DEL} if $debug;
 					$vdenovo->Bit_On($vector_id) if $nb_alt < $local_limit && $min_cov >= 5 ;
 				}
 				
@@ -389,13 +384,11 @@ sub check_cnv {
 	my $debug =1;
 	$debug =1 if $var->gnomad_id eq '17-78064045-del-187';
 	$debug =1 if $var->name eq '17-78064045-del-187';
-	warn "xxx";
 	my $dp = $var->getNormDP($parent);
 	my $dpc = $var->getNormDP($children);
 	warn " dp parent ".$dp." ".$dpc if $debug == 1; 
 	return 0 if $parent->meanDepth($chr->name,$var->start,$var->end) < 5;
 	return 0 if $dp < 5; 
-	warn "yyy";
 	$dpc = 0.00000001 if $dpc == 0; 
 	
 	my $pc = int((($dpc-$dp)/$dpc)*100);

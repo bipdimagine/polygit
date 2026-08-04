@@ -956,7 +956,7 @@ sub save_parquet_rocksdb {
 	my $parquet_file = $project->getCacheCNV()."/".$project->name.".".$project->id.".parquet";
 	my $query = "
 	COPY (
-        SELECT * from read_csv_auto(['$filename']) order by 'patient','type','chr','type','start'
+        SELECT * from read_csv_auto(['$filename']) order by patient,type,chr,start
     )
     TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE);";
     print "\n# $query\n";

@@ -222,11 +222,12 @@ sub dbh {
 		$self->{dbh}->{$key1}->do("PRAGMA cache_size = 40000") or confess ($DBI::errstr." ".$key1);
 		$self->{dbh}->{$key1}->do("PRAGMA synchronous = OFF");
 		$self->{dbh}->{$key1}->do("PRAGMA journal_mode = DELETE;");
-		$self->{dbh}->{$key1}->do("PRAGMA locking_mode = EXCLUSIVE;")  unless $self->no_lock;;
+		#$self->{dbh}->{$key1}->do("PRAGMA locking_mode = EXCLUSIVE;")  unless $self->no_lock;;
 		$self->{dbh}->{$key1}->do("PRAGMA temp_store = MEMORY;");
 		$self->{dbh}->{$key1}->do("PRAGMA auto_vacuum = NONE;");
 		$self->{dbh}->{$key1}->do("PRAGMA count_changes=OFF;");
 		$self->{dbh}->{$key1}->do("PRAGMA threads = 8");
+		$self->{dbh}->{$key1}->do("PRAGMA query_only = ON");
 			#$self->{dbh}->{$key1}->do("PRAGMA cache_size = 4000000") or confess ($DBI::errstr." ".$key1);
 			#$self->{dbh}->{$key1}->do("PRAGMA temp_store = MEMORY;");
 			

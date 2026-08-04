@@ -21,7 +21,7 @@ use lib "$Bin/../../dejavu/utility/";
 use liftOverRegions;
 use GBuffer;
 use Text::CSV;
-
+use List::Util qw[min max  sum];
 #
 #je vais filtrer les cnvs en utilsant wisecondor le ratio 
 #
@@ -52,13 +52,16 @@ my $rocks = GenBoNoSqlRocks->new(dir=>"$dir",mode=>"r",name=>"sv");
 my $parquet_file_quality = $project->getCacheSV()."/".$project->name.".".$project->id.".sv_quality.parquet";
 my $parquet_file = $project->getCacheSV()."/".$project->name.".".$project->id.".parquet";
 
-my $dir_tmp = "/data-beegfs/tmp/";
+my $dir_tmp = $buffer->config_path("root","tmp");
+
 my $filename = "$dir_tmp".$project->name.time.".quality.csv";
 my $fh;
 my $bl_name = "spectre.blacklist.bed.gz";
 $bl_name = "encode.blacklist.bed.gz";
-warn "/data-pure/public-data/repository/HG38/blacklist/$bl_name";
-my $tabix_blacklist = Bio::DB::HTS::Tabix->new( filename => "/data-pure/public-data/repository/HG38/blacklist/$bl_name"); 
+
+my $fn =  "/data-bipd/data-pure/public-data/repository/HG38/blacklist/$bl_name"; 
+warn $fn;
+my $tabix_blacklist = Bio::DB::HTS::Tabix->new( filename => "$fn"); 
 
 open( $fh, ">", $filename) or die "Impossible d'ouvrir $filename: $!";
 	my $csv = Text::CSV->new({ binary => 1, eol => "\n" });
@@ -67,8 +70,8 @@ open( $fh, ">", $filename) or die "Impossible d'ouvrir $filename: $!";
 	
 	my $tab_pid;
 #my $tabix_blacklist = Bio::DB::HTS::Tabix->new( filename => "/data-pure/public-data/repository/HG38/blacklist/$bl_name"); 
-my 	$tabix_inversion = Bio::DB::HTS::Tabix->new( filename => "/data-beegfs/sawfish/sawfish.inv.gz"); 
-my 	$tabix_bnd = Bio::DB::HTS::Tabix->new( filename => "/data-beegfs/sawfish/sawfish.bnd.gz"); 
+my 	$tabix_inversion = Bio::DB::HTS::Tabix->new( filename => "/data-bipd/data-pure/public-data/dejavu/HG38/sawfish/sawfish.inv.gz"); 
+my 	$tabix_bnd = Bio::DB::HTS::Tabix->new( filename => "/data-bipd/data-pure/public-data/dejavu/HG38/sawfish/sawfish.bnd.gz"); 
 foreach my $patient (@{$project->getPatients}){
 	my $pid= $patient->id;
 	warn $patient->name;
@@ -216,7 +219,7 @@ sub blacklist {
 	my $res_blacklist = $tabix->query("chr".$chr.":".$start."-".$end) if $debug;
 	return 0 unless $res_blacklist;
 
-		my $bl_span = Set::IntSpan::Fast::XS->new();
+		my $bl_span = Set::IntSpan::Fast->new();
 		
 		while (my $line = $res_blacklist->next) {
     		my ($b_chr, $b_start, $b_end) = split /\t/, $line;
@@ -232,7 +235,7 @@ sub blacklist {
 sub tabix {
 	my ($tabixf,$region) = @_;
 	my $res = $tabixf->query("chr".$region);
-	my @val;
+	my @val =(0);
 	if ($res){
 			while (my $line = $res->next) {
     		my ($b_chr, $b_start, $b_end, $a,$b,$nb) = split /\t/, $line;

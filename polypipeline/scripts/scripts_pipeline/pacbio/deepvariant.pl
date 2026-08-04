@@ -43,7 +43,7 @@ my $model = "WGS";
 	my $patient = $project->getPatient($patient_name);
 	my $dir_out= $project->getAlignmentPipelineDir($patient->name);
 	my $bam_out = $dir_out."/".$patient->name.".bam";
-	
+$bam_out = $patient->getBamFile unless -e $bam_out;
 my $vcf_out = $dir_out."/".$patient->name.".deep.vcf.gz";
 my $gvcf_out == $dir_out."/".$patient->name.".deep.gvcf.gz";
 exit(0) if -e $vcf_out;

@@ -57,6 +57,7 @@ sub load_config {
 	my $json_str = do { local $/; <$fh> };
 	close($fh);
 	my $h = decode_json($json_str);
+	
 	if($self->mode ne "c"){
 		$self->{size} = delete $h->{size};
 		$self->{date} = delete $h->{time};
@@ -64,7 +65,6 @@ sub load_config {
 		$self->{vector_type_patient} = delete $h->{vector_type_patient};
 		$self->{vector_type_transmission} = delete $h->{vector_type_transmission};
 		$self->{vector_type_chromosome} = delete $h->{vector_type_chromosome};
-		
 		
 	}
 	
@@ -128,6 +128,12 @@ sub put_batch_vector_transmission {
 	my $id = $self->id_vector_transmission($patient,$type);
 	$self->vector_type_transmission->{$type} = 1;
 	$self->put_batch($id,$v);
+}
+sub put_vector_transmission {
+	my ($self,$patient,$type,$v) =@ _;
+	my $id = $self->id_vector_transmission($patient,$type);
+	$self->vector_type_transmission->{$type} = 1;
+	$self->put($id,$v);
 }
 sub get_vector_transmission {
 	my ($self,$patient,$type) =@ _;
@@ -240,7 +246,8 @@ has vector_type_patient =>(
 );
 sub cache_memory_patient{
 	my ($self,$patient) = @_;
-	confess() if $patient eq "55661";
+	
+	#confess() if $patient eq "55661";
 	return $self->{hash}->{$patient->id} if exists  $self->{hash}->{$patient->id};
 	my $search =$self->id_global_patient($patient,"");
 	chop($search);
@@ -250,12 +257,13 @@ sub cache_memory_patient{
 		last if $key !~ /$x1/;
 			$self->{hash}->{$patient->id}->{$key} = $value;
 	}
+	undef $iter;# = undef;
 	return $self->{hash}->{$patient->id};
 }
 
 sub get_vector_patient {
 	my ($self,$patient,$search) = @_;
-	confess("problem ".$search." ".$self->dir) unless exists $self->vector_type_patient->{$search};
+	confess("problem ".$search." ".$self->dir." ".$self->name) unless exists $self->vector_type_patient->{$search};
 	my $h = $self->cache_memory_patient($patient);
 	warn Dumper keys %$h  unless exists $h->{$self->id_global_patient($patient,$search)};
 	confess($search." ".$self->id_global_patient($patient,$search)) unless exists $h->{$self->id_global_patient($patient,$search)};

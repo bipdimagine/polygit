@@ -225,6 +225,7 @@ my @files ;
 		 	foreach my $g (@{$v->getGenes}){
 		 		my $debug;
 		 		$debug = 1 if $g->id eq "ENSG00000167522_16";
+		 		#die() if $debug;
 		 		my $hgenes;
 				$javascript_id ++;
 				my $score_variant = $v->scaledScoreVariant($g,$patient);

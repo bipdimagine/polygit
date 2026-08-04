@@ -104,6 +104,7 @@ has tmp_dir => (
 	is      => 'rw',
 	default => sub {
 		my $dir = "/tmp/pipeline/";
+		$dir = "/mnt/ramdisk/" if -e "/mnt/ramdisk/";
 		#$dir = "/mnt/ramdisk/tmp/pipeline";
 		system("mkdir -p $dir") unless -e $dir;
 		return $dir;
@@ -117,6 +118,7 @@ has is_compress => (
 
 	}
 );
+
 has path_rocks => (
 	is      => 'rw',
 	lazy    => 1,
@@ -127,6 +129,7 @@ has path_rocks => (
 
 	}
 );
+
 
 has original_path_rocks => (
 	is      => 'rw',
@@ -218,9 +221,10 @@ has json_file => (
 	lazy    => 1,
 	default => sub {
 		my $self = shift;
-		system( "mkdir -p " . $self->path_rocks ) unless -e $self->path_rocks;
+		system( "mkdir -p " . $self->path_rocks." && chmod -R a+rwx ".$self->path_rocks ) unless -e $self->path_rocks;
 		my $file = $self->path_rocks . "/configuration.db.json";
 		if ( $self->mode eq "c" && -e $file ) {
+		
 			unlink $file;
 		}
 		return $file;
@@ -336,10 +340,11 @@ sub rocks {
 		$self->tmp_dir . "/" . $self->name . "." . $zz . ".rocksdb" );
 	}
 	if ($self->create_mode){
-		system("mkdir ".$self->dir." && chmod a+rwx ".$self->dir) unless -e $self->dir;
+		system("mkdir ".$self->dir." && chmod -R a+rwx ".$self->dir) unless -e $self->dir;
 	}
 	confess unless $self->mode;
 	if ( $self->mode eq "r" ) {
+		confess($self->path_rocks)  unless -e $self->path_rocks;
 		$self->load_config() if -e $self->json_file;
 		confess( $self->path_rocks . '/CURRENT' )
 		  unless ( $self->exists_rocks() );
@@ -538,8 +543,8 @@ sub decode {
 	
 	};
 if ($@){
-	warn $value;
-	confess();
+	#warn $value;
+	confess($self->name." ".$self->dir);
 }
 return $x;
 }
@@ -728,6 +733,10 @@ sub close {
 		system( "rsync -ra --remove-source-files "
 			  . $self->path_rocks
 			  . "/ $dir_prod/ 2>/dev/null " );
+			  die() if $? ne 0;
+			  warn "rsync -ra --remove-source-files "
+			  . $self->path_rocks
+			  . "/ $dir_prod/";
 		system( "rmdir " . $self->path_rocks );
 		die() if $? ne 0;
 		$self->pipeline(undef);
@@ -751,6 +760,7 @@ sub close {
 sub prepare {
 	my ($self,$list) = @_;
 	return  if scalar (@$list) == 0;
+	warn $self->dir();
 	$self->{buffer} = $self->rocks->get_multi(@$list);
 	#delete $self->{rocks};
 	return 1;
