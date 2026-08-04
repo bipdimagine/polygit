@@ -1,17 +1,12 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use Carp;
 use strict;
 use JSON;
 use Data::Dumper;
 use CGI qw/:standard :html3/;
-use Set::IntSpan::Fast::XS;
-use Set::IntervalTree;
-use List::Util qw[min max];
 use FindBin qw($Bin);
-use Storable qw(store retrieve freeze);
 use Clone qw(clone);
-use Parallel::ForkManager;
 use strict;
 use Text::CSV qw( csv );
 use lib "$Bin/../../../../../GenBo/lib/obj-nodb/";

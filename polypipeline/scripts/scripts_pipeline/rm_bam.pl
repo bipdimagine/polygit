@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use strict;
 use lib "$Bin/../../../GenBo/lib/obj-nodb/";
@@ -15,7 +15,7 @@ use Term::ANSIColor;
 
 
 my $buffer = GBuffer->new();
- my $dir_trash =  $buffer->config->{project_data}->{root}."/TRASH/";
+ my $dir_trash =  $buffer->config_path("project_data")."/TRASH/";
  system("mkdir -p $dir_trash && chmod a+rwx $dir_trash") unless -e $dir_trash;
  
 

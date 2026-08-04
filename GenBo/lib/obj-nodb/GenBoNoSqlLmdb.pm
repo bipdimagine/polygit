@@ -173,7 +173,6 @@ sub lmdb {
   			confess("not find database $filename ".$self->dir."/".$self->name ) unless -e $filename;
  	 }
 	 my $env;
-		warn $self->dir."/$name";
 	 	if ($self->mode eq "r"){
 	 		my $filename =  $self->dir."/$name";
 	 		#warn "read only ".$self->dir."/$name";
@@ -209,7 +208,6 @@ sub lmdb {
 				unless (-e  $self->dir."/$name"){
 						mkdir $self->dir."/$name";
 				}
-				warn $self->dir."/$name";
 				my $flag = 0;
 				unless (-d $self->dir."/$name"){
 					$flag  =  LMDB_File::MDB_NOSUBDIR;

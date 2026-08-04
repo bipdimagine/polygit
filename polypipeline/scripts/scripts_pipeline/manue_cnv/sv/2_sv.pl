@@ -1,15 +1,11 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use Carp;
 use strict;
 use Data::Dumper;
 use CGI qw/:standard :html3/;
-use Set::IntSpan::Fast::XS;
-use Set::IntervalTree;
-use List::Util qw[min max  sum];
 use FindBin qw($Bin);
 use Storable qw(store retrieve freeze);
-use Storable 'dclone';
 use lib "$Bin/../../../../../GenBo/lib/obj-nodb/";
 use Hash::Merge qw/ merge /;
 use MCE::Loop;
@@ -212,7 +208,7 @@ sub genesInfos {
 
 sub save_parquet_rocksdb {
 	my ($project,$svs) = @_;
-	my $dir_tmp = "/data-beegfs/tmp/";
+	my $dir_tmp = $buffer->config_path("tmp");#"/data-beegfs/tmp/";
 	my $filename = "$dir_tmp".$project->name.".csv";
 	my $fh;		
 	open( $fh, ">", $filename) or die "Impossible d'ouvrir $filename: $!";
@@ -256,11 +252,12 @@ sub save_parquet_rocksdb {
 	close($fh);
 	my $dbh = DBI->connect("dbi:ODBC:Driver=DuckDB;Database=:memory:", "", "", { RaiseError => 1 , AutoCommit => 1});
 	my $parquet_file = $project->getCacheSV()."/".$project->name.".".$project->id.".parquet";
+	unlink $parquet_file if -e $parquet_file;
 	my $query = "
 	COPY (
         SELECT * from read_csv_auto(['$filename']) order by type,chr1,pos1
     )
-    TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD, OVERWRITE TRUE);";
+    TO '$parquet_file' (FORMAT PARQUET, COMPRESSION ZSTD);";
     warn $query;
 	$dbh->do($query);
 	$dbh->disconnect;

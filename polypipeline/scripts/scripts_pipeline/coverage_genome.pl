@@ -169,7 +169,7 @@ foreach my $chr (@{$project->getChromosomes}){
 
 $fbout->close();
 
-unless ($project->isCapture){
+unless ($project->isDiagnostic){
 	system("$Bin/coverage_statistics_genome.pl -project=$project_name -patient=$patient_name -fork=$fork");
 }
 exit(0);	
