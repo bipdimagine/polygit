@@ -173,6 +173,7 @@ sub lmdb {
   			confess("not find database $filename ".$self->dir."/".$self->name ) unless -e $filename;
  	 }
 	 my $env;
+
 	 	if ($self->mode eq "r"){
 	 		my $filename =  $self->dir."/$name";
 	 		#warn "read only ".$self->dir."/$name";

@@ -212,6 +212,7 @@ has hash_users_projects => (
 				$h_projects->{$proj_name}->{description} = '-';
 				$h_projects->{$proj_name}->{name} = $proj_name;
 				$h_projects->{$proj_name}->{id} = $proj_id;
+				$h_projects->{$proj_name}->{is_mine} = undef;
 				my $list_patients = $self->buffer->getQuery->getPatients($proj_id);
 				foreach my $h_pat (@$list_patients) {
 					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{family} = $h_pat->{family};
@@ -225,8 +226,8 @@ has hash_users_projects => (
 				$h_projects->{$proj_id} = $h_projects->{$proj_name};
 			}
 		}
-		else {
-			$self->{is_magic_user} = undef;
+		if (not $self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
+			$self->{is_magic_user} = undef if not $self->view_all_projects();
 			@list_hash = @{$self->buffer->getQuery()->getProjectListForUser($self->user_name(), $self->pwd())};
 			foreach my $hash (@list_hash) {
 				my $proj_name = $hash->{name};
@@ -236,6 +237,7 @@ has hash_users_projects => (
 				$h_projects->{$proj_name}->{description} = $hash->{description};
 				$h_projects->{$proj_name}->{name} = $proj_name;
 				$h_projects->{$proj_name}->{id} = $hash->{id};
+				$h_projects->{$proj_name}->{is_mine} = 1;
 				my $list_patients = $self->buffer->getQuery->getPatients($hash->{id});
 				foreach my $h_pat (@$list_patients) {
 					$h_projects->{$proj_name}->{patients}->{$h_pat->{name}}->{family} = $h_pat->{family};
@@ -473,7 +475,12 @@ sub check_variants_from_gene {
 					}
 					if ($found) {
 						if (not $var->isVariation()) {
-							$var_allele = 'indel';
+							if ($var->isInsertion) {
+								$var_allele = '+'.$var_allele;
+							}
+							elsif ($var->isDeletion) {
+								$var_allele = $var->length();
+							}
 							my @ltmp = split('-', $gnomad_id);
 							if (lc($ltmp[-2]) eq 'cnv') {
 								$gnomad_id = $var_id;
@@ -487,9 +494,7 @@ sub check_variants_from_gene {
 		            $var = undef;
 		        }
 		        
-#		        print '.before_duck_projects.nbvar.';
 				my ($h_projects_patients, $h_gnomadid) = $self->get_from_duckdb_project_patients_infos_global($h_var_pos, $hres);
-#				print '.after_duck_projects.';
 				print '.';
 		        
 		        foreach my $var_id (keys %{$h_projects_patients}) {
@@ -506,6 +511,9 @@ sub check_variants_from_gene {
 							my $hh;
 							$hh->{project_name} = $project_name;
 							$hh->{patient_name} = $patient_name;
+							$hh->{my_project} = 'no';
+							if (exists $self->hash_users_projects->{$project_name} and $self->hash_users_projects->{$project_name}->{is_mine}) { $hh->{my_project} = 'yes'; }
+							$hh->{sex} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{sex};
 							$hh->{heho} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{heho};
 							$hh->{ratio} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{ratio};
 							$hh->{dp} = $h_projects_patients->{$var_id}->{$project_name}->{$patient_name}->{dp};
@@ -737,7 +745,6 @@ sub get_from_duckdb_project_patients_infos_global {
 		my $header = $csv_in->getline($out);
 		while (my $row = $csv_in->getline($out)) {
 		    my ($project_id,$this_chr38,$this_chr19,$this_pos38,$this_pos19,$he,$var_all,$patients,$dp_ratios) = @$row;
-		    $var_all = 'indel' if ($var_all ne 'T' and $var_all ne 'G' and $var_all ne 'A' and $var_all ne 'C');
 		    next if (not exists $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all});
 		    
 		    my $var_id    = $h_var_pos->{$this_chr38}->{$this_pos38}->{$var_all}->{var_id};
@@ -777,6 +784,84 @@ sub get_from_duckdb_project_patients_infos_global {
 		waitpid($pid, 0);
 	}
 	return ($h_projects_patients, $h_gnomadid);
+}
+
+sub print_html_variant_only  {
+	my ($self, $var_id, $g, $hVariantsDetails) = @_;
+	my $pr = $self->project;
+	my $pat = $self->project->getPatients->[0];
+	my $print_html = polyviewer_html->new( project=>$pr, patient=>$pat,header=>\@headers);
+	my $opacity = undef;
+	my $var = $self->project->_newVariant($var_id);
+	my $polyviewer_variant = $hVariantsDetails->{$var_id}->{polyviewer_variant};
+	$polyviewer_variant->{gene} = $g;
+	$polyviewer_variant->{ncboost_value} = $hVariantsDetails->{$var_id}->{ncboost};
+	$polyviewer_variant->{transcripts} = $polyviewer_variant->{hgenes}->{$g->{id}}->{tr};
+	my @list_polyviewer_h_details = @{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}};
+	$print_html->variant($polyviewer_variant);
+	my ($this_out, $this_h_pheno) = $self->print_line_variant_all_patients($polyviewer_variant, $print_html, \@list_polyviewer_h_details, $opacity);
+	return ($this_out, $this_h_pheno);
+	
+}
+
+sub print_html_gene_only  {
+	my ($self, $gene_id, $list_variants, $hVariantsDetails) = @_;
+	print '|';
+	my $nb_ok = 0;
+	my @lVar_ok;
+	foreach my $var_id (sort @$list_variants) {
+		next if not exists $hVariantsDetails->{$var_id};
+#		next if not $self->is_magic_user() and not $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat};
+		next if not $hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat};
+		$nb_ok++;
+		push(@lVar_ok, $var_id);
+	}
+	return if $nb_ok == 0;
+	
+#	warn "\n\n\nNB VAR: ".scalar(@$list_variants).' -> '.$nb_ok;
+	
+	my $pr = $self->project;
+	my $pat = $self->project->getPatients->[0];
+	my ($g, $gene, $max_gene_score, $h_var_scores);
+	if ($gene_id eq 'intergenic') {
+		$g->{id} = $gene_id;
+		$g->{uid} = $gene_id;
+		$g->{name} = 'Intergenic';
+		$g->{external_name} = 'Intergenic';
+		$g->{chr_name} = 'Intergenic';
+		$g->{nb} = $nb_ok;
+		$g->{omim_id} = undef;
+		$g->{pLI} = undef;
+		$g->{phenotypes} = 'Intergenic';
+		$g->{variants} = \@lVar_ok;
+		$g->{panels} = undef;
+		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient(\@lVar_ok, $hVariantsDetails);
+		$g->{max_score} = $max_gene_score;
+	}
+	else {
+		$gene = $self->project->newGene($gene_id);
+		$g->{id} = $gene_id;
+		$g->{uid} = $gene_id;
+		$g->{name} = $gene->external_name();
+		$g->{external_name} = $gene->external_name();
+		$g->{chr_name} = $gene->getChromosome->id();
+		$g->{nb} = $nb_ok;
+		$g->{omim_id} = $gene->omim_id();
+		$g->{pLI} = $gene->pLI();
+		$g->{phenotypes} = $gene->description().' '.$gene->polyquery_phenotypes();
+		$g->{variants} = \@lVar_ok;
+		$g->{panels} = $self->buffer->queryPanel()->getPanelsForGeneName($gene->external_name);
+		($max_gene_score, $h_var_scores) = $self->get_score_variant_from_gene_without_patient(\@lVar_ok, $hVariantsDetails, $gene);
+		$g->{max_score} = $max_gene_score;
+	}
+	return if ($self->only_genes() and not exists $self->{hash_only_genes}->{$g->{name}});
+	my $panel_id = "panel_".$gene_id;
+	$panel_id .= "_he_comp" if $self->only_genes() and $self->hash_only_project() and $self->hash_only_patients();
+	my ($out, $h_phenos);
+	my $out_g = update_variant_editor::panel_gene($g, $panel_id, $self->project->name);
+	$out_g =~ s/>CNV/ hidden>CNV/;
+	$g->{html} = $out_g;
+	return $g;
 }
 
 sub print_html_gene {

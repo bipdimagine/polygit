@@ -5370,12 +5370,12 @@ sub rnaseqsea_rnaseq {
 	my $dirout = $project->project_path . "/analysis/AllRes/";
 	my $fileout = $dirout . "/allResRI.txt.gz";
 	my $bin_dev = $self->script_dir;
+	my $dir_proj = $project->project_path();
 	my $cmd_json = "$bin_dev/polyrnaseqsea/create_config_splices_analyse_file.pl -project=$project_name -force=1";
 	my $json_file = `$cmd_json`;
-	my $cmd = "Rscript $bin_dev/polyrnaseqsea/all/RNAseqSEA_AllTnjs.r idprojet=$project_name nCPU=$ppn config_file=$json_file";
-
-	$cmd .= " && $bin_dev/polyrnaseqsea/split_junctions_files_by_patient.pl -project=$project_name";
-	warn $cmd;
+	my $method_align = $project->getPatients->[0]->alignmentMethods->[0];
+	my $genome_version = $project->getVersion();
+	my $cmd = "Rscript $bin_dev/polyrnaseqsea/all/RNAseqSEA_AllTnjs.r idprojet=$project_name config_file=$json_file align=$method_align esp=$genome_version";
 	my $type     = "rnaseqsea_all";
 	my $stepname = $self->patient->name . "@" . $type;
 	my $job_bds  = job_bds_tracking->new(

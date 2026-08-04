@@ -553,6 +553,7 @@ else {
 
 my $limit = 100;
 $limit = 200 if $project->isGenome();
+$limit = 1000000 if $gene_name_filtering;
 
 
 my @list_genes_sorted;

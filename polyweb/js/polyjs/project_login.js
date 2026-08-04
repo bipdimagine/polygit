@@ -110,7 +110,7 @@ function view_rna_junctions(prj) {
 }
 
 function view_old_rna_junctions(prj) {
-	var url = 'https://'+window.location.hostname + "/polyweb/rna/rna_junctions.html?project="+prj;
+	var url = 'https://'+window.location.hostname + "/archive/polyweb/rna/rna_junctions.html?project="+prj;
 	window.open(url, '_blank');
 }
 

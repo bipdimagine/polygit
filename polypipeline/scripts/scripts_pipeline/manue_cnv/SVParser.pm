@@ -330,8 +330,7 @@ sub parse_sniffles_bnd {
 		my $h1 = dclone $mate[0];
 		my $hchr;
 		my $alt_field = $h1->{alt};
-		
-		if (lc($alt_field) =~ /.?[\[\]](?:chr)?([A-Za-z0-9_]+):(\d+)[\[\]]/i) {
+		if ($alt_field =~ /.?[\[\]](?:chr)?([A-Za-z0-9_]+):(\d+)[\[\]]/i) {
 			$hchr->{chr} = $1;  # Capture le chromosome
 			$hchr->{pos} = $2;    # Capture la position
  			$hchr->{chr} =~ s/chr//;

@@ -91,7 +91,7 @@ if ( $input =~ 'id:' ) {
 	elsif ( $input =~ /[Ee][Nn][Ss][Gg]/ ) { $input = 'geneId:'.uc($input); }
 	elsif ( $input =~ /,/ ) { $input = 'varId:'.$input; }
 	elsif ( $input =~ /_/ ) { $input = 'varId:'.$input; }
-	elsif ( $input =~ /[Rr][Ss][0-9]+/ ) { $input = 'varId:'.lc($input); }
+	elsif ( $input =~ /^[Rr][Ss][0-9]+/ ) { $input = 'varId:'.lc($input); }
 	else { $input = 'geneId:'.uc($input); }
 }
 
@@ -137,7 +137,7 @@ if ( $input =~ 'varId:' ) {
 		
 		if ($varId =~ /1kg_/) { $varId =~ s/1kg_//; }
 		if ($varId =~ /evs_/) { $varId =~ s/evs_//; }
-		if (($varId =~ /rs/) or (($varId =~ /TMP_ESP/))) {
+		if (($varId =~ /^rs/) or (($varId =~ /TMP_ESP/))) {
 			my $rsName = $varId;
 			
 			my $res = $projectTmp->convertRsNameToIntervalPositions($rsName);

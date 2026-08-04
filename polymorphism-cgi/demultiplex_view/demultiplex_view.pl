@@ -134,9 +134,16 @@ foreach my $date (reverse sort keys %$h_files_date) {
 	else {
 		$file_to_date = $origin_path;
 	}
+	my $path_file_origin;
+	my $host = $ENV{HTTP_HOST};
 	my $chemin =$h_files->{$file};
-	$chemin =~ s/^.*ngs\///; 
-	my $path_file_origin = 'https://'.$ENV{HTTP_HOST}.'/NGS/'.$chemin;
+	if ($chemin =~ /$host/) {
+		$path_file_origin = $chemin;
+	}
+	else {
+		$chemin =~ s/^.*ngs\///; 
+		$path_file_origin = 'https://'.$ENV{HTTP_HOST}.'/NGS/'.$chemin;
+	}
 	my $path_file = $h_files->{$file};
 	
 	my ($substring, $color, $date_text);
