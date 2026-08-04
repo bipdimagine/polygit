@@ -40,7 +40,7 @@ projects_lite:variations/projects/
 CNV:CNV/
 SVeq:SVeq/
 sv:/data-pure/public-data/dejavu/sv/projects/
-cnv:/data-beegfs/projects.cnv.parquet.2/
+cnv:/data-pure/public-data/dejavu/cnv/projects/
 [polyproject_default]
 release:HG38_DRAGEN
 genecode:43

@@ -322,7 +322,7 @@ melt:/software/distrib/MELT/MELTv2.2.2/MELT.jar
 liftOver:/data-bipd/data-pure/software/bin.biocluster//liftOver
 
 #DUCKDB
-duckdb:/data-bipd/data-pure/software/bin.biocluster//duckdb
+duckdb:duckdb
 
 ###################
 ## singularity-run

@@ -18,12 +18,12 @@ cache_2b:/data-beegfs/polycache.polyviewer/rocks/
 cache_lmdb:/data-bipd/data-isilon/polycache/
 
 project_pipeline:/data-bipd/data-flash/polycache/pipeline
-tmp:/scratch
+tmp:/data-bipd/data-pure/workspace/tmp/
 bds:/data-bipd/data-pure/workspace/bds
 dragen_pipeline:/data-dragen/pipeline/
 software:/data-bipd//data-pure//software/bin/
-dejavu-sv:/data-pure/public-data/dejavu/sv/projects/
-dejavu-cnv:/data-beegfs/projects.cnv.parquet.2/
+dejavu-sv:/data-bipd/data-pure/public-data/dejavu/sv/projects/
+dejavu-cnv:/data-bipd/data-pure/public-data/dejavu/cnv/projects/
 bcl:/data-bipd//data-pure/raw-data/
 [dejavu]
 variations:variations/rocks/
@@ -31,8 +31,9 @@ revio:revio/
 phenotype:variations/rocks.phenotype/
 projects:variations/projects.lmdb/
 projects_lite:variations/projects/
-CNV:CNV/
+#CNV:CNV/
 SVeq:SVeq/
+cnv:/data-bipd/data-pure/public-data/dejavu/cnv/projects/
 sv:/data-bipd//data-pure/public-data/dejavu/sv/projects/
 [polyproject_default]
 release:HG38_DRAGEN
