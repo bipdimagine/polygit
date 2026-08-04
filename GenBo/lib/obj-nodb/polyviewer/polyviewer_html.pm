@@ -295,7 +295,7 @@ sub calling_variation_xslate {
 		$data->{table_id} = 'ti_'.$variation_id.'_'.$gene->{id}.'_'.$self->patient_id.'_random_'.int(rand(10000));
 		$data->{patient_name} = $patient_name;
 		 my $fam = $self->patient->getFamily();
-		  if ($self->patient->isChild) {
+	#	  if ($self->patient->isChild) {
 		  	if ($fam->getMother){
 		  		my $p = $fam->getMother(); 
 		  		my $type= "mother";
@@ -357,26 +357,26 @@ sub calling_variation_xslate {
 				$text_caller .= join("<br>",@{$a});
 				push(@{$data->{child}},$hchild);
 		  	}
-		  }
-		  else{
-		  	my $p = $patient; 
-	  			my $hsample = $samples->{$patient->id};
-	  			my $type = "child";
-	  			my $hchild;
-	  			$hchild->{$type."_name"} = $p->name;
-		  		$hchild->{$type."_icon"} = $p->small_icon_url;
-		  		$hchild->{$type."_gt"} = $hsample->{gt};
-		  		$hchild->{$type."_pc"} =  "-";
-		  		$hchild->{$type} ++  if ($hsample->{pc});
-		  		$hchild->{$type."_pc"} = $hsample->{pc}.'%' if ($hsample->{pc});
-		  		$hchild->{$type."_dp"} = $hsample->{dp};
-		  		$hchild->{$type."_model"} = "?";
-				$hchild->{$type."_color_model"}  = "#E0E0E0";
-				my $a = [];
-				$a = $hsample->{array_text_calling} if $hsample->{array_text_calling};
-				$text_caller .= join("<br>",@{$a});
-				push(@{$data->{child}},$hchild);
-		  }
+		#  }
+#		  else{
+#		  	my $p = $patient; 
+#	  			my $hsample = $samples->{$patient->id};
+#	  			my $type = "child";
+#	  			my $hchild;
+#	  			$hchild->{$type."_name"} = $p->name;
+#		  		$hchild->{$type."_icon"} = $p->small_icon_url;
+#		  		$hchild->{$type."_gt"} = $hsample->{gt};
+#		  		$hchild->{$type."_pc"} =  "-";
+#		  		$hchild->{$type} ++  if ($hsample->{pc});
+#		  		$hchild->{$type."_pc"} = $hsample->{pc}.'%' if ($hsample->{pc});
+#		  		$hchild->{$type."_dp"} = $hsample->{dp};
+#		  		$hchild->{$type."_model"} = "?";
+#				$hchild->{$type."_color_model"}  = "#E0E0E0";
+#				my $a = [];
+#				$a = $hsample->{array_text_calling} if $hsample->{array_text_calling};
+#				$text_caller .= join("<br>",@{$a});
+#				push(@{$data->{child}},$hchild);
+#		  }
 		  $data->{text_caller} = $text_caller;
 		  
 #			warn "\n\n";
