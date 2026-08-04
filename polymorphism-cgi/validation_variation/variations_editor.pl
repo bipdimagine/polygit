@@ -87,7 +87,7 @@ my $VERSION_UPDATE_VARIANT_EDITOR = "9dd1dc46f32240dad92ea588d85d9f9d1"; #23/09/
 my $dev;
 $dev = 1 if $ENV{SERVER_NAME} eq  "10.200.27.103";
 my $cgi = new CGI();
-
+umask(0000);
 my $OLDOUT;
 if ($cgi->param('export_xls')) {
 	open $OLDOUT, ">&STDOUT";
