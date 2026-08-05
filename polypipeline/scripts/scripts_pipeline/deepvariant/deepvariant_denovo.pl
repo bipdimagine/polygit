@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use strict;
 use FindBin qw($Bin);
@@ -63,7 +63,12 @@ my $nb_change =0;
         chomp $ligne;
         
         # Si c'est une ligne d'en-tête, on l'écrit telle quelle
-        if ($ligne =~ /^#/) {
+        if ($ligne =~ /^##/) {
+            print $fh_out "$ligne\n";
+            next;
+        }
+         if ($ligne =~ /^#CHROM/) {
+         	print $fh_out  qq{##FILTER=<ID=RefCall_dnv,Description="RefCall_dnv filter">\n};
             print $fh_out "$ligne\n";
             next;
         }
