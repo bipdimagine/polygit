@@ -71,7 +71,7 @@ while (<$fh>) {
 }
 
 close($fh);
-die("No @RG found in header") unless $find;
+die('No @RG found in header') unless $find;
 	
 }
 warn $ubam;
