@@ -64,6 +64,7 @@ if ($log_file){
 }
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
+my $patient = $project->getPatient($name);
  $mode = "pe" unless $mode;
 if ($prog =~/_UMI/){
 	my @dir_out  = split("/",$fileout);
@@ -145,12 +146,17 @@ my $cmd_move = "mv $file_out_tmp $fileout && test -e $file_out_tmp.bai &&  mv $f
 my $cmd_index = "$samtools index $file_out_tmp";                     
 #$sammem $reference_bwa $file1 $file2 -R readgroup -M
 
+my $HiC_option = '';
+if ($patient->isHiC) {
+	$HiC_option = '-5SP' if ($prog eq 'bwa');
+	$HiC_option = '--very-sensitive --no-mixed --no-discordant' if ( $prog eq 'bowtie2');
+}
 my $align_command ={
 	pe=>{
-		bwa =>  "cd $dir_tmp && $cmd mem $index  $file1 $file2 -t $fork  -R '$readgroup' -M  | $cmd_sort  && $cmd_move",
+		bwa =>  "cd $dir_tmp && $cmd mem $index  $file1 $file2 -t $fork  -R '$readgroup' -M $HiC_option | $cmd_sort  && $cmd_move",
 		hisat2 => "cd $dir_tmp && $cmd --dta-cufflinks -x $index -1 $file1  -2 $file2 --rg-id $name --rg SM:$name  -p $fork | $cmd_sort && $cmd_move",
 		star =>  "cd $dir_tmp && $cmd --runThreadN $fork --genomeDir $index  --readFilesIn  $file1 $file2 --outSAMunmapped Within --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate  --outSAMattrRGline $readgroupstar && mv Aligned.sortedByCoord.out.bam $file_out_tmp && $cmd_index && $cmd_move",
-		bowtie2 =>  "cd $dir_tmp && $cmd  -x  $index -1 $file1 -2 $file2 --threads $fork| $cmd_sort  && $cmd_move",
+		bowtie2 =>  "cd $dir_tmp && $cmd  -x  $index -1 $file1 -2 $file2 $HiC_option --threads $fork| $cmd_sort  && $cmd_move",
 	},
 	frag =>{
 		bwa =>  "cd $dir_tmp && $cmd mem $index  $file1  -t $fork  -R '$readgroup' -M  | $cmd_sort  && $cmd_move",
@@ -158,7 +164,7 @@ my $align_command ={
 		star =>  "cd $dir_tmp && $cmd --runThreadN $fork --genomeDir $index  --readFilesIn  $file1   --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --outSAMattrRGline $readgroupstar && mv Aligned.sortedByCoord.out.bam $file_out_tmp && $cmd_index && $cmd_move"
 	},
 	xths2 => {
-		bwa=>  "cd $dir_tmp && $cmd mem -C $index  $file1 $file2 -t $fork  -R '$readgroup' -M  | $cmd_sort  && $cmd_move",
+		bwa=>  "cd $dir_tmp && $cmd mem -C $index  $file1 $file2 -t $fork  -R '$readgroup' -M $HiC_option | $cmd_sort  && $cmd_move",
 	}
 
 	} ;

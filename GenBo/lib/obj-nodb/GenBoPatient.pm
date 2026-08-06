@@ -109,6 +109,16 @@ has isExome => (
 	},
 );
 
+has isHiC => (
+	is      => 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return 1 if ($self->getSampleProfile() =~ /epigenomic Hi-C/);
+		return undef;
+	},
+);
+
 has run_id => (
 	is => 'ro',
 
