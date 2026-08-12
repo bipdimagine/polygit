@@ -2485,7 +2485,8 @@ sub meanDepth {
 	my ( $self, $chr, $start, $end ) = @_;
 	return -1 if $self->isNoAlign();
 	my $a = $self->depth($chr,$start,$end);
-	#return -1 unless @$a;
+	warn $self->getBamFile." ".$chr.":".$start."-".$end unless @$a;
+	return -1 unless @$a;
 	my $t = sum(@$a);
 	return $t/scalar(@$a);
 	

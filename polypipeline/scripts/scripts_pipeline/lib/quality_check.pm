@@ -173,6 +173,7 @@ sub concatVcf {
 #my $cmd = " $bcftools merge   $variant_string -o $fileout --force-samples >$fileout " ;
 
 	my $cmd = " $bcftools merge   $variant_string -o $fileout  >$fileout 2>/dev/null";
+	$cmd = qq{$bcftools merge $variant_string -Ou | $bcftools view  -e 'COUNT(GT="mis")>0' -Oz -o $fileout};
 	warn $cmd;
 	system($cmd) unless -e $fileout;
 	warn "end";
@@ -222,7 +223,7 @@ sub fast_plink {
 		next if $ref =~ /,/;
 		next if $alt =~ /,/;
 		next if scalar(@gsamples) ne scalar(@samples);
-
+		next if $filter ne "PASS";
 		my $snp;
 		my $id = $chrom . "_" . $pos . "_" . $alt;
 		my $chro = $project->getChromosome($chrom,1);
@@ -285,27 +286,27 @@ sub fast_plink {
 				my $d       = $patient->depth( $chrom, $pos, $pos );
 				$geno = "0 0";
 				$geno = "$ref $ref" if ( $d->[0] > 30 );
-
+				die();
 
 				#warn $d->[0] if ($d->[0] < 20);
 			}
-			elsif ( $a + $b < 10 ) {
-				$geno = "0 0";
-			}
+			#elsif ( $a + $b < 10 ) {
+			#	$geno = "0 0";
+			#}
 			elsif ( $string[0] eq "0" && $string[2] eq "0" ) {
 				$geno = "$ref $ref";
 			}
 			elsif ( $string[0] eq "0" && $string[2] eq "1" ) {
 				$geno = "$ref $alt";
-				$geno = "0 0" if ( $b / ( $a + $b ) ) < 0.30;
+				#$geno = "0 0" if ( $b / ( $a + $b ) ) < 0.30;
 			}
 			elsif ( $string[0] eq "1" && $string[2] eq "0" ) {
 				$geno = "$ref $alt";
-				$geno = "0 0" if ( $b / ( $a + $b ) ) < 0.30;
+				#$geno = "0 0" if ( $b / ( $a + $b ) ) < 0.30;
 			}
 			elsif ( $string[0] eq "1" && $string[2] eq "1" ) {
 				$geno = "$alt $alt";
-				$geno = "0 0" if ( $a + $b ) < 20;
+				#$geno = "0 0" if ( $a + $b ) < 10;
 			}
 			#elsif ($string =~ /.:./) { $geno ="$ref $ref"; }
 			else {
@@ -322,8 +323,9 @@ sub fast_plink {
 		  grep { $snp->{samples}->{$_} eq "0 0" } @{ $fam->{members} };
 
 		if ($find) {
-
+			
 			map { $snp->{samples}->{$_} = "0 0" } @{ $fam->{members} };
+			next;
 		}
 		else {
 
@@ -340,7 +342,6 @@ sub fast_plink {
 	mkdir $dir unless -e $dir;
 	my $ped_file = $dir . "/" . $fam->name . ".ped";
 	my @samples_name;
-	warn "ped";
 	open( PED, ">$ped_file" );
 
 	foreach my $p ( @{ $fam->getMembers } ) {
@@ -373,7 +374,8 @@ sub fast_plink {
 	if ( @{ $fam->getParents } ) {
 		my $cmd2 = "$plink --tped $tped_file --tfam $ped_file --noweb --mendel  --mendel-duos --out $dir/$projectName --allow-extra-chr";
 
-			warn $cmd2;
+		warn $cmd2;
+		warn "*****";
 		my @log   = `$cmd2`;
 		my $file1 = "$dir/" . $fam->name();
 		open( MENDEL, "$file1.imendel" )
@@ -390,7 +392,7 @@ sub fast_plink {
 			my $patient = $project->getPatient($name);
 			my $fam     = $patient->getFamily();
 			my $p       = int( $nb / $nb_snp * 10000 ) / 100;
-			warn "------------>" . $fam->name . " " . $p;
+			warn "------------>" . $fam->name . " " . $p ." :: ".$nb_snp;
 			$statistics->{ $fam->name }->{$name}->{mendelian_errors}->{percent}
 			  = $p;
 			$statistics->{ $fam->name }->{$name}->{mendelian_errors}->{nb_snp}
@@ -1241,8 +1243,9 @@ sub compute_coverage_stats {
 	return if not $has_bam_file;
 	
 	my $cmd = "$Bin/coverage_statistics_genome.pl -project=".$project->name." -fork=$fork -json=1";
+	warn $cmd;
 	my $toto = `$cmd`;
-	
+	warn $toto;
 	my $h = decode_json $toto;
 	warn $cmd;
 	return $h;
