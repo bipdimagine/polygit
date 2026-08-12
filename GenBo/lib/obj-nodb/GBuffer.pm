@@ -210,7 +210,6 @@ has hash_config_path => (
 		my $self = shift; 
 		my $dir = $self->config_dir;
 		my $filename = $dir."paths.cfg";
-		{};
 		if ($self->biocluster) {
 			$filename = $dir."paths.cfg.biocluster";
 		}

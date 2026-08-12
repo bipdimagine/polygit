@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use FindBin qw($Bin);
@@ -205,7 +205,7 @@ $pipeline->priority_name($list_steps_types);
 
 my $bin_dev = qq{$Bin/scripts/scripts_pipeline/};
 
-my $cmd_first = qq{/usr/bin/perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_global_infos.pl -project=$projectName };
+my $cmd_first = qq{perl $Bin/../polymorphism-cgi/cache_nodb/scripts/cache_global_infos.pl -project=$projectName };
 system("$cmd_first");
 
 my $end_files;
@@ -268,14 +268,14 @@ if ($pipeline->nocluster ne 2){
 		 if (defined $pipeline->daemon){
 			$pipeline->daemon->Kill_Daemon($pipeline->pid,15) if $pipeline->daemon->Status($pipeline->pid);
 			sleep(2);
-		 	system("$Bin//scripts/scripts_pipeline/parse_qstat.pl ".$pipeline->timestamp());
+		 	system("perl $Bin//scripts/scripts_pipeline/parse_qstat.pl ".$pipeline->timestamp());
 		 	sleep(2);
 		}
 		elsif (defined $pipeline->process()) {
 			warn "process";
 		 	$pipeline->process->kill();
 		 	sleep(5);
-		 	system("$Bin//scripts/scripts_pipeline/parse_qstat.pl ".$pipeline->timestamp());
+		 	system("perl $Bin//scripts/scripts_pipeline/parse_qstat.pl ".$pipeline->timestamp());
 		 };
 		 $pipeline->clean_error;
 		 exit(1);
