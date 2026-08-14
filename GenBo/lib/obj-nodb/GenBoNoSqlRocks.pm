@@ -103,8 +103,9 @@ sub deactivate_cache {
 has tmp_dir => (
 	is      => 'rw',
 	default => sub {
-		my $dir = "/tmp/pipeline/";
-		$dir = "/mnt/ramdisk/" if -e "/mnt/ramdisk/";
+	#	return "/scratch" if -e $scratch;
+		my $dir = "/data-bipd/workspace/tmp/pipeline/tmp.".time;
+		$dir = "/scratch/pipeline/tmp.".time if -e "/scratch/";
 		#$dir = "/mnt/ramdisk/tmp/pipeline";
 		system("mkdir -p $dir") unless -e $dir;
 		return $dir;
