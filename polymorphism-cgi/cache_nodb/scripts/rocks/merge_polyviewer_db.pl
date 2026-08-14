@@ -54,6 +54,7 @@ my $buffer = new GBuffer;
 my $project = $buffer->newProject( -name => $project_name );
 warn $project->rocks_directory();
 my $final_polyviewer_all = GenBoNoSqlRocks->new(dir=>$project->rocks_directory(),mode=>"c",name=>"polyviewer_objects",pipeline=>1);
+
 my $nb =0;
 my $hpatients;
 foreach my $patient (sort { $a->{name} cmp $b->{name} } @{ $project->getPatients }){
@@ -87,6 +88,8 @@ foreach my $chr (@{$project->getChromosomes} ){
 				die();
 			}
 			warn $var_id." ".$nb if $nb%10000 == 0;
+			#my $v = $final_polyviewer_all->decode($value);
+			#warn Dumper $v->{patients_calling};
 			$final_polyviewer_all->put_batch_raw($var_id,$value);
 			next;
 			
