@@ -104,7 +104,8 @@ has tmp_dir => (
 	is      => 'rw',
 	default => sub {
 	#	return "/scratch" if -e $scratch;
-		my $dir = "/data-bipd/workspace/tmp/pipeline/tmp.".time;
+		my $dir = "/data-bipd/data-pure/workspace/tmp/pipeline/tmp.".time;
+		$dir = "/tmp/pipeline/" if (-e "/data-beegfs/");
 		$dir = "/scratch/pipeline/tmp.".time if -e "/scratch/";
 		#$dir = "/mnt/ramdisk/tmp/pipeline";
 		system("mkdir -p $dir") unless -e $dir;
