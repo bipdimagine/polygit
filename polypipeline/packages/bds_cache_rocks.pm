@@ -183,7 +183,7 @@ sub polyviewer  {
 sub merge_objects {
 	my ($self,$hash) = @_;
 	my $filein = $hash->{filein};
-	my $ppn = 5;
+	my $ppn = 20;
 	my $project = $self->project;
 	my $project_name = $self->project->name();
 	my $type = "merge-objs";
