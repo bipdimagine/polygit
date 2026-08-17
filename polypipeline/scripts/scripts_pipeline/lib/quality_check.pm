@@ -218,7 +218,7 @@ sub fast_plink {
 		next if length($ref) > 1;
 		next if length($alt) > 1;
 		$max_chr{$chrom}++;
-		next if ( $max_chr{$chrom} > 1_000 );
+		next if ( $max_chr{$chrom} > 10_000 );
 		next if $ref =~ /,/;
 		next if $alt =~ /,/;
 		next if scalar(@gsamples) ne scalar(@samples);
