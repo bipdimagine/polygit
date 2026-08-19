@@ -3,7 +3,7 @@ use strict;
 use Data::Dumper;
 
 sub get_fastq_file {
-	my ($patient,$dir_pipeline, $dir_fastq) = @_;
+	my ($patient,$dir_pipeline, $dir_fastq,$delete) = @_;
 	my $name=$patient->name();
 	$dir_fastq = $patient->getSequencesDirectory() unless $dir_fastq;
 	my $files_pe1 = file_util::find_file_pe($patient,"",$dir_fastq,1);
@@ -15,11 +15,13 @@ sub get_fastq_file {
 	my $indice2 = "R2";
 	#if exists 
 	my $r2 = "R2";
+	warn Dumper @$files_pe1;
 	foreach my $cp (@$files_pe1) {
 		
 		if (exists $cp->{R3}){
 			$r2 = "R3";
 		}
+		warn  $cp->{R1}  if $cp->{R1} =~ /_I1_0/;;
 		$find_I1 ++ if $cp->{R1} =~ /_I1_0/;;
 		next if $cp->{R1} =~ /_I1_0/;
 		die($dir_fastq." ".Dumper $cp) if ($cp->{R2} !~ /_R2_/ and $cp->{R2} !~ /_R2./);
@@ -35,10 +37,20 @@ sub get_fastq_file {
 	my $fastq1 = $dir_pipeline."/".$patient->name."_S1_L001_R1_001.fastq.gz";
 	my $fastq2 = $dir_pipeline."/".$patient->name."_S1_L001_R2_001.fastq.gz";
 	#if ($step eq "align"){
-		system "cat $cmd1 > $fastq1";# unless -e $fastq1;
-		system "cat $cmd2 > $fastq2";# unless -e $fastq2;
-	#}
 	
+		
+		if ($delete eq "delete"){
+			warn "cat and DELETE";
+			system "cat $cmd1 > $fastq1 && rm $cmd1 ";# unless -e $fastq1;
+			system "cat $cmd1 > $fastq1 && rm $cmd2";# unless -e $fastq1;
+		}
+		else {
+		warn "cat $cmd1 > $fastq1";
+		system "cat $cmd1 > $fastq1";# unless -e $fastq1;
+		warn "cat $cmd2 > $fastq2";
+		system "cat $cmd2 > $fastq2";# unless -e $fastq2;
+		}
+	#}
 	if ($find_I1){
 		
 		my @r1;
@@ -57,9 +69,10 @@ sub get_fastq_file {
 		my $cmd2 = join(" ",@r2);
 		my $fastq1 = $dir_pipeline."/".$patient->name."_S1_L001_I1_001.fastq.gz";
 		my $fastq2 = $dir_pipeline."/".$patient->name."_S1_L001_I2_001.fastq.gz";
-		
 		#if ($step eq "align"){
+			warn  "cat $cmd1 > $fastq1";
 			system "cat $cmd1 > $fastq1";# unless -e $fastq1;
+			warn "cat $cmd2 > $fastq2";
 			system "cat $cmd2 > $fastq2";# unless -e $fastq2;
 		#}	
 	

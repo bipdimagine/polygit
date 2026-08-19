@@ -465,10 +465,11 @@ die() if $exit ne 0;
 warn "END DEMULTIPEX \n let's copy ";
 my $fork = 6;
 my $pm   = new Parallel::ForkManager($fork);
-
+my $dir_stats;
 foreach my $project_name ( split( ",", $project_names ) ) {
 	my $buffer  = GBuffer->new();
 	my $project = $buffer->newProject( -name => $project_name );
+	$dir_stats = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
 	my $runs    = $project->getRuns;
 	my $run;
 	if ($run_name_option) {
@@ -485,7 +486,8 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 
 		my $pid = $pm->start and next;
 
-		my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out );
+		my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out,"delete" );
+		
 		warn $fastq1 . " " . $fastq2;
 		#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
 
@@ -497,7 +499,8 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 $pm->wait_all_children();
 my $pr = $project_names;
 $pr =~ s/,/_/g;
-my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/" . $run_name . "." . $pr;
+$dir_stats.= $run_name . "." . $pr;
+ #/data-isilon/sequencing/ngs/demultiplex/
 
 system( "mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav " . $dir_out . "/Reports/ $dir_stats/ ; chmod -R a+rwx $dir_stats;" );
 

@@ -129,7 +129,7 @@ foreach my $project_name (split(",",$project_names)){
 	$bcl_dir = $run->bcl_dir;
 	die("Can't find bcl directory : ".$bcl_dir) unless (-d $bcl_dir);
 	die("Problem different bcl dir : $bcl_dir ".$run->bcl_dir) if ($bcl_dir && $run->bcl_dir() ne $bcl_dir);
-	$dir_tmp = $buffer->config_path("root","tmp");
+	$dir_tmp = $buffer->config_path("root","tmp")."/";
 	$bcl_tmp = $dir_tmp.'bcl/'.$run_name.'/';
 	make_path($bcl_tmp) unless (-d $bcl_tmp);
 	$dir_out = $dir_tmp.'fastq/'.$run_name.'/';
@@ -468,9 +468,10 @@ die("Error while demultiplexing") if ($exit);
 warn "END DEMULTIPEX \n let's copy ";
 my $fork = 6;
 my $pm = new Parallel::ForkManager($fork);
-
+my $dir_stats;
 foreach my $project_name (sort split(",",$project_names)){
 	my $buffer = GBuffer->new();
+	$dir_stats = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
 	my $project = $buffer->newProject( -name => $project_name );
 	my $runs = $project->getRuns;
 	my $run;
@@ -497,7 +498,7 @@ $pm->wait_all_children();
 # Demultiplex stats
 my $pr = $project_names;
 $pr =~ s/,/_/g;
-my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/".$run_name.".".$pr.'/';
+ $dir_stats .= $run_name.".".$pr.'/';
 system("mkdir $dir_stats --mode 777") unless (-d $dir_stats);
 make_path($dir_stats,{chmod=>0777}) unless (-d $dir_stats);
 warn("rsync $dir_out* $dir_stats ; chmod -R a+rwx $dir_stats");
