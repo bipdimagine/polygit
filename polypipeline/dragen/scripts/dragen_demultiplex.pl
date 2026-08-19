@@ -44,7 +44,7 @@ my $fastq_index;
 my $trim = '';
 my $big_run;
 my $sc;
-
+my $delete;
 GetOptions(
 	'project=s'		=> \$project_names,
 	'l2=s'			=> \$l2,
@@ -56,6 +56,8 @@ GetOptions(
 	'fastq_index'	=> \$fastq_index,	# generate I1/I2 fastq
 	'singlecell|sc'	=> \$sc,
 	'big_run'		=> \$big_run,
+	'delete!'		=> \$delete,
+	
 ) || confess("Error in command line arguments");
 
 my $bcl_dir;
@@ -67,6 +69,9 @@ my $run_name;
 my $umi_name;
 my $dir_bcl_tmp;
 my $adaptors;
+unless (defined $delete){
+$delete = 1 if ( prompt( "Delete Bcl after demultipex (y/n) ", -yes) );
+}
 
 foreach my $project_name ( split( ",", $project_names ) ) {
 	my $buffer  = GBuffer->new();
@@ -581,6 +586,9 @@ sub report {
 	$tb2->load(@rows);
 	print $tb2;
 	print "\n ------------------------------\n";
+	if ($delete) {
+		system ("rm -r $dir_bcl_tmp");
+	}
 }
 
 sub create_3_fastq {
