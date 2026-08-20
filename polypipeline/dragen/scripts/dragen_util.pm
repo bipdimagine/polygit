@@ -15,7 +15,6 @@ sub get_fastq_file {
 	my $indice2 = "R2";
 	#if exists 
 	my $r2 = "R2";
-	warn Dumper @$files_pe1;
 	foreach my $cp (@$files_pe1) {
 		
 		if (exists $cp->{R3}){
@@ -42,7 +41,7 @@ sub get_fastq_file {
 		if ($delete eq "delete"){
 			warn "cat and DELETE";
 			system "cat $cmd1 > $fastq1 && rm $cmd1 ";# unless -e $fastq1;
-			system "cat $cmd1 > $fastq1 && rm $cmd2";# unless -e $fastq1;
+			system "cat $cmd2 > $fastq2 && rm $cmd2";# unless -e $fastq1;
 		}
 		else {
 		warn "cat $cmd1 > $fastq1";
