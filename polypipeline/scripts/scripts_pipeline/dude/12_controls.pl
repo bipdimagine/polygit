@@ -60,6 +60,7 @@ foreach my $r (@$runs) {
 }
 foreach my $r (@$runs) {
 	my $hps =  $r->getAllPatientsInfos();
+	warn Dumper $hps if $r->id == 2998;
 
 	#warn Dumper($hps) if $r->id() eq 982;
 	#only control
@@ -105,12 +106,6 @@ foreach my $r (@$runs) {
 			
 		}
 	}
-	push(@{$controls->{$r->id}},@hps2);
-	
-	#die();
-	# $max_controls = 50;
-
-	warn "\tmax control $max_controls ******************* control".scalar (@hps2);
 	if (scalar (@hps2) < 20) {
 		find_other_patient($r,\@hps2);
 	}
@@ -119,18 +114,22 @@ foreach my $r (@$runs) {
 	map {$contr_projects{$_->{project}} ++} @hps2;
 	warn "\t*******************".scalar (@hps2);
 	#warn Dumper @hps2;
-
+	my $debug;
+	$debug = 1 if $r->id() == 2998;
 	foreach my $pr (keys %contr_projects){
+		warn "\t ** \t".$pr if $debug;
 		my $buffer1 = new GBuffer;
 		my $project1 = $buffer1->newProjectCache( -name 			=> $pr );
 		next if $genome_version ne $project1->genome_version();
 		next if $project1->validation_db() eq 'poubelle';
+		
 		#next() if $project1->name() eq "NGS2018_2286";
 		foreach my $p (grep{$_->{project} eq $pr} @hps2){	
 			eval {
 			my $patient = $project1->getPatient($p->{patient});
+			die() if $p->{patient} eq "BEN_Lou";
 			my $b = $patient->getAlignFileName();
-			
+			warn "\t\t".$p->{patient} if $debug;
 			next unless -e $b;		
 			#next unless $patient->alignmentMethod() ne "dragen-align";
 			my $scompute = &compute_sex($patient);
@@ -141,9 +140,8 @@ foreach my $r (@$runs) {
 				system("$Bin/../coverage_genome.pl -project=$project_name -fork=$fork -patient=".$patient->name);
 				die($cov_file) unless -e $cov_file;
 			}
-			warn $patient->name." ".$pr  unless -e $cov_file;
+			#warn $patient->name." ".$pr  unless -e $cov_file;
 			next unless -e $cov_file;
-			warn $cov_file;
 			$p->{file_depth} = $cov_file;
 			$p->{dir_depth} = $project1->getCoverageDir()."/lmdb_depth";
 			$p->{bam} = $patient->getBamFile();
@@ -164,7 +162,6 @@ foreach my $r (@$runs) {
 	}
 }
 
-warn Dumper $controls;
 #my $chr = $project->getChromosome("Y");
 foreach my $r (keys %$controls){
 		warn "run : ".$r. " c : ".scalar (@{$controls->{$r}});
@@ -173,7 +170,7 @@ foreach my $r (keys %$controls){
 	
 #	}
 }
-
+#warn Dumper $controls->{2998};
 
 foreach my $r (@$runs){
 	warn $r->id." ".$r->name." ". scalar(@{$controls->{$r->id}});
@@ -206,9 +203,8 @@ my %patients_captures;
 
 sub find_other_patient {
 	my ($run,$controls) = @_;
-	warn "coucou";
 	 my $capture = $run->project->getCaptures()->[0];
-	 warn $capture->id;
+	 my $machine = $run->project->getSequencingMachines()->[0];
 	 my $machine_project = $run->machine;
 	 if (exists $patients_captures{$capture->name}){
 	 	 push(@$controls, @{$patients_captures{$capture->name}});
@@ -228,7 +224,6 @@ sub find_other_patient {
 	 }
 	 close(SCHUF);
 	 my $nv;
-	 
 	 foreach my $c (@$controls){
 	 		my $buffer2 = GBuffer->new();
 			my $project2 =  $buffer2->newProject( -name 			=> $c->{project});
@@ -242,7 +237,6 @@ sub find_other_patient {
 				};
 			}
 	 }
-	 warn $nv;
 	 $nv = 1 unless $nv;
 	 $mean_norm /= $nv;
 	 
@@ -250,7 +244,6 @@ sub find_other_patient {
 	my $x;
 	my $res =[];
 	my $limit = 30 - scalar(@$controls);
-	warn $limit;
 	 foreach my $project_name2 (@$query){
 	 		next if $project_name2 =~ /NGS2010/;
 	 		next if $project_name2 =~ /7187/;
@@ -259,15 +252,15 @@ sub find_other_patient {
 	 	
 			my $project2 =  $buffer2->newProject( -name 			=> $project_name2);
 			next if $genome_version ne $project2->genome_version();
-			warn $genome_version;
-			warn  $project2->genome_version();
 			my $nbx = 0;
-			warn scalar(@{$project2->getPatients});
+			#warn scalar(@{$project2->getPatients});
 			foreach my $p (@{$project2->getPatients}){
 				next if $p->isRna();
 				next if $p->name() =~/cdna/i;
 				my $capture2  = $p->getCapture();
-				next if $p->status == 1;
+				
+				#next if $p->status == 2;
+				next if $machine ne $p->getRun->machine();
 				my $bam; 
 				eval {
 				
