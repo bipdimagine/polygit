@@ -754,6 +754,7 @@ sub close {
 	#$self->rocks->close();
 	delete $self->{rocks};
 	$self->{rocks} = undef;
+	
 	#$self->DESTROY;
 	#$self = undef;
 }
@@ -896,9 +897,14 @@ sub dejavu_phenotype {
 
 sub DESTROY {
 	my ($self) = @_;
-#	warn "DESTROY ".$self->dir." ".$self->name;
-	system( "/usr/bin/rm -f " . $self->path_rocks() . "/LOG*" );
-	system( "rm -f " . $self->path_rocks() . "/LOCK" );
+    my $d = $self->path_rocks();
+    unlink glob("$d/LOG*");
+    unlink  $self->path_rocks() . "/LOCK" if -e $self->path_rocks() . "/LOCK";
+	#unless ($self->mode eq "r"){
+	#	system( "/usr/bin/rm -f " . $self->path_rocks() . "/LOG*" );
+	#	system( "rm -f " . $self->path_rocks() . "/LOCK" );
+		
+	#}
 	if ( $self->temporary && -e $self->path_rocks ) {
 		$self->delete_files( $self->path_rocks );
 		system( "rmdir " . $self->path_rocks );
