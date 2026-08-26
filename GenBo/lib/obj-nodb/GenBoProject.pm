@@ -3744,7 +3744,7 @@ sub newTranscript {
 }
 
 sub newGene {
-	my ( $self, $id ) = @_;
+	my ( $self, $id,$version ) = @_;
 	confess if not $id;
 	return $self->{objects}->{genes}->{$id} if (exists $self->{objects}->{genes}->{$id});
 	$self->getChromosomes();
@@ -5068,6 +5068,14 @@ has lmdbGenBo => (
 	}
 );
 
+
+sub blacklist_file {
+	my ( $self ) = @_;
+	my $f = $self->buffer()->config_path("root","public_data")."/repository/".$self->annotation_genome_version."/blacklist/encode.blacklist.bed.gz";
+	die($f) unless -e $f;
+	return $f;
+	 
+}
 sub rocksGenBo {
 	my ( $self, $mode ) = @_;
 	$mode = "r" unless $mode;
@@ -5084,6 +5092,51 @@ sub rocksGenBo {
 		return $self->{rocks}->{$name};
 	
 }
+
+
+sub rocksGenboVersion {
+	my ( $self, $id,$version ) = @_;
+	confess if not $id;
+	
+	#return $self->{objects}->{genes}->{$id} if (exists $self->{objects}->{genes}->{$id});
+	$self->getChromosomes();
+	my $rocks;
+	$rocks = $self->rocksGenBo_HG19 if ($version eq "HG19");
+	$rocks = $self->rocksGenBo_HG38 if ($version eq "HG38");
+	my $id1 = $rocks->synonym($id);
+	return undef unless $id1;
+	my $obj = $rocks->genbo($id1);
+	return $obj;
+}
+sub rocksGenBo_HG19 {
+	my ( $self ) = @_;
+	my $version = "46";
+	my $name="HG19_rocksv".$version;
+	return  $self->{rocks}->{$name} if exists  $self->{rocks}->{$name};
+	my $dir = $self->public_data_root . "/HG19/". $self->buffer->gencode->{$version}->{directory};
+	$self->{rocks}->{$name}  = GenBoNoSqlRocksAnnotation->new(
+			name        => "genbo",
+			dir         => $dir,
+			mode        => "r",
+		);
+	return $self->{rocks}->{$name}
+}
+
+sub rocksGenBo_HG38 {
+	my ( $self ) = @_;
+	my $name="HG38_rocksv";
+	my $version = "46";
+	return  $self->{rocks}->{$name} if exists  $self->{rocks}->{$name};
+	my $dir = $self->public_data_root . "/HG38/". $self->buffer->gencode->{$version}->{directory};
+	$self->{rocks}->{$name}  = GenBoNoSqlRocksAnnotation->new(
+			name        => "genbo",
+			dir         => $self->get_gencode_directory,
+			mode        => "r",
+		);
+			return $self->{rocks}->{$name}
+}
+
+
 sub random {
 	my ( $self ) = @_;
 	return $self->{rocks}->{random} if exists $self->{rocks}->{random};
@@ -7241,7 +7294,6 @@ is      => 'ro',
 		return $acmg_genes;
 	},
 );
-
 
 
 1;

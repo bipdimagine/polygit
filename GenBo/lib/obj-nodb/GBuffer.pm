@@ -1280,6 +1280,12 @@ sub DESTROY {
 	#delete $self->{lmdb};
 	my $t =time;
 	#swarn "detroy buffer ";
+        
+	 if ($@) {
+
+        warn "Programme en train de mourir : $@\n";
+
+    }
 	foreach my $chr (keys %{$self->{lmdb}}){
 			foreach my $db (keys %{$self->{lmdb}->{$chr}}){
 					foreach my $type (keys %{$self->{lmdb}->{$chr}->{$db}}){
