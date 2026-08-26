@@ -132,7 +132,7 @@ if ($chrom !~ /all/){
 }
 #my $sql =qq{select id from '$parquet_file' where  len > $minlength and patient=$patient_id; };
 my $cmd = qq{duckdb -json -c "$sql"};
-
+warn $cmd;
 my $res =`$cmd`;
 my $array_ref = [];
 $array_ref  = decode_json $res if $res;
@@ -158,32 +158,34 @@ my $nb = 0;
 		if ($select_best < 2){
 		next if $row->{blacklist} > 80 && $select_best == 0;
 		next if $row->{blacklist} > 65;
-		if ($row->{caller_sr} && $row->{nb_caller} == 1  ){
-			next if $row->{mr} < 0.1 && $select_best == 0;
-			next if $row->{na} > 0.6 && $row->{nr} < 10 ;#&& $select_best == 0;
+		}
+		}
+#		if ($row->{caller_sr} && $row->{nb_caller} == 1  ){
+#			next if $row->{mr} < 0.1 && $select_best == 0;
+#			next if $row->{na} > 0.6 && $row->{nr} < 10 ;#&& $select_best == 0;
+##			
+##			$row->{mz} = $mz;
+##		$row->{mr} = $mr;
+##		$row->{na} = $na;
+##		$row->{nr} = $nr;
+##		$row->{pa} = $pa;
+##		 = scalar(@t);
+##		$row->{caller_sr} = 0;
+##		$row->{caller_depth} = 0;
+##		$row->{caller_coverage} = 0;
+##		
+##		$row->{caller_sr} = 1 if exists $cnv->{score}->{score_caller_sr};
+##		$row->{caller_depth}= 1 if exists $cnv->{score}->{score_caller_depth};
+##		$row->{caller_coverage} = 1 if exists $cnv->{score}->{score_caller_coverage};
+#		}
+#		if ($row->{caller_depth}  && $row->{nb_caller} == 1  && $row->{len} < 100_000 ){
 #			
-#			$row->{mz} = $mz;
-#		$row->{mr} = $mr;
-#		$row->{na} = $na;
-#		$row->{nr} = $nr;
-#		$row->{pa} = $pa;
-#		 = scalar(@t);
-#		$row->{caller_sr} = 0;
-#		$row->{caller_depth} = 0;
-#		$row->{caller_coverage} = 0;
-#		
-#		$row->{caller_sr} = 1 if exists $cnv->{score}->{score_caller_sr};
-#		$row->{caller_depth}= 1 if exists $cnv->{score}->{score_caller_depth};
-#		$row->{caller_coverage} = 1 if exists $cnv->{score}->{score_caller_coverage};
-		}
-		if ($row->{caller_depth}  && $row->{nb_caller} == 1  && $row->{len} < 100_000 ){
-			
-			next if $row->{mr} < 0.1;
-			next if $row->{na} > 0.90;
-			next if $row->{na} > 0.75   && $select_best == 0;;
-		}
-		}
-	}
+#			next if $row->{mr} < 0.1;
+#			next if $row->{na} > 0.90;
+#			next if $row->{na} > 0.75   && $select_best == 0;;
+#		}
+#		}
+#	}
 	 my $cnv = $rocks->get($row->{id});
 	next  unless defined $cnv->{genes}->[0]->{name};
 	 if (exists $hintpsan->{$cnv->{chromosome}}){

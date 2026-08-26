@@ -520,12 +520,47 @@ h4 {
             font-size: 12px;
             color: #333;
         }
+.position-link {
 
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 3px;
+
+    padding: 2px 5px;
+
+    background: #604D8C;
+    //#BC2749;
+
+    border: 1px solid #ddd;
+
+    border-radius: 3px;
+
+    font-size: 10px;
+
+    color: white;
+
+    text-decoration: none;
+
+    white-space: nowrap;
+
+}
+
+.position-link:hover {
+
+    background: #e8f3f8;
+
+    border-color: #5bc0de;
+
+    color: #337ab7;
+
+}
 	</style>
 };
 
 #CGI::Cache::setup();
-
+#604D8C
 my $buffer = GBuffer->new();
 
 my $fsize        = "font-size:10px";
@@ -726,7 +761,7 @@ sub check_level {
 
 
 sub print_line_patient {
-	my ( $p, $nb_row,$hash_disomy) = @_;
+	my ( $p, $nb_row,$hash_disomy,$regions_ho) = @_;
 #@title = ("Fam","Patient","Sex","mendelian error","Cov","30x","Sub","Indels","%He","validation");
 	my $line;
 	my $sex_eval;
@@ -926,6 +961,15 @@ qq{ <span  class="stamp1"><span>-$term-</span>&nbsp;-&nbsp;<small>$date2</small>
 		$line->{"Unidisomy"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
 	}
 	
+	if ($regions_ho){
+		my $url = qq{html/manta/plotAllBAplots.html?project=}.$project->name.qq{&patient=}.$p->name;
+		my $text = qq{ <a  class="stamp_ho" href="$url" target="_blank" ><span>$regions_ho</span></a>};
+		$line->{"ho_regions"} = $cgi->td( { style => "vertical-align:middle" }, "$text" );
+	}
+	else {
+		$line->{"ho_regions"} = $cgi->td( { style => "vertical-align:middle" }, "-" );
+	}
+	
 	return $line;
 }
 
@@ -1002,7 +1046,7 @@ sub test_disomy {
 	$uni->{find_disomy} = 0;
 	foreach my $p (@{$project->getPatients}){
 		my $file = $p->upd_file();
-		unlink $file  if $cgi->param('force');
+		#unlink $file  if $cgi->param('force');
 		unless (-e $file ) {
 			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/getUPD.pl};
 			system("perl $prg -project=$project_name -patient=".$p->name." 2>/dev/null >/dev/null");
@@ -1017,8 +1061,50 @@ sub test_disomy {
 		else {
 			$uni->{patient}->{$p->id} = "-";
 		}
+	
 	}
 	return $uni;
+}
+
+sub exists_regions_ho {
+	my ($p) = @_;
+	my $file = $p->upd_file().".ho";
+	unless (-e $file ) {
+			my $prg = qq{$Bin/../../polypipeline/scripts/scripts_pipeline/upd/region_ho.pl};
+			system("perl $prg -project=$project_name -patient=".$p->name." 2>/dev/null >/dev/null");
+			# if $p->isChild();
+		}
+	print '.';
+	open(JSON,$file);
+	return "" unless -e $file;
+	my $tt = <JSON>;
+	chomp($tt) if $tt;
+	my $array = decode_json $tt;
+	my @string;
+	foreach my $r (@$array){
+		next if abs($r->{start}-$r->{end}) < 6_000_000; 
+		next if abs($r->{start}-$r->{end}) < 10_000;
+		#https://www.polyweb.fr/aptana-git/polyweb/html/manta/PolyCytoCNVPlot.html?project=NGS2026_10498&patient=07-003-2-BYBI&chr=4&debcnv=27905243&fincnv=49230060&type=1&transmission=?
+		my $url = qq{html/manta/PolyCytoCNVPlot.html?project=}.$project->name.qq{&patient=}.$p->name."&chr=".$r->{chr}."&debcnv=".$r->{start}."&fincnv=".$r->{end}."&type=1&transmission=?";
+		my $a = "[".$r->{chr}.":".$r->{start}."-".$r->{end}." ".$r->{nb}."]";
+		my $cname = "chr".$r->{chr};
+		my $st	 = qq{
+		<a href="$url" class="position-link"  title="$a" target="_blank">
+			<span>$cname</span><i class="fa fa-external-link"></i>
+		</a>
+		};	
+		push(@string,qq{$st});
+		
+	}
+	
+	return ("-") unless @string;
+	
+	foreach my $st (@string) { 
+		my ($chr,)
+	
+	}
+	return join("&nbsp;",@string);
+	
 }
 
 sub exists_disomy {
@@ -3524,8 +3610,10 @@ sub table_patients {
 			$out .= $cgi->th( { style => "text-align: center;min-width:5%;background-color:#962D3E" }, "Unidisomy" );
 		}
 		else {
-			$out .= $cgi->th( { style => "text-align: center;min-width:70%" }, "Unidisomy" );
+			$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, "Unidisomy" );
 		}
+		$out .= $cgi->th( { style => "text-align: center;min-width:5%" }, "Ho Regions" );
+		push(@title,"ho_regions");
 	}
 	
 	
@@ -3583,7 +3671,10 @@ sub table_patients {
 			# bouton DYSOMY
 			#######################
 			$out .= $cgi->td( { style => "vertical-align:middle" }, $td );
-			my $line = print_line_patient( $p, 0,$hash_disomy );
+			my $string_regions_ho = exists_regions_ho($p);
+
+		my $line = print_line_patient( $p, 0,$hash_disomy,$string_regions_ho );
+		#	my $line = print_line_patient( $p, 0,$hash_disomy,$string_regions_ho );
 			
 			$line->{control} = $control->{$p->id};
 			
@@ -3592,6 +3683,8 @@ sub table_patients {
 				$out .= $line->{$col};
 			}
 			$out .= $cgi->end_Tr;
+			
+
 			$out .= $cgi->start_Tr( { style => "background-color:$color" } ) if $nb_members > 1;
 		}
 		$out .= $cgi->end_Tr if $nb_members > 1;
