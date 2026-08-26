@@ -1418,22 +1418,12 @@ sub printButton {
 sub validations {
 		my ($self) = @_;
 		my $project = $self->project;
-		my $all_validations = $project->validations;
 		my $val_id = $self->variant->gene->{id}."!".$self->variant->id;
 		my $local_validation = $project->getValidationVariation($val_id,$self->patient);
 		my $data;
 		$data->{local_text} = "";
 		$data->{local_value} = -99;
 		if ($local_validation->{validation}) {
-#			my $is_STAFF_login = $self->project->buffer->getQuery->isLoginSTAFF($local_validation->{user_name});
-#			if ($is_STAFF_login) {
-#				$data->{local_value}  = 99;
-#				$data->{local_text} = 'STAFF';
-#			} 
-#			else {
-#				$data->{local_value}  = $local_validation->{validation};
-#				$data->{local_text} = $project->buffer->value_validation->{$data->{local_value}};
-#			}
 			$data->{local_value}  = $local_validation->{validation};
 			$data->{local_text} = $project->buffer->value_validation->{$data->{local_value}};
 			$self->{local_value} = $data->{local_text};
@@ -1445,7 +1435,6 @@ sub validations {
 			$data->{local_value}  = -1;
 			$data->{local_text} = $is_forced_viewing;
 		}
-		
 		$data->{var_id} = $self->variant->id;
 		$data->{gene_id} = $self->variant->gene->{id};
 		$data->{project_name} = $self->project->name;
@@ -1455,7 +1444,6 @@ sub validations {
 		$data->{clinvar_value} = $self->variant->clinvar_value;
 		$data->{clinvar_text} = $self->variant->clinvar;
 		if ($data->{clinvar_value} > 0){
-		#	warn $self->variant->clinvar_id;
 			$data->{clinvar_id} = $self->variant->clinvar_id;
 		}
 		my $output;
@@ -2090,16 +2078,14 @@ sub validation_select{
 my $val_id = $gene->{id}."!".$self->variant->id;
 
 my $saved =[] ;
+my $local_validation = $patient->getValidationVariation($val_id);
 my $all_validations = $patient->validations;
 my $validation_term ="";
 my $validation_value = 0;
- if (exists $all_validations->{$val_id}){
- #	my @found = grep {$_->{sample_id} eq $patient->id} @{$all_validations->{$val_id}};
- 	$saved =  $all_validations->{$val_id};
- 	$validation_term = $saved->[0]->{term};
- 	$validation_value = $saved->[0]->{validation};
- }
- 
+if ($local_validation->{validation}) {
+ 	$validation_value = $local_validation->{validation};
+ 	$validation_term = $project->buffer->value_validation->{$validation_value};
+}
 #$saved = $all_validations->{$val_id}->[0]->{validation}  if exists $all_validations->{$val_id};
 
 my $option;
@@ -2118,6 +2104,9 @@ unless ($validation_term){
 
 	$option .="</select></div>";
 	$bgcolor = "info";
+ 	$bgcolor = "blue" if  $validation_value < 0;
+ 	$bgcolor = "pink" if  $validation_value <= -3;
+	$bgcolor = "success" if  $validation_value >= 1;
 	$bgcolor = "secondary" if  $validation_value >= 3;
 	$bgcolor = "warning" if  $validation_value >= 4;
  	$bgcolor = "danger" if  $validation_value >= 5;

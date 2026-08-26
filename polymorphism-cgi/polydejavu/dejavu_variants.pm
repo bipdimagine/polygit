@@ -734,7 +734,7 @@ sub get_from_duckdb_project_patients_infos_global {
 		
 		print $in qq{
 			PRAGMA threads=2;
-			WITH filtered AS ( SELECT * FROM $sql_parquets where chr38='$chr_id' )
+			WITH filtered AS ( SELECT * FROM $sql_parquets where concat(chr38)='$chr_id' )
 			SELECT f.project, f.chr38, f.chr19, f.pos38, f.pos19, f.he, f.allele, f.patients, f.dp_ratios
 			FROM filtered f JOIN positions p ON f.pos38 = p.pos38;
 		};

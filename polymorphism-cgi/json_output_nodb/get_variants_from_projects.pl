@@ -367,11 +367,11 @@ if ($region or $only_genes) {
 				foreach my $interval (@$list_this_region) {
 					my ($start_filter, $end_filter) = split('-', $interval);
 					$end_filter = $start_filter +1 if not $end_filter;
-					push(@list_sql_pos, "(pos38 >= $start_filter and pos38 <= $end_filter)");
+					push(@list_sql_pos, "pos38 BETWEEN $start_filter AND $end_filter");
 					$found_pos++;
 				}
 				if ($found_pos) {
-					$sql_pos = 'and ('.join(' OR ', @list_sql_pos).')';
+					$sql_pos = join(' OR ', @list_sql_pos).' AND ';
 				}
 				
 				my $i = 0;
@@ -380,7 +380,7 @@ if ($region or $only_genes) {
 				my $this_fork = $dejavu_variants->fork();
 				my $sql = "
 					PRAGMA threads=$fork_sql;
-					WITH base AS ( SELECT project, chr38, pos38, allele, he, ho FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos ),
+					WITH base AS ( SELECT project, chr38, pos38, allele, he, ho FROM $sql_parquets WHERE $sql_pos concat(chr38)='$chr_filter'),
 					agg AS (
 					    SELECT 
 					        chr38, pos38, allele,
@@ -443,7 +443,7 @@ if ($region or $only_genes) {
 					my $sql_clinvar = "
 						PRAGMA threads=$fork_sql;
 						WITH dejavu AS (
-							SELECT *, chr38 || '!' || LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'index', LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'rocksid' FROM $sql_parquets WHERE chr38='$chr_filter' $sql_pos
+							SELECT *, chr38 || '!' || LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'index', LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'rocksid' FROM $sql_parquets WHERE $sql_pos concat(chr38)='$chr_filter'
 						)
 						SELECT d.project, c.index, d.rocksid
 							FROM dejavu d
@@ -1012,7 +1012,7 @@ sub launch_ncboost {
 					WITH b_filtered AS (
 					    SELECT pos38
 					    FROM $sql_parquets
-					    WHERE chr38 = '$chr_id'
+					    WHERE concat(chr38) = '$chr_id'
 					      AND max_ratio > 0
 					      AND allele IN ('A','T','C','G')
 					    GROUP BY pos38
