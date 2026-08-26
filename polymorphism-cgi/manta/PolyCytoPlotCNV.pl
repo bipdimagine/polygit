@@ -25,6 +25,8 @@ use layout;
 use export_excel; 
 use export_data;
 use Capture::Tiny ':all';
+use IPC::Open2;
+
 #----------------------------------------------------------------------------------------------------------------------------------------------
 #  recupère les valeurs du patient.bins.bed correspondant au CNV pour faire le plot des ratios
 #-----------------------------------------------------------------------------------------------------------------------------------------------
@@ -127,7 +129,7 @@ foreach my $ligne (@tabValPat)
 	if (($y<0.2) && ($y>-0.2))
 	{
 		$i++;
-		next if ($i%10 != 0);
+		next if ($i%3 != 0);
 	}
 	$lpos .= $x." ";
 	$lratio .= $y." ";
@@ -226,36 +228,40 @@ if ($trio == 3)	#both parents
 	my $v2bis;
 	# (1) selection des snps informatifs a partir des variants Ho : version patrick
 	
-	if ($type == 1)	# DEL on regarde tous les variants de l'enfant / au niveau de la deletion tous les variants He du parent non délété deviennent Ho
-	{
-		$v1 = $mother->getVectorOriginHe($chr);
-		#$v1 &= $mother->getVectorSubstitutions($chr);
-		$v1 &= $chr->getVectorSubstitutions();
- 		$v1 -= $father->getVectorOrigin($chr);
-		$v1 &= $patient->getVectorOrigin($chr);
-
-		$v2 = $father->getVectorOriginHe($chr);
-		$v2 &= $chr->getVectorSubstitutions();
-		#$v2 &= $father->getVectorSubstitutions($chr);
- 		$v2 -= $mother->getVectorOrigin($chr);
-		$v2 &= $patient->getVectorOrigin($chr);
-	}
-
-	if ($type >= 2 ) # DUP les snps informatifs sont ceux Ho chez un des parents non présents chez l'autre et He chez l'enfant 
-	{
-		$v1 = $mother->getVectorOriginHo($chr);
-		$v1 &= $mother->getVectorSubstitutions($chr);
-		
- 		$v1 -= $father->getVectorOrigin($chr);
-		$v1 &= $patient->getVectorOriginHe($chr);
-
-		$v2 = $father->getVectorOriginHo($chr);
-		$v2 &= $father->getVectorSubstitutions($chr);
- 		$v2 -= $father->getVectorOrigin($chr);
-		$v2 &= $patient->getVectorOriginHe($chr);
-	}
-	
-	my $v3 = $v1+$v2;	
+#	if ($type == 1)	# DEL on regarde tous les variants de l'enfant / au niveau de la deletion tous les variants He du parent non délété deviennent Ho
+#	{
+#		$v1 = $mother->getVectorOrigin($chr);
+#		#$v1 &= $mother->getVectorSubstitutions($chr);
+#		$v1 &= $chr->getVectorSubstitutions();
+# 		$v1 -= $father->getVectorOrigin($chr);
+#		$v1 &= $patient->getVectorOrigin($chr);
+#
+#		$v2 = $father->getVectorOrigin($chr);
+#		$v2 &= $chr->getVectorSubstitutions();
+#		#$v2 &= $father->getVectorSubstitutions($chr);
+# 		$v2 -= $mother->getVectorOrigin($chr);
+#		$v2 &= $patient->getVectorOrigin($chr);
+#	}
+#
+#	if ($type > 1 ) # DUP les snps informatifs sont ceux Ho chez un des parents non présents chez l'autre et He chez l'enfant 
+#	{
+#		$v1 = $mother->getVectorOrigin($chr);
+#		$v1 &= $mother->getVectorSubstitutions($chr);
+#		
+# 		$v1 -= $father->getVectorOrigin($chr);
+#		$v1 &= $patient->getVectorOriginHe($chr);
+#
+#		$v2 = $father->getVectorOrigin($chr);
+#		$v2 &= $father->getVectorSubstitutions($chr);
+# 		$v2 -= $father->getVectorOrigin($chr);
+#		$v2 &= $patient->getVectorOriginHe($chr);
+#	}
+#	
+#	my $vboth = $mother->getVectorOrigin($chr) & $father->getVectorOrigin($chr);
+#	#$both -= ($v1 +$v2) : 
+#	$vboth = $patient->getVectorOrigin($chr);
+#	my $v3 =$patient->getVectorOrigin($chr);
+	my $v3 = $patient->getVectorSubstitutions($chr);
 	my $list3 = to_array($v3,$chr->name);	
 	$project->setListVariants($list3);
 
@@ -268,24 +274,26 @@ if ($trio == 3)	#both parents
 	my $nb = 0;
 	while(my $v = $project->nextVariant) {
 		$hvar->{$v->id} ++;
-		$nb ++;
-	#	die() if $nb ++ > 50;
-		$x++;			
 		my $p1 = $v->getPourcentAllele($mother);			# 100 si mother Ho value si He  - sinon
 	
 		my $p2 = $v->getPourcentAllele($father);			# 100 si father Ho value si He - sinon
 		my $value = $v->getPourcentAllele($patient);		# freaquence allelique de l'enfant
 		
-		next if $value == 0 ;
-		next if $p1 == 0 && $p2 ==0;
-		if ($p1  >  0 ){									# la mere donne allele
-			my $res = $v->start.",".$value.",null";			# frequence allelique de l'enfant attribue a la mere 
+		#next if $value == 0 ;
+		#next if $p1 == 0 && $p2 ==0;
+		if ($p1 > 0 && $p2 > 0 ){
+			next if $value < 80;
+			my $res = $v->start.",null,null,${value}";#.50;			# frequence allelique de l'enfant attribue a la mere 
+			push(@array,$res);
+		}
+		elsif ($p1  >  0 ){									# la mere donne allele
+			my $res = $v->start.",".$value.",null,null";			# frequence allelique de l'enfant attribue a la mere 
 			push(@array,$res);
 		}
 		#$p1= "" if $p1 eq "-";
 
 		elsif ($p2 > 0 ){									# le pere donne allele
-			my $res = $v->start.",null,".$value;			# frequence allelique de l'enfant attribue au pere
+			my $res = $v->start.",null,".$value.",null";			# frequence allelique de l'enfant attribue au pere
 			push(@array,$res);
 		}
 		
@@ -297,18 +305,22 @@ if ($trio == 3)	#both parents
 	my $lpos="";
 	my $lmother="";
 	my $lfather="";
-
+	my $lboth="";
 	foreach my $values (@array)
 	{
-		my ($p,$m,$f)=split(/,/,$values);
+		my ($p,$m,$f,$b)=split(/,/,$values);
 		$lpos .= $p." ";
 		$lmother .= $m." ";
 		$lfather .= $f." ";
+		$lboth .=$b." ";
 	}
+	
+
 	
 	$hres->{'POSball'} = $lpos;
 	$hres->{'MOTHER'} = $lmother;
 	$hres->{'FATHER'} = $lfather;
+	$hres->{'BOTH'} = $lboth;
 }
 else
 {
@@ -391,7 +403,9 @@ sub to_array {
 	while ( my ( $from, $to ) = $iter->() ) {
 		for my $member ( $from .. $to ) {
 			$x++;
-			next if ($x%10 != 0);
+		#	if ($project->isGenome){
+				next if $x%10 != 0;
+		#	}
 			if ($name) {
 				push( @t, $name . "!" . $member );
 			}

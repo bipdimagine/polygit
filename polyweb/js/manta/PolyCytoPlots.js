@@ -1254,9 +1254,10 @@ function launch_plot(transmission,type,chr,debcnv,fincnv)
  	
 function PlotValues(transmission,type,project,patient,chr,debcnv,fincnv)
 {
+	var locus = chr + ':' + debcnv + '-' + fincnv;
 	var url_plotCNV = url_path + "/manta/PolyCytoPlotCNV.pl";
 	dataStorePlotValue = new dojo.data.ItemFileReadStore({ url: url_plotCNV + "?project=" + project + "&patient=" + patient + "&chr=" + chr + "&type=" + type + "&debcnv=" + debcnv  + "&fincnv=" + fincnv});
-
+	var url_gene = "../../vector/get_variants_from_all_my_projects.html?input="+locus+"&project=" + project + "&patient=" + patient ;
 	var ttype; // type version text
 	
 	if (type == 1) { ttype = "Deletion";}
@@ -1272,19 +1273,20 @@ function PlotValues(transmission,type,project,patient,chr,debcnv,fincnv)
 	if (transmission == "father") {colortrans = "lightblue";}
 	if (transmission == "both") {colortrans = "grey";}
 	
+	var link =  "<a href="+url_gene+" target='_blank'><span> "+locus+" </span></a> ";
 	if (transmission =="-")
 	{
-		var titre = '<br><label style="font-size:16px; color:orange">' +patient + ' / chr' + chr + ':' + debcnv + '_' + fincnv +'</label><br><b><label style="font-size:16px; color: ' + colortype +'">' + ttype  + '</label></b><br><br>';
+		var titre = '<br><label style="font-size:16px; color:orange">' +patient + ' / ' + link +'</label><br><b><label style="font-size:16px; color: ' + colortype +'">' + ttype  + '</label></b><br><br>';
 	}
 	else
 	{
 		if(transmission == "denovo")
 		{
-			var titre = '<br><label style="font-size:16px; color:orange">' +patient + ' / chr' + chr + ':' + debcnv + '_' + fincnv +'</label><br><br><b><label style="font-size:16px; color: ' + colortype +'">' + ttype  + '</label>' + '<label style="font-size:16px; color:' + colortrans+'">&nbsp&nbsp' + transmission + '</label></b><br><br>';
+			var titre = '<br><label style="font-size:16px; color:orange">' +patient + ' / ' + link +'</label><br><br><b><label style="font-size:16px; color: ' + colortype +'">' + ttype  + '</label>' + '<label style="font-size:16px; color:' + colortrans+'">&nbsp&nbsp' + transmission + '</label></b><br><br>';
 		}
 		else
 		{
-			var titre = '<br><label style="font-size:16px; color:orange">' +patient + ' / chr' + chr + ':' + debcnv + '_' + fincnv +'</label><br><br><b><label style="font-size:16px; color: ' + colortype +'">' + ttype  + '</label>' + '<label style="font-size:16px; color:' + colortrans+'">&nbsp&nbsp transmission : ' + transmission + '</label></b><br><br>';
+			var titre = '<br><label style="font-size:16px; color:orange">' +patient + ' / ' +link +'</label><br><br><b><label style="font-size:16px; color: ' + colortype +'">' + ttype  + '</label>' + '<label style="font-size:16px; color:' + colortrans+'">&nbsp&nbsp transmission : ' + transmission + '</label></b><br><br>';
 
 		}
 	}
@@ -1333,6 +1335,9 @@ function PlotValues(transmission,type,project,patient,chr,debcnv,fincnv)
    	
    	var tabplotYM=[];
    	var tabcnvYM=[];
+	
+	var tabplotYB=[];
+	var tabcnvYB=[];
    	
    	var tabplotYF=[];
    	var tabcnvYF=[];
@@ -1550,11 +1555,11 @@ function PlotValues(transmission,type,project,patient,chr,debcnv,fincnv)
 						tabPosBA = dataStorePlotValue.getValue(item, "POSball"); 
    						tabMother = dataStorePlotValue.getValue(item, "MOTHER");
  						tabFather = dataStorePlotValue.getValue(item, "FATHER");
- 						
+						var tabBoth = dataStorePlotValue.getValue(item, "BOTH");
    						var tabBAX = tabPosBA.split(" ");
    						var tabYM = tabMother.split(" ");
    						var tabYF = tabFather.split(" ");
-   					
+						var tabYB = tabBoth.split(" ");
    						for ( var i = 0 ; i < tabBAX.length ; i++ ) {
    					
   							if (  (parseInt(tabBAX[i]) < parseInt(debcnv) ) || ( parseInt(tabBAX[i]) > parseInt(fincnv) ) ) 
@@ -1562,17 +1567,25 @@ function PlotValues(transmission,type,project,patient,chr,debcnv,fincnv)
   									tabplotBAX.push(tabBAX[i]);
   									tabplotYM.push(tabYM[i]);			
   									tabplotYF.push(tabYF[i]);
+									tabplotYB.push(tabYB[i]);
+								//--	tabplotYB.push(tabYB[i]);
   							}
   							else
   							{
+									//tabplotBAX.push(tabBAX[i]);
   									tabcnvBAX.push(tabBAX[i]);
   									tabcnvYM.push(tabYM[i]);
   									tabcnvYF.push(tabYF[i]);
+									tabcnvYB.push(tabYB[i]);
   							}
+							//
+							// 
+							//tabplotYB.push(tabYB[i]);
   						}	
-  						console.dir(tabplotYM);
-						console.dir(tabplotYF);
-						console.dir(tabplotBAX);
+  						console.dir(tabYB);
+						//console.dir(tabplotYF);
+						//console.dir(tabplotBAX);
+						
   						var trace7 = {
   							x:tabplotBAX,
   							y:tabplotYM,
@@ -1624,10 +1637,34 @@ function PlotValues(transmission,type,project,patient,chr,debcnv,fincnv)
       								size:4
     						}
 						};
-					
+						
+						var trace11 = {
+						  	x:tabplotBAX,
+						  	y:tabplotYB,
+						    yaxis: 'y4',
+						  	mode: 'markers',
+						  	showlegend:false,
+						  	name:' ',
+						  		marker: {
+						      			color: '#C3B1E1',
+						      			size:3
+						    	}
+							};
+							var trace12 = {
+								x:tabcnvBAX,
+								y:tabcnvYB,
+								yaxis: 'y4',
+								mode: 'markers',
+								showlegend:false,
+								name:' ',
+								marker: {
+										color: 'purple',
+										size:3
+								}
+							};
+
 		
-		
-						data=[trace1,trace2,trace3,trace4,trace5,trace6,trace7,trace8,trace9,trace10];
+						data=[trace1,trace2,trace3,trace4,trace5,trace11,trace6,trace7,trace8,trace12];
 						
 						layout = {
   							yaxis1:   {domain: [0.0, 0.2], title : 'Wc ratio : Child'},
