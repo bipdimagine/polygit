@@ -10,6 +10,7 @@ use lib "$Bin/../../../";
 use GBuffer;
 use GenBoProject;
 use GenBoProjectCache;
+use JSON::XS;
 
 
 my $cgi = new CGI();
@@ -42,7 +43,175 @@ sub print_hgmd_concepts {
 	return $cgi->td({rowspan => 1,style => "max-height:60px;overflow-y: auto;width:90px;"}, '<i class="fa fa-minus"></i>');
 }
 
+
 sub print_tab_variants_project {
+	my ($patient, $hash_stats) = @_;
+	
+	#warn Dumper @array_ref;
+	my $total = 0;
+	my $denovo = 0;
+	my $dominant = 0;
+	my $recessif = 0;
+	my $mosaic = 0;
+	my $uniparental = 0;
+	my $mother = 0;
+	my $father = 0;
+	my $both = 0;
+	my $h_transmissions = {
+    solo          => 1 << 0,  # 2^0 = 1
+    father        => 1 << 1,  # 2^1 = 2
+    mother        => 1 << 2,  # 2^2 = 4
+    both          => 1 << 3,  # 2^3 = 8
+    is_parent     => 1 << 4,  # 2^4 = 16
+    recessive      => 1 << 5,  # 2^5 = 32
+     recessif      => 1 << 5,  # 2^5 = 32
+    dominant      => 1 << 6,  # 2^6 = 64
+    denovo        => 1 << 7,  # 2^7 = 128
+    strict_denovo => 1 << 8,  # 2^8 = 256
+    error         => 1 << 9,  # 2^9 = 512
+    mosaic         => 1 << 10,  # 2^10 = 1024
+    uniparental     => 1 << 11,  # 2^11 = 2048
+    
+	};
+	
+	my $total = 0;
+	my $denovo = 0;
+	my $dominant = 0;
+	my $recessif = 0;
+	my $mosaic = 0;
+	my $uniparental = 0;
+	my $mother = 0;
+	my $father = 0;
+	my $both = 0;
+	my $debug;
+	my $solo = 0;
+			my $pname = $patient->project->name;
+	#$debug=1 if $gene_trio->external_name eq "PAICS";
+	foreach my $v (keys %{$hash_stats->{transmission}}){
+		
+		#warn $v->{transmission}." ". $h_transmissions->{both}." ".($v->{transmission} & $h_transmissions->{both}) if ($debug);
+		$total+= $hash_stats->{transmission}->{$v};
+		if (($v & $h_transmissions->{recessive}) > 0){ $recessif =$hash_stats->{transmission}->{$v}; }
+		if (($v & $h_transmissions->{denovo}) > 0){ $denovo=$hash_stats->{transmission}->{$v} }
+		if (($v & $h_transmissions->{dominant}) > 0 ){ $dominant=$hash_stats->{transmission}->{$v} }
+		if (($v & $h_transmissions->{mosaic}) > 0 ){ $mosaic=$hash_stats->{transmission}->{$v} }
+		if (($v & $h_transmissions->{uniparental}) > 0){ $uniparental=$hash_stats->{transmission}->{$v} }
+		if (($v & $h_transmissions->{mother}) > 0){ $mother=$hash_stats->{transmission}->{$v} }
+		if (($v & $h_transmissions->{father}) > 0){ $father=$hash_stats->{transmission}->{$v} }
+		if (($v & $h_transmissions->{recessive}) > 0){ $recessif=$hash_stats->{transmission}->{$v}; }
+		if (($v & $h_transmissions->{both}) > 0){ $both=$hash_stats->{transmission}->{$v}  }
+		if (($v & $h_transmissions->{solo}) > 0){ $solo=$hash_stats->{transmission}->{$v}  }
+		
+		
+	}
+	my $nb;
+	$nb->{ho} = $hash_stats->{heho}->{2};
+	$nb->{he} = $hash_stats->{heho}->{1};
+	$nb->{rare} = $hash_stats->{ac};
+	my $color_father = '#779ecb';
+	my $color_mother = '#f7c9c9';
+	my $color_denovo = '#e74c3c';
+	my $color_dominant = '#e74c3c';
+	my $color_recessif = '#ee82ee';
+	my $color_mosaic = '#f9885c';
+	my $color_uniparental = '#45b8ac';
+	my $color_both = 'grey';
+	
+	my (@l_td_header, @l_td_values);
+	my $use_patient = $patient->name;
+	foreach my $cat ('Denovo', 'Dominant', 'Recessive', 'Mosaic', 'Uniparental', 'Mother', 'Father', 'Both') {
+		
+		if (lc($cat) eq 'father') {
+			next unless $patient->getFamily->getFather();
+			$use_patient = $patient->getFamily->getFather->name();
+		}
+		if (lc($cat) eq 'mother') {
+			next unless $patient->getFamily->getMother();
+			$use_patient = $patient->getFamily->getMother->name();
+		}
+		
+		my ($value, $badge_color);
+		$badge_color = 'grey';
+		if (lc($cat) eq 'total') { $value = $total; }
+		if (lc($cat) eq 'denovo') {
+			$value = $denovo;
+			$badge_color = $color_denovo;
+		}
+		if (lc($cat) eq 'dominant') {
+			$value = $dominant;
+			$badge_color = $color_dominant;
+		}
+		if (lc($cat) eq 'recessive') {
+			$value = $recessif;
+			$badge_color = $color_recessif;
+		}
+		if (lc($cat) eq 'mosaic') {
+			$value = $mosaic;
+			$badge_color = $color_mosaic;
+		}
+		if (lc($cat) eq 'uniparental') {
+			$value = $uniparental;
+			$badge_color = $color_uniparental;
+		}
+		if (lc($cat) eq 'mother') {
+			$value = $mother;
+			$badge_color = $color_mother;
+		}
+		if (lc($cat) eq 'father') {
+			$value = $father;
+			$badge_color = $color_father;
+		}
+		
+		if (lc($cat) eq 'both') { $value = $both; }
+		next if (lc($cat) ne 'total' and $value == 0);
+		
+		my ($td_header, $td_value);
+
+		if ($value > 0) {
+			my $only_model = lc($cat);
+			my $ensg = $hash_stats->{id};
+			my $cmd_var_base = qq{view_var_from_proj_gene_pat('${pname}', '$ensg', '$use_patient', '', '$only_model')};
+			my $cmd_var_base = qq{view_var_from_proj_gene_pat('${pname}', '$ensg', '$use_patient', '', '')};
+			
+			$td_header = qq{<td style="color:black;"><b>$cat</b></td>};
+			$td_value = qq{<td onClick="$cmd_var_base"><span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:white;font-size:9px;">$value</span></td>};
+			
+		}
+		else {
+			$td_header = qq{<td style="color:black;opacity:0.5;"><b>$cat</b></td>};
+			$td_value = qq{<td style="color:black;opacity:0.5;">$value</td>};
+		}
+		push(@l_td_header, $td_header);
+		push(@l_td_values, $td_value);
+	}
+	foreach my $cat ('he','ho','rare') {
+		my	$badge_color = 'grey';
+		my $value = $nb->{$cat} + 0;
+		my $ensg = $hash_stats->{id};
+		my $cmd_var_base = qq{view_var_from_proj_gene_pat('${pname}', '$ensg', '$use_patient', '', '')};
+		my $td_header = qq{<td style="color:black;"><b>$cat</b></td>};
+		my $td_value = qq{<td onClick="$cmd_var_base"><span class="badge badge-success badge-xs" style="border-color:$badge_color;background-color:$badge_color;color:white;font-size:9px;">$value</span></td>};
+		push(@l_td_header, $td_header);
+		push(@l_td_values, $td_value);
+	}
+	
+	my $color_text = 'black';
+#	$color_text = 'red' if ($nb_dm_text > 0);
+	my $nb_var_text = $cgi->start_table({class=>"table table-sm table-striped table-condensed table-bordered table-primary ",style=>"text-align:center;max-width:300px;box-shadow: 1px 1px 6px $color_text;font-size: 8px;font-family:  Verdana;margin-bottom:0px"});
+	$nb_var_text .= $cgi->start_Tr();
+	foreach my $td (@l_td_header) { $nb_var_text .= $td; }
+	$nb_var_text .= $cgi->end_Tr();
+	
+	$nb_var_text .= $cgi->start_Tr();
+	foreach my $td (@l_td_values) { $nb_var_text .= $td; }
+	
+	$nb_var_text .= $cgi->end_Tr();
+	$nb_var_text .= $cgi->end_table();
+	return qq{<td><a class="btn btn-primary btn-xs" style="min-width:40px;border-color:transparent;background-color:transparent;color:black;"><center><u>$nb_var_text</u></center></a></td>};
+}
+
+
+sub print_tab_variants_project_ori {
 	my ($chr_id, $external_name, $trio_project, $trio_patient, $h_genes,$project_trio) = @_;
 	my $buffer_trio;
 	if ($project_trio){
@@ -217,8 +386,8 @@ sub print_gene_score {
 	my $color = '#FFFFFF';
 	$color = 'grey' if $bcolor eq 'yellow';
  	return qq{<td style="border-color:$bcolor;background-color:$bcolor;border-color:black;"><span class="badge badge-success badge-xs" style="background-color:$bcolor;color:$color;font-size:25px;">$gene_score</span></td>};
-}
-
+}#
+ 
 sub print_locus {
 	my ($gene) = @_;
 	my $chr_locus = $gene->getChromosome->id();
@@ -228,28 +397,33 @@ sub print_locus {
 	return $cgi->td({ rowspan => 1, style => "max-height:60px;overflow-y:auto;font-size:12px;" }, $gene_locus );
 }
 
+
 sub print_locus_hg38_hg19 {
 	my ($gene) = @_;
+
+	
+	#warn $g->start;
+	#return $cgi->td({ rowspan => 1, style => "max-height:60px;overflow-y:auto;font-size:12px;" }, "-" );
 	my $chr_locus = $gene->getChromosome->id();
 	my $start_locus = $gene->start();
 	my $end_locus = $gene->end();
 	my $gene_locus_hg38 = $chr_locus.':'.$start_locus.'-'.$end_locus;
 	my $gene_locus_hg19;
-	my $buffer_hg19 = new GBuffer;
-	my $proj_hg19_name = $buffer_hg19->getRandomProjectName('HG19', '46.20');
-	my $proj_hg19 = $buffer_hg19->newProject( -name => $proj_hg19_name );
-	$proj_hg19->{version} = 'HG19';
+	#my $buffer_hg19 = new GBuffer;
+	#my $proj_hg19_name = $buffer_hg19->getRandomProjectName('HG19', '46.20');
+	#my $proj_hg19 = $buffer_hg19->newProject( -name => $proj_hg19_name );
+	#$proj_hg19->{version} = 'HG19';
 	my $gene_hg19;
-	eval {
-		$gene_hg19 = $proj_hg19->newGene($gene->external_name());
-		$gene_locus_hg19 = $gene_hg19->getChromosome->id().':'.$gene_hg19->start().'-'.$gene_hg19->end();
-	};
-	if ($@) {
-		$gene_locus_hg19 = 'not found';
-	}
-	$gene_hg19 = undef;
-	$proj_hg19 = undef;
-	$buffer_hg19 = undef;
+	#eval {
+		my $hgene_hg19 = $gene->project->rocksGenboVersion($gene->id,"HG19");
+		if ($hgene_hg19){
+			my ($chr19) = keys %{$hgene_hg19->{chromosomes_object}};
+			$gene_locus_hg19 = $chr19.':'.$hgene_hg19->start.'-'.$hgene_hg19->end ;
+		}
+	#};
+	#if ($@) {
+	#	$gene_locus_hg19 = 'not found';
+	#}
 	my $html_text = "<b>HG38: </b>$gene_locus_hg38<br><b>HG19: </b>$gene_locus_hg19";
 	return $cgi->td({ rowspan => 1, style => "max-height:60px;overflow-y:auto;font-size:12px;" }, $html_text );
 }
