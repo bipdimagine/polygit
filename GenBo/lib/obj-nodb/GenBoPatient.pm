@@ -3645,6 +3645,14 @@ sub mean_align_quality {
 
 ## Validations Methods
 
+
+sub getValidationVariation {
+	my ( $self, $val_id) = @_;
+	return undef unless exists $self->validations->{$val_id};
+	my $tvid = $self->validations->{$val_id};
+	return $tvid->[0];
+}
+
 has validations => (
 	is => 'ro',
 
