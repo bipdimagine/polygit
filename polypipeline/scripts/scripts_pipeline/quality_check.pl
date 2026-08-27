@@ -214,12 +214,13 @@ foreach my $type (@types){
 			my $buffer = GBuffer->new();
 			 $project = $buffer->newProject( -name => $projectName );
 			 if ($project->isGenome or $project->isExome){
-			 	system("$Bin/upd/getUPD.pl -project=$project_name");
-			 	system("$Bin/upd/region_ho.pl -project=$project_name");
+			 	
+			 	system("$Bin/upd/getUPD.pl -project=$projectName");
+			 	system("$Bin/upd/region_ho.pl -project=$projectName");
 				
 			 }
 
-			 system("$Bin/identito_vigilence.pl -project=$project_name");
+			 system("$Bin/identito_vigilence.pl -project=$projectName");
 			 system ("touch $file_done");
 		}
 
