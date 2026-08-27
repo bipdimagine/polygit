@@ -180,6 +180,7 @@ my $steps = {
 	},
 	
 	"bam_stats" => sub{
+		warn "bam_stats";
 		my $buffer = GBuffer->new();
 		my $project = $buffer->newProject( -name => $projectName );
 		$project->get_only_list_patients(join(",",@selected_patient));
@@ -221,6 +222,14 @@ foreach my $type (@types){
 			 }
 
 			 system("$Bin/identito_vigilence.pl -project=$projectName");
+			  my ($dbh,$projectid,$groupid) = @_;
+			  my $dbh = $buffer->dbh();
+			  my $groupid = 12 ;
+			  my $projectid = $project->id;
+        my $sql = qq{    
+                insert IGNORE PolyprojectNGS.ugroup_projects (ugroup_id,project_id) values ($groupid,$projectid);
+        };
+        $dbh->do($sql) or die($sql);
 			 system ("touch $file_done");
 		}
 
