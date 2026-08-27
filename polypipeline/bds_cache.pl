@@ -76,7 +76,7 @@ unless ($filename_cfg) {
 read_config $filename_cfg =>  %{$define_steps};
 
 my $project = $buffer->newProject( -name => $projectName );
-
+control_patients($project);
 if ($annot_version) {
 	$project->changeAnnotationVersion($annot_version);
 }
@@ -312,7 +312,6 @@ sub prepare_calling_jobs {
 	
 	my $next_file = "";
 	foreach my $step (@$running_steps){
-		warn $step." ".$next_file;
 		($next_file) = $steps->{$step}->({filein=>$next_file});
 	}
 	return $next_file;
@@ -359,6 +358,64 @@ sub clean {
 		
 }
 
+sub control_patients {
+	my ($project) = @_;
+	print "\033[H\033[J";
+	colored::stabilo("yellow","\n\n======================= Check Sex =========================\n\n");
+	my $tb = Text::Table->new(colored::stabilo("magenta","Patient", 1), colored::stabilo("magenta","BD", 1),colored::stabilo("magenta","Estimated",1), colored::stabilo("magenta","SRY", 1)  );
+	my $lines;
+	my $error;
+	foreach my $patient (@{$project->getPatients}){
+		my $s1 = $patient->sex;
+		my $s2 = $patient->compute_sex;
+		my $cov_sry  = $patient->coverage_SRY();
+		my $color= "green";
+		if ($s1 ne $s2) {
+			push(@$error,$patient);
+			$color = "red";
+		}
+			push(@$lines,[colored::stabilo("$color",$patient->name,1),colored::stabilo("$color",$s1,1),colored::stabilo("$color",$s2,1),colored::stabilo("$color",$cov_sry,1)] ); 
+		
+	}
+	$tb->load(@$lines);
+	print $tb;
+	if ($error){
+	 my $choice = prompt("\nDo you want to update  the sex  (y/n) ? ") unless $yes;
+			if ($choice eq "y"){
+				change_sex($error);
+			} 
+			else {
+				exit;
+			}
+	}
+	colored::stabilo("green"," PERFECT   !!!! " );
+	#print "Press <Enter> or <Return> to continue: ";
+	sleep(5);
+}
+
+sub change_sex {
+	my ($patients) = @_;
+	my $dbh = $buffer->dbh;
+	my $sth = $dbh->prepare(
+
+    "UPDATE patient SET sex = ? WHERE patient_id = ?"
+
+);
+print "\033[H\033[J";
+$dbh->{AutoCommit} = 0;
+	foreach my $patient (@$patients){
+		print colored("cyan"," - ".$patient->name." ".$patient->sex." ==> ".$patient->compute_sex)."\n";
+		 $sth->execute($patient->compute_sex, $patient->id);
+	} 
+	 my $choice = prompt("\nConfirm  (y/n) ? ") unless $yes;
+			if ($choice eq "y"){
+				$dbh->commit;
+			} 
+			else {
+				$dbh->rollback;
+				exit;
+			}
+}
 
 sub check_version {
 	my ($project_name) = @_;
@@ -373,6 +430,7 @@ sub check_version {
 	my $gencode_available = $query->getMaxGencodeVersion($project->id);;
 	my $cache_directory_actual = $project->getCacheDir();
 	my $genome_version = $project->annotation_genome_version();
+		print "\033[H\033[J";
 	colored::stabilo("magenta","\n\n======================= Check Version =========================");
 	colored::stabilo("green","\nGenome Version: $genome_version\n");
 	

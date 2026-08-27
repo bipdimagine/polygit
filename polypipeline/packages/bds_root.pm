@@ -1105,6 +1105,7 @@ sub report_target{
 sub print_status_bds {
 		my ($self) = @_;
 	print "\n";
+	print "\033[H\033[J";
 	#[$status,$tcurrent,$terror,$nbok,$remaining];
 	my @header = ("sample","status","Running","OK","error","remaining");
 	my @lines;
@@ -1313,7 +1314,7 @@ sub print_all_steps_by_prority{
 			}
 		
 	}
-	
+		print "\033[H\033[J";
 	my $hSampleByPriority;
 	foreach my $s (@sams) {
 		push(@{$hSampleByPriority->{$s->priority()}}, $s);
@@ -1376,6 +1377,7 @@ sub print_all_steps_by_prority{
 		unless ($self->yes){
 		  print "Press <Enter> or <Return> to continue: ";
 		 my $resp = <STDIN>;
+		 	print "\033[H\033[J";
 		}
 		}
 	}
@@ -1387,6 +1389,7 @@ sub print_all_steps_by_prority{
 
 sub print_all_steps{
 		my ($self) = @_;
+	print "\033[H\033[J";
 	my @sams = $self->samples;#keys %{$self->samples};
 	my $hCat;
 	foreach my $sam (@sams) {

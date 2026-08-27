@@ -215,9 +215,10 @@ foreach my $type (@types){
 			my $buffer = GBuffer->new();
 			 $project = $buffer->newProject( -name => $projectName );
 			 if ($project->isGenome or $project->isExome){
-			 	
-			 	system("$Bin/upd/getUPD.pl -project=$projectName");
-			 	system("$Bin/upd/region_ho.pl -project=$projectName");
+			 	foreach my $patient (@{$project->getPatients}){
+			 		system("$Bin/upd/getUPD.pl -project=$projectName -patient=".$patient->name);
+			 		system("$Bin/upd/region_ho.pl -project=$projectName -patient=".$patient->name);
+			 	}
 				
 			 }
 

@@ -348,6 +348,7 @@ sub transcripts_coverage {
 	return ($fileout);
 }
 
+
 sub identito_vigilence {
 		my ($self,$hash) = @_;
 	my $filein = $hash->{filein};
@@ -355,29 +356,31 @@ sub identito_vigilence {
 	my $project = $self->patient()->getProject();
 	my $project_name = $project->name();
 	
-	
-	my $no = $self->patient()->getGenesDude();
-	my $fileout = $no->filename();
-	my $ppn =$self->nproc;
+	my $projectName = $self->project->name();
+	my $ppn = 1;
 	$ppn = int($self->nproc/2) if $self->nocluster;
-	
+	my $output   = $self->project->quality_dir;#$self->getCacheDir() . "/check_quality";
+	my $fileout = "$output/".$self->project->name.".identito_vigilence.txt";
 	
 	### Récupération de la version de samtools
 	
 	my $bin_dev = $self->script_dir;
 	
-	my $cmd = qq{perl $bin_dev/identito_vigilence.pl -patient=$name  -fork=$ppn  -project=$project_name };
-	my $type = "genes_dude";
-	 my $stepname = $self->patient->name."@".$type;
+	my $cmd = qq{perl $bin_dev/identito_vigilence.pl -project=$projectName > $fileout };
+	my $type = "identito";
+	my $stepname = $projectName."@".$type;
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
 	$self->current_sample->add_job({job=>$job_bds});
-	my $no_cache = $self->patient()->get_lmdb_cache("r");
-	if ($self->unforce() &&  -e $no_cache->filename ){
-		 		$job_bds->skip();
+	if ($self->unforce() && -e $fileout){
+		my $nofound;
+		foreach my $patient (@{$project->getPatients()}) {
+			my $identity_vigilance= $patient->identity_vigilance();
+			$nofound ++ unless $identity_vigilance;
+		}
+		
+		 		$job_bds->skip() unless $nofound;
 	}
-	$no->close();
 	return ($fileout);
-}
 
 sub html_cache_polyviewer {
 		my ($self,$hash) = @_;
@@ -814,6 +817,7 @@ sub cnv_dejavu_cache {
 	my $log_1s = $self->project->getCacheBitVectorDir()."/../logs/cnv-dv-parquet.1sv.log";
 	my $log_2s = $self->project->getCacheBitVectorDir()."/../logs/cnv-dv-parquet.2sv.log";
 	my $fileout   = $ok;
+		my $bin_dev = $self->script_dir;
 	my $cmd = "perl $bin_dev/manue_cnv/cnv/1_cnv.pl -project=$projectName -fork=$ppn 1>$log_1c 2>>$log_1c";
 	$cmd .= " && perl $bin_dev/manue_cnv/sv/1_sv.pl -project=$projectName -fork=$ppn 1>$log_1s 2>>$log_1s";
 	$cmd .= " && perl $bin_dev/manue_cnv/sv/2_sv.pl -project=$projectName -fork=$ppn 1>$log_2s 2>>$log_2s";
@@ -842,6 +846,7 @@ sub cnv_manue {
 	my $fileout   = $self->project->getCNVDir()."/".$self->project->name.".done";
 	my $file1 = $self->project->getCacheDir().'/CNV2/1.dejavu.lite';
 	my $file2 = $self->project->getCacheDir().'/SV/SV.dejavu.lite';
+		my $bin_dev = $self->script_dir;
 	my $cmd = "perl $bin_dev/manue_cnv/SV_global.pl -project=$projectName -fork=$ppn";
 	$cmd .= " && perl $bin_dev/manue_cnv/parseBND.pl -project=$projectName -fork=$ppn > $fileout";
 	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
@@ -853,38 +858,6 @@ sub cnv_manue {
 	return ($filein);
 }
 
-sub identito_vigilence {
-		my ($self,$hash) = @_;
-	my $filein = $hash->{filein};
-	my $name = $self->patient()->name();
-	my $project = $self->patient()->getProject();
-	my $project_name = $project->name();
-	
-	my $projectName = $self->project->name();
-	my $ppn = 1;
-	$ppn = int($self->nproc/2) if $self->nocluster;
-	my $output   = $self->project->quality_dir;#$self->getCacheDir() . "/check_quality";
-	my $fileout = "$output/".$self->project->name.".identito_vigilence.txt";
-	
-	### Récupération de la version de samtools
-	
-	my $bin_dev = $self->script_dir;
-	
-	my $cmd = qq{perl $bin_dev/identito_vigilence.pl -project=$projectName > $fileout };
-	my $type = "identito";
-	my $stepname = $projectName."@".$type;
-	my $job_bds = job_bds->new(cmd=>[$cmd],name=>$stepname,ppn=>$ppn,filein=>[$filein],fileout=>$fileout,type=>$type,dir_bds=>$self->dir_bds);
-	$self->current_sample->add_job({job=>$job_bds});
-	if ($self->unforce() && -e $fileout){
-		my $nofound;
-		foreach my $patient (@{$project->getPatients()}) {
-			my $identity_vigilance= $patient->identity_vigilance();
-			$nofound ++ unless $identity_vigilance;
-		}
-		
-		 		$job_bds->skip() unless $nofound;
-	}
-	return ($fileout);
 }
 
 sub quality_check {
