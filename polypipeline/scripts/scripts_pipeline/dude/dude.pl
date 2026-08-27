@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use FindBin qw($Bin);
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
@@ -29,9 +29,11 @@ die("dude !!!  no project ") unless $project_name;
 my $buffer = new GBuffer;
 my @list_cmd = (11,"12_controls","12cai",13,"14");
 my $project = $buffer->newProject( -name 			=> $project_name );
+my $dir_out= $project->getVariationsDir("dude");
+unlink "$dir_out/dude.done" if -e "$dir_out/dude.done";
 #exit(0) if $project->isDude();
 foreach my $patient (@{$project->getPatients}){
-		my $dir_out= $project->getVariationsDir("dude");
+		
 		my $filegz = $dir_out."/".$patient->name.".dude.lid.gz";
 		if (-e $filegz){
 			unlink $filegz;
@@ -69,6 +71,6 @@ foreach my $patient (@{$project->getPatients}){
 			die("you have a problem somewhere: $filegz ".$patient->name);
 		}
 }
-
+system ("touch $dir_out/dude.done");
 print "OK \n";
 exit(0);
