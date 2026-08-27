@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use FindBin qw($Bin);
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
@@ -49,6 +49,8 @@ my $patient_runs;
 foreach my $run (keys %{$control}) {
 	foreach my $hp (@{$control->{$run}}) {
 		my $name = $hp->{patient};
+		warn Dumper $hp;
+		die() if $name eq "BEN_Lou";
 		$list_controls->{$hp->{id}}++;
 		$patient_runs->{$hp->{id}} = $run;
 		my $dir = $hp->{file_depth};
@@ -57,7 +59,6 @@ foreach my $run (keys %{$control}) {
 		my $pr =$hp->{$run}->{project};
 	}
 }
-
 foreach my $patient (@{$project->getPatients}){
 			my $r = $patient->getRun();
 			my $cov_file = $patient->fileNoSqlDepth;
@@ -155,7 +156,7 @@ foreach my $chr (@{$project->getChromosomes}) {
 						my $name = $hp->{patient};
 						my $dir = $hp->{dir_depth};
 						$hdepth->{$name} =  GenBoBinaryFile->new(name=>$name.".depth.lmdb",dir=>$dir,mode=>"r") unless exists $hdepth->{$name};
-					
+						
 						my $array = $hdepth->{$name}->getDepth($chr->name,$primer->start,$primer->end);
 					
 						my $cov = sum(@$array)/scalar(@$array);

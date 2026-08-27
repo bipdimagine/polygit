@@ -268,7 +268,7 @@ sub find_other_patient {
 				$bam =  $p->getAlignFileName();
 				 my $capture = $p->getCapture;	
 				my $machine     = $p->getRun->machine;
-				next if $machine ne $machine_project;
+				#next if $machine ne $machine_project;
 				#warn $machine;
 				#next unless  $machine =~/NOVA/i;
 
