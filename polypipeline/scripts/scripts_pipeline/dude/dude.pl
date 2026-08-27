@@ -30,7 +30,10 @@ my $buffer = new GBuffer;
 my @list_cmd = (11,"12_controls","12cai",13,"14");
 my $project = $buffer->newProject( -name 			=> $project_name );
 my $dir_out= $project->getVariationsDir("dude");
-unlink "$dir_out/dude.done" if -e "$dir_out/dude.done";
+my $file_done = $project->getFileName("dude");
+unlink $file_done if -e $file_done;
+
+ 
 #exit(0) if $project->isDude();
 foreach my $patient (@{$project->getPatients}){
 		
@@ -71,6 +74,6 @@ foreach my $patient (@{$project->getPatients}){
 			die("you have a problem somewhere: $filegz ".$patient->name);
 		}
 }
-system ("touch $dir_out/dude.done");
+ system ("touch $file_done");
 print "OK \n";
 exit(0);

@@ -952,6 +952,19 @@ has ncboost_parquet_dejavu_filter_path => (
 	}
 );
 
+
+sub getFileName {
+		my ($self,$step) = @_;
+		if ($step eq "quality_check") {
+			return $self->quality_dir." quality_check.done";
+		}
+		elsif ($step eq "dude") {
+			my $dir_out= $self->getVariationsDir("dude");
+			return "$dir_out/dude.done";
+		}
+		
+		else {die("nothing konwn about $step ")};
+}
 #has lmdb_ncboost_path => (
 #	is      => 'ro',
 #	lazy    => 1,
