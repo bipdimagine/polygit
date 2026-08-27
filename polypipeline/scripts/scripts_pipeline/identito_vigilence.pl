@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use FindBin qw($Bin);
 use strict;
@@ -89,6 +89,7 @@ foreach my $var_id (@list) {
 	#eval {
 	my $v = $project->_newVariant($var_id);
 	#}
+	warn $v->name;
 	foreach my $patient (@{$project->getPatients()}) {
 	my $depth = $patient->depth($v->getChromosome()->id(),$v->start,$v->start+1);
 	if ($depth->[0] > $limit){
