@@ -143,6 +143,7 @@ my $steps = {
 				"tiny_rocks"=>sub {$pipeline->tiny_rocks(@_)},
 				"cache_store_duck" =>sub {$pipeline->cache_store_duck(@_)}, 
 				"hotspot" =>sub {$pipeline->hotspot(@_)},
+				"dude" =>sub {$pipeline->dude_prg(@_)},
 			};
 
 
@@ -155,7 +156,7 @@ $pipeline->yes($yes);
 $pipeline->unforce(0) if $force;
 #$pipeline->add_sample(patient=>$project);
 
-my @types_steps = ('dude','chromosomes','project','dejavu','polydiag','html_cache');
+my @types_steps = ('dude1','dude','chromosomes','project','dejavu','polydiag','html_cache');
  @types_steps = ('chromosomes','rocks','project','dejavu','html_cache') if $project->isGenome;
 @types_steps = ('chromosomes') if $giab ;
 my $list_steps;
@@ -177,7 +178,7 @@ unless ($menu) {
 
 	
 		next unless $define_steps->{$type}->{$ht};
-
+		warn Dumper $define_steps->{$type}->{$ht};
 		push(@$list_steps,[split(",",$define_steps->{$type}->{$ht})]);
    		push(@$list_steps_types,$type);
 	}
@@ -215,9 +216,15 @@ my $n = 0;
 my $priority = 0;
 my $nb_type = 0;
 foreach my $list_requests (@{$list_steps}) {
+	
 	my $type_objects = $list_steps_types->[$nb_type];
 	$nb_type ++;
 	$priority++;
+	if ($type_objects eq 'dude1') {
+		$pipeline->add_sample_with_priority($project, $priority);
+		push(@$end_files, prepare_calling_jobs($list_requests, $steps));
+		
+	}
 	if ($type_objects eq 'dude') {
 		foreach my $patient (@{$project->getPatients()}) {
 			$pipeline->add_sample_with_priority($patient, $priority);
@@ -396,16 +403,30 @@ sub control_patients {
 sub change_sex {
 	my ($patients) = @_;
 	my $dbh = $buffer->dbh;
-	my $sth = $dbh->prepare(
-
-    "UPDATE patient SET sex = ? WHERE patient_id = ?"
-
-);
 print "\033[H\033[J";
 $dbh->{AutoCommit} = 0;
+
+my ($user, $current_user, $host) = $dbh->selectrow_array(
+
+    q{SELECT USER(), CURRENT_USER(), @@hostname}
+
+);
+
+warn "USER()=$user\n";
+
+warn "CURRENT_USER()=$current_user\n";
+
+warn "SERVER=$host\n";
+
 	foreach my $patient (@$patients){
-		print colored("cyan"," - ".$patient->name." ".$patient->sex." ==> ".$patient->compute_sex)."\n";
-		 $sth->execute($patient->compute_sex, $patient->id);
+		warn $patient->name;
+		print colored::stabilo("bold cyan"," - ".$patient->name." ".$patient->sex." ==> ".$patient->compute_sex,1)."\n";
+		my $s = $patient->compute_sex;
+		my $id = $patient->id;
+		 my $sql = qq{    
+               UPDATE PolyprojectNGS.patient SET sex = $s WHERE patient_id = $id;
+        };
+        $dbh->do($sql) or die($sql);
 	} 
 	 my $choice = prompt("\nConfirm  (y/n) ? ") unless $yes;
 			if ($choice eq "y"){
@@ -415,6 +436,9 @@ $dbh->{AutoCommit} = 0;
 				$dbh->rollback;
 				exit;
 			}
+	#print "restart dude ?";
+	#warn qq{run_cluster.pl -cmd=\"$Bin/scripts/scripts_pipeline/dude/dude.pl -project=}.$project->name.qq{ -fork=24\"};
+	#system(qq{run_cluster.pl -cmd=\"$Bin/scripts/scripts_pipeline/dude/dude.pl -project=}.$project->name.qq{ -fork=24\" -cpu=24});	
 }
 
 sub check_version {

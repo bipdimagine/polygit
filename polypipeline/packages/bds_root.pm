@@ -22,6 +22,9 @@ require Term::Screen;
 use Term::StatusBar;
 use UUID 'uuid';
 use Carp;
+use utf8;
+
+use open ':std', ':encoding(UTF-8)';
 
 my $bin_dev = "";
 has 'patient' => (
@@ -515,10 +518,12 @@ sub launch_bds_daemon_common{
 	while ( $daemon->Status($pid)){
 		$nb ++;
 		my $z =0;
+		my @spin = ("-","\\" ,"|","/");
 		while ($z< 30){
 			$z++;
+			print "\r".$spin[$z%4];
 			#$s->next();
-			print ".";
+			#print ".";
 			sleep(1);
 		}
 		print "\n";
