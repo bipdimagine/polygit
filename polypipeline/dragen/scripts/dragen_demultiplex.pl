@@ -44,7 +44,7 @@ my $fastq_index;
 my $trim = '';
 my $big_run;
 my $sc;
-
+my $delete;
 GetOptions(
 	'project=s'		=> \$project_names,
 	'l2=s'			=> \$l2,
@@ -56,6 +56,8 @@ GetOptions(
 	'fastq_index'	=> \$fastq_index,	# generate I1/I2 fastq
 	'singlecell|sc'	=> \$sc,
 	'big_run'		=> \$big_run,
+	'delete!'		=> \$delete,
+	
 ) || confess("Error in command line arguments");
 
 my $bcl_dir;
@@ -67,6 +69,9 @@ my $run_name;
 my $umi_name;
 my $dir_bcl_tmp;
 my $adaptors;
+unless (defined $delete){
+	$delete = 1 if ( prompt( "Delete Bcl after demultipex (y/n) ", -yes) );
+}
 
 foreach my $project_name ( split( ",", $project_names ) ) {
 	my $buffer  = GBuffer->new();
@@ -94,6 +99,8 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 		if ( $capture->umi ) {
 			$mask     = $capture->umi->{mask} unless defined $mask;
 			$umi_name = $capture->umi->{name};
+
+			#v2
 			die("problem more than one mask ") if $mask ne $capture->umi->{mask};
 		}
 	}
@@ -101,9 +108,14 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 
 	# RNAseq NEB: récupère les adaptateurs à trimmer
 	my @profiles = map { $_->getSampleProfile } @{ $project->getPatients };
-	$trim = 1 if ($project->isRnaseq and $trim eq '');
+	$trim = 1 if ($project->isRnaseq and $trim eq ''); #( grep { $_->isRna and $_->getCaptures->[0]->name !~ /^transcriptome_10X/} @{ $project->getPatients } );
 	if ($trim) {
 		undef $adaptors;
+# Nextera Mate Pair Adapters: CTGTCTCTTATACACATCT+AGATGTGTATAAGAGACAG # FastQC: CTGTCTCTTATA
+# Nextera Transposase Adapters: TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG+GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG
+# Illumina Universal Adapter: R1:AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC; R2:AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT # FastQC: AGATCGGAAGAG
+# Illumina Small RNA Adapter: # FastQC:	ATGGAATTCTCG
+# SOLID Small RNA Adapter: # FastQC:	CGCCTTGGCCGT
 		my $illuminaAdaptors = Bio::SeqIO->new( -file => $project->getIlluminaAdaptors, '-format' => 'Fasta' );
 		my $tsoAdaptors = Bio::SeqIO->new( -file => $project->getTsoAdaptors, '-format' => 'Fasta' );
 		foreach my $fasta ( $illuminaAdaptors, $tsoAdaptors ) {
@@ -138,8 +150,10 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	my $csv_tmp = $bcl_dir . "/SP." . time . ".csv";
 	die("no sample sheet in database ") unless ( $run->sample_sheet or -e $bcl_dir . 'SampleSheet10X.csv' );
 	my $toto = $run->sample_sheet;
-	#warn $csv_tmp;
+
+	#v2
 	$toto =~ s/;/,/g;
+#	$toto =~ s/\[BCLConvert_(Data|Settings)\]/\[$1\]/g;
 	open( TOTO, ">$csv_tmp" ) || confess("Can't open '$csv_tmp': $!");
 	print TOTO $toto;
 	close TOTO;
@@ -189,6 +203,7 @@ my $ok;
 my $pos_sample = firstidx { $_ eq "Sample_ID" } @$lheader_data;
 die("No Sample_ID in $data_title header ") if ($pos_sample eq -1);
 my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
+#warn("No Sample_Name in $data_title header ") if ($pos_sample_name eq -1);
 
 my $pos_cb1 = firstidx { lc $_ eq "index" } @$lheader_data;
 my $pos_cb2 = firstidx { lc $_ eq "index2" } @$lheader_data;
@@ -198,6 +213,7 @@ $len_cb->[1] = length( $lines->{$data_title}->[0]->[$pos_cb2] ) unless ( $pos_cb
 
 foreach my $data ( @{ $lines->{$data_title} } ) {
 	next unless $data->[$pos_cb1];
+	#v2
 	die( $len_cb->[0] . " ::  " . $data->[$pos_cb1] ) if $len_cb->[0] ne length( $data->[$pos_cb1] );
 	die("CB de taille differente") if ( ( $pos_cb2 ne '-1' ) and ( $len_cb->[1] ne length( $data->[$pos_cb2] ) ) );
 }
@@ -217,6 +233,7 @@ my $rc = 1 if (	grep {
 		 			and $_->{IsReverseComplement} eq 'Y'
 				} @$reads );
 
+#warn colored(['on_red'],"Index2 IsReverseComplement='Y' in RunInfo. The **I2** mask will be interpreted in reverse !!!") if ($rc);
 warn "Index2 IsReverseComplement='Y' in RunInfo." if ($rc);
 my $i_index = 0;
 
@@ -347,9 +364,11 @@ push( @{ $lines->{$settings_title} }, $adapter_R1 ) if ($adapter_R1);
 push( @{ $lines->{$settings_title} }, $adapter_R2 ) if ($adapter_R2);
 push( @{ $lines->{$settings_title} }, [ "OverrideCycles", $mask ] ) if $mask;
 if ($trim) {
-	# RNAseq NEB: Trim les adaptateurs
+	# RNAseq: Trim les adaptateurs
 	die("$settings_title AdapterRead1 already in samplesheet") if ( grep { /AdapterRead1/ } @{ $lines->{$settings_title} } );
 	die("$settings_title AdapterRead2 already in samplesheet") if ( grep { /AdapterRead2/ } @{ $lines->{$settings_title} } );
+	#	push(@{$lines->{$settings_title}},["AdapterRead1",'AGATCGGAAGAGCACACGTC']);#AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+	#	push(@{$lines->{$settings_title}},["AdapterRead2",'AGATCGGAAGAGCGTCGTGT']);#AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
 	push(
 		@{ $lines->{$settings_title} },
 		[ "AdapterRead1", join( '+', @$adaptors ) ],
@@ -420,6 +439,7 @@ foreach my $title ( @{$titles} ) {
 my $samp_name = "file" . time . ".csv";
 my $ss = $bcl_dir . "/" . $samp_name;
 csv( in => $outcsv, out => $ss, sep_char => "," );
+#die($ss);
 
 sleep(1);
 
@@ -439,19 +459,18 @@ while ( $checkComplete == 1 ) {
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
 my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp "; # --temp-dir=/data-pure/testfs-bipd/tmpDemul
 warn $rsync_cmd;
-my $exit_rsync = system($rsync_cmd);
+my $exit_rsync = system($rsync_cmd) || my $exit_rsync = $? >> 8;
+warn $exit_rsync;
+sleep(3);
 my $retry = 0;
-#while($exit_rsync >> 8 == 23 and $retry < 3) {
-while($exit_rsync != 0 and $retry < 3) {
-	warn $?;
-	warn $exit_rsync;
-	warn $exit_rsync . ' >> 8 = ' . $exit_rsync >> 8;
+while ( $exit_rsync == 23 and $retry < 3 ) {
 	$retry++;
 	warn("rsync error, new try $retry/3");
 	$exit_rsync = system($rsync_cmd);
 }
 die("Rsync error ($exit_rsync), please retry") if ($exit_rsync);
 my $ss1 = $dir_bcl_tmp . "/" . $samp_name;
+
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss1 --force --bcl-num-parallel-tiles 4 --bcl-num-conversion-threads 4 --bcl-num-compression-threads 4 --bcl-num-decompression-threads 4 };
 $cmd .= "--strict-mode true ";    # abort if any files are missing or corrupt
 $cmd .= "--create-fastq-for-index-reads true " if $fastq_index;
@@ -459,16 +478,18 @@ warn $cmd;
 
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
+#die;
 $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
 die() if $exit ne 0;
 #exit(0);
 warn "END DEMULTIPEX \n let's copy ";
 my $fork = 6;
 my $pm   = new Parallel::ForkManager($fork);
-
+my $dir_stats;
 foreach my $project_name ( split( ",", $project_names ) ) {
 	my $buffer  = GBuffer->new();
 	my $project = $buffer->newProject( -name => $project_name );
+	$dir_stats = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
 	my $runs    = $project->getRuns;
 	my $run;
 	if ($run_name_option) {
@@ -485,7 +506,8 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 
 		my $pid = $pm->start and next;
 
-		my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out );
+		my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out,"delete" );
+		
 		warn $fastq1 . " " . $fastq2;
 		#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
 
@@ -497,7 +519,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 $pm->wait_all_children();
 my $pr = $project_names;
 $pr =~ s/,/_/g;
-my $dir_stats = "/data-isilon/sequencing/ngs/demultiplex/" . $run_name . "." . $pr;
+$dir_stats .= $run_name . "." . $pr;
 
 system( "mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav " . $dir_out . "/Reports/ $dir_stats/ ; chmod -R a+rwx $dir_stats;" );
 
@@ -555,24 +577,66 @@ sub report {
 	print "\n ------------------------------\n";
 
 	print "-- By Sample : --\n";
-	my $tb2 = Text::Table->new( ( colored::stabilo( "blue", "Sample", 1 ), "# reads" ) ) ;    # if ($type == 1);
+#	my $tb2 = Text::Table->new( ( colored::stabilo( "blue", "Sample", 1 ), "# reads" ) ) ;    # if ($type == 1);
+#	@rows = ();
+#	foreach my $p ( sort keys %$bypatient ) {
+#		my @row;
+#		push( @row, colored::stabilo( "blue", $p, 1 ) );
+#		if ( $bypatient->{$p} < 1000000 ) {
+#			push( @row, colored::stabilo( "red", $bypatient->{$p}, 1 ) );
+#		}
+#		#		elsif (abs( $bypatient->{$p} - $mean ) > 3*$sd){
+#		#			push(@row,colored::stabilo("red",$bypatient->{$p},1)) ;
+#		#		}
+#		#		elsif (abs( $bypatient->{$p} - $mean ) > $sd){
+#		#			push(@row,colored::stabilo("yellow",$bypatient->{$p},1)) ;
+#		#		}
+#		else {
+#			push( @row, colored::stabilo( "green", $bypatient->{$p}, 1 ) );
+#		}
+#		push( @rows, \@row );
+	my @all_patients;
+	my $buffer  = GBuffer->new();
+	push (@all_patients, @{$buffer->newProject( -name => $_ )->getPatients}) foreach (split( ",", $project_names ));
+	
+	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# reads", 'expected reads') ) ; # if ($type == 1);
 	@rows = ();
-	foreach my $p ( sort keys %$bypatient ) {
+	$stat->add_data(values %$bypatient);
+	$mean = $stat->mean();
+	$sd = $stat->standard_deviation();
+	foreach my $p (sort keys %$bypatient){
+		my @pat = grep {$_->name eq $p =~ s/_RC$//r} @all_patients;
+		my $expected_reads = 0;
+		$expected_reads = $pat[0]->getExpectedReads if (scalar @pat);
 		my @row;
-		push( @row, colored::stabilo( "blue", $p, 1 ) );
-		if ( $bypatient->{$p} < 1000000 ) {
-			push( @row, colored::stabilo( "red", $bypatient->{$p}, 1 ) );
+		push(@row,colored::stabilo("blue",$p,1));
+		my $color;
+		if ($bypatient->{$p} < 1000000){
+			$color = 'red';
 		}
-#		elsif (abs( $bypatient->{$p} - $mean ) > 3*$sd){
-#			push(@row,colored::stabilo("red",$bypatient->{$p},1)) ;
-#		}
-#		elsif (abs( $bypatient->{$p} - $mean ) > $sd){
-#			push(@row,colored::stabilo("yellow",$bypatient->{$p},1)) ;
-#		}
+		elsif ($expected_reads) {
+			if ($bypatient->{$p} <= 0.9*$expected_reads or $bypatient->{$p} > 2*$expected_reads){
+				$color = 'red';
+			}
+			elsif ($bypatient->{$p} <= $expected_reads or $bypatient->{$p} > 1.5*$expected_reads){
+				$color = 'yellow';
+			}
+			else {
+				$color = 'green';
+			}
+		}
+		elsif (abs( $bypatient->{$p} - $mean ) > 3*$sd){
+			$color = 'red';
+		}
+		elsif (abs( $bypatient->{$p} - $mean ) > $sd){
+			$color = 'yellow';
+		}
 		else {
-			push( @row, colored::stabilo( "green", $bypatient->{$p}, 1 ) );
+			$color = 'green';
 		}
-		push( @rows, \@row );
+		push( @row, colored::stabilo( $color, $bypatient->{$p} =~ s/\B(?=(\d{3})+(?!\d))/ /gr, 1 ) ) ;
+		push( @row, colored::stabilo( $color, $expected_reads =~ s/\B(?=(\d{3})+(?!\d))/ /gr, 1 ) ) ;
+		push(@rows,\@row);
 	}
 
 	$tb2->load(@rows);

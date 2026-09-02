@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use CGI qw/:standard :html3/;
 use FindBin qw($Bin);
 use strict;
