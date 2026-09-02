@@ -1331,7 +1331,9 @@ sub bam_stats {
 			die($f) unless -e $f;
 			$cmd = qq{cat $f }
 		 }
-		my $cmd   = qq{$samtools idxstats $bam};
+		else { 
+		 $cmd   = qq{$samtools idxstats $bam};
+		}
 		my @t     = `$cmd`;
 		chomp(@t);
 		foreach my $l (@t) {

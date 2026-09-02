@@ -100,7 +100,9 @@ foreach my $var_id (@{$buffer->queryClinvarPathogenic->getAllVarIds_onlyLastRele
 
 my @lGenes;
 if ($keep_var_id) {
+	warn "cocuou";
 	my $v = $project->getVariant($keep_var_id);
+	warn "dididi";
 	@lGenes = (@{$v->getGenes()});
 }
 else {

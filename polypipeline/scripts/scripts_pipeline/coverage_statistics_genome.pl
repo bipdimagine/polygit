@@ -49,7 +49,7 @@ my $patients;
 if ($patient_name) { push(@$patients, $project->getPatient($patient_name)); }
 else { $patients = $project->getPatients(); }
 
-if ($project->isGenome && $json) {
+if ( $json) {
 	my $hjson;
 	
 	$patients = undef;
@@ -92,8 +92,9 @@ if ($project->isGenome && $json) {
 		exit(0);
 }
 
-if ($project->isGenome){
-	 
+die($json) unless $patient_name;
+my $patient = $project->getPatient($patient_name) ;
+if ($patient->isGenome){
 	$pm->run_on_finish(
 		sub {
 			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
@@ -117,10 +118,6 @@ if ($project->isGenome){
 	);
 
 
-$patients = undef;
-if ($patient_name) { push(@$patients, $project->getPatient($patient_name)); }
-else { $patients = $project->getPatients(); }	
-foreach my $patient (@{$patients}){
 	foreach my $chr (@{$project->getChromosomes}){
 			my $intervals = $buffer->divide_by_chunks(1,$chr->length,50_000_000);
 			#warn $from." ".$to;
@@ -152,8 +149,6 @@ foreach my $patient (@{$patients}){
 			 $h = {s5=>$s5,s15=>$s15,s30=>$s30,s100=>$s100,s20=>$s20,patient=>$patient->name,nb=>$nb,sum=>$sum} ;
 		 	$pm->finish( 0,$h );
 		 }
-		
-		}
 	}
 $pm->wait_all_children();
 }
@@ -182,11 +177,6 @@ $pm->run_on_finish(
 		}
 	);
 	
-$patients = undef;
-if ($patient_name) { push(@$patients, $project->getPatient($patient_name)); }
-else { $patients = $project->getPatients(); }
-	
-foreach my $patient (@{$patients}){
 			$patient->project->disconnect();
 	my $all_sum;
 	$patient->alignmentMethods();
@@ -227,7 +217,6 @@ foreach my $patient (@{$patients}){
 		}
 		$pm->wait_all_children();
 	}
-}
 
 
 my $hjson; 

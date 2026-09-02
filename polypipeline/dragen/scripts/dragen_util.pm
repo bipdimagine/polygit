@@ -1,9 +1,9 @@
 package dragen_util;
 use strict;
 use Data::Dumper;
-
+use Carp qw(confess);
 sub get_fastq_file {
-	my ($patient,$dir_pipeline, $dir_fastq,$delete) = @_;
+	my ($patient,$dir_pipeline, $dir_fastq,$type) = @_;
 	my $name=$patient->name();
 	$dir_fastq = $patient->getSequencesDirectory() unless $dir_fastq;
 	my $files_pe1 = file_util::find_file_pe($patient,"",$dir_fastq,1);
@@ -15,6 +15,7 @@ sub get_fastq_file {
 	my $indice2 = "R2";
 	#if exists 
 	my $r2 = "R2";
+	my @files_rclone;
 	foreach my $cp (@$files_pe1) {
 		
 		if (exists $cp->{R3}){
@@ -30,18 +31,33 @@ sub get_fastq_file {
 		die($file2) unless -e  $file1;
 		push(@r1,$file1);
 		push(@r2,$file2);##
+		push(@files_rclone,$cp->{R1});
+		push(@files_rclone,$cp->{R2});
 	}
 	my $cmd1 = join(" ",@r1);
 	my $cmd2 = join(" ",@r2);
 	my $fastq1 = $dir_pipeline."/".$patient->name."_S1_L001_R1_001.fastq.gz";
 	my $fastq2 = $dir_pipeline."/".$patient->name."_S1_L001_R2_001.fastq.gz";
-	#if ($step eq "align"){
-	
+	my $nb_rclone  =scalar @files_rclone;
+	if($nb_rclone == 2 && dir_fastq){
 		
-		if ($delete eq "delete"){
+	}
+	#if ($step eq "align"){
+	#	if (scalar(@r1) == 1 && scalar(@r2) == 1 && $type="name" ){
+	#		return($r1[0],$r2[0]);
+	#	}
+		if ($type eq "delete"){
 			warn "cat and DELETE";
 			system "cat $cmd1 > $fastq1 && rm $cmd1 ";# unless -e $fastq1;
 			system "cat $cmd2 > $fastq2 && rm $cmd2";# unless -e $fastq1;
+		}
+		elsif ($type eq "copy" && $nb_rclone == 2 ){
+			my $rclone_arg = join(" --include ",@files_rclone);
+			warn "RCLONE ";
+			warn "rclone copy $dir_fastq --include  $rclone_arg $dir_pipeline --transfers 2  --checkers 2 2>/dev/null";
+			system("rclone copy $dir_fastq  --include $rclone_arg $dir_pipeline --transfers 2  --checkers 2 2>/dev/null");
+			system("mv $dir_pipeline/".$files_rclone[0]." ".$fastq1) if $files_rclone[0] ne $patient->name."_S1_L001_R1_001.fastq.gz";
+			system("mv $dir_pipeline/".$files_rclone[1]." ".$fastq2) if $files_rclone[1] ne $patient->name."_S1_L001_R1_001.fastq.gz";
 		}
 		else {
 		warn "cat $cmd1 > $fastq1";

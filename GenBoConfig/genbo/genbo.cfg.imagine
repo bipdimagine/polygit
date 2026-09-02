@@ -231,7 +231,7 @@ plink:/software/bin/plink
 bazam:/software/distrib/miniconda3/bin/bazam
 
 #rnaseq
-featureCounts:/software/bin/featureCounts
+featureCounts:exec_singularity.sh subread.sif /usr/local/bin/featureCounts
 fastqScreen:/software/distrib/FastQ-Screen/fastq_screen
 
 #insertion
@@ -321,7 +321,7 @@ epi2me:env NXF_SINGULARITY_CACHEDIR=/data-isilon/SINGULARITY/EPI2ME nextflow run
 
 
 # MELT 
-melt:/software/distrib/MELT/MELTv2.2.2/MELT.jar
+melt:/data-bipd/data-pure/software/distrib/MELT/MELTv2.2.2/MELT.jar
 
 # liftOver
 liftOver:/software/bin/liftOver

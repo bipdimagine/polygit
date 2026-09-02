@@ -125,6 +125,8 @@ my $pangenome ="";
  $dragen = "/opt/dragen/4.3.16/bin/dragen" if $project->genome_version =~ /HG19/;
  
  my($version_str, $stderr, $exit2) = $ssh->cmd("$dragen --version");
+ warn "$dragen --version";
+ warn $stderr;
  die() unless $version_str;
 my @a = split("\n",$version_str);
 my @b = split(" ",$a[0]);
@@ -254,7 +256,7 @@ sub run_pipeline_rna {
 	warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 	my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 	unlink $fastq1 if  $fastq1 =~ /pipeline/;
-	unlink $fastq2 if $fastq2 =~ /pipeline/;;
+	unlink $fastq2 if $fastq2 =~ /pipeline/;
 	die if $exit != 0;
 
 }
@@ -291,7 +293,7 @@ my ($fastq1,$fastq2);
 
 if (exists $pipeline->{align}){
 	warn "1";
-	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline,undef,"copy");
 	 warn "2";
 	 
 }
@@ -317,7 +319,7 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 	}
 }	
 elsif (exists $pipeline->{align}){
-my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+#my ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
 
 #	confess() unless $fastq1;
 	if ($fastq1) {
