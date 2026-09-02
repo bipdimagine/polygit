@@ -50,7 +50,6 @@ warn "=== Preliminary Check ===" . "\n\n";
 # Vérifier le nombre de reads total des ubams Revio
 my $nb_reads_revio = 0;
 foreach my $bam (@{$patient->uBams_revio()}){
-	$nb_reads_revio += -s $bam;
 	my $pbi = $bam.".pbi";
 	#warn "run_singularity.sh pbbam.sif pbindexdump $pbi"; 
 	open(my $fh, "-|", "run_singularity.sh pbbam.sif pbindexdump $pbi") or confess "Impossible de lancer pbdump: $!";
@@ -69,7 +68,6 @@ foreach my $bam (@{$patient->uBams_revio()}){
 
 # Le BAM de sortie existe-t-il déjà avec le bon SM ?
 if (-e $ubam && !$force) {
-	warn "=== Preliminary Check ===" . "\n\n";
 	warn colored("Output BAM already exists: $ubam", 'yellow');
 	
 	# Vérifier le SM du BAM existant
@@ -260,7 +258,7 @@ unless ($no_exec and ! -e $ubam) {
 	chomp($nb_reads_merged);
 	if ($nb_reads_merged != $nb_reads_revio) {
 		#unlink $ubam;
-		confess ("ERROR Le nombre de reads ne correspond pas: ubams Revio $nb_reads_revio vs ubam mergé $nb_reads_merged");
+		confess (colored("ERROR Le nombre de reads ne correspond pas: ubams Revio $nb_reads_revio vs ubam mergé $nb_reads_merged", 'red'));
 	}
 }
 
