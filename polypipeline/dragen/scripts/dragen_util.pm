@@ -39,13 +39,8 @@ sub get_fastq_file {
 	my $fastq1 = $dir_pipeline."/".$patient->name."_S1_L001_R1_001.fastq.gz";
 	my $fastq2 = $dir_pipeline."/".$patient->name."_S1_L001_R2_001.fastq.gz";
 	my $nb_rclone  =scalar @files_rclone;
-	if($nb_rclone == 2 && dir_fastq){
-		
-	}
-	#if ($step eq "align"){
-	#	if (scalar(@r1) == 1 && scalar(@r2) == 1 && $type="name" ){
-	#		return($r1[0],$r2[0]);
-	#	}
+
+	
 		if ($type eq "delete"){
 			warn "cat and DELETE";
 			system "cat $cmd1 > $fastq1 && rm $cmd1 ";# unless -e $fastq1;
