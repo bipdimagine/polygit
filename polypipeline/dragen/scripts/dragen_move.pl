@@ -184,7 +184,7 @@ sub move_stats {
 
 sub move_file {
 	my ($file,$patient,$method,$type,$idxtype,$backup) = @_;	
-	
+	die();
 	my $physical_name = $patient->getPhysicalFileName($method,$version,$type);
 	if($backup && -e $physical_name ) {
 		backup($physical_name);
@@ -197,16 +197,22 @@ sub move_file {
 
 sub move_cram {
 	my ($bam,$patient,$type,$idxtype) = @_;
-	my $physical_name = move_file($bam,$patient,"dragen-align","cram","crai");
+	#my $physical_name = move_file($bam,$patient,"dragen-align","cram","crai");
 	my $prod = $patient->getCramFileName("dragen-align",$version);
-	ln_encode_json($physical_name,$prod);
-	system("ln -sf  $physical_name.crai $prod.crai");
+	move_file2($bam,$prod,'crai');
 	 my $filename = $prod;
 	 $filename =~ s/cram/idxstats/;
 	 my $samtools = $buffer->software("samtools");
-	 system("$samtools idxstats $physical_name  -\@ 20  > $filename");
+	 system("$samtools idxstats $prod  -\@ 20  > $filename");
+	 
 }
-
+sub move_file2 {
+	my ($bam1,$bam2,$ext) = @_;
+	die() unless  -e $bam1;
+	system("rsync -rav  $url"."$bam1 $bam2 ");
+	system("rsync -rav  $url"."${bam1}.${ext} ${bam2}.${ext} ");
+	
+}
 
 sub move_bam {
 	my ($bam,$patient) = @_;
@@ -215,38 +221,41 @@ sub move_bam {
 		move_cram($bam,$patient);
 		return;
 	}
-	my $physical_name = move_file($bam,$patient,"dragen-align","bam","bai");
+	move_file2($bam,$prod,"bai");
+	system("rsync -rav  $url"."$bam $prod ");
+	system("rsync -rav  $url"."${bam}.bai ${prod}.bai ");
 	
-	ln_encode_json($physical_name,$prod);
-	system("ln -sf  $physical_name.bai $prod.bai");
+	#my $physical_name = move_file($bam,$patient,"dragen-align","bam","bai");
+	
+	#ln_encode_json($physical_name,$prod);
+	#system("ln -sf  $physical_name.bai $prod.bai");
 }
 
 
 sub move_gvcf {
 	my ($gvcf,$patient) = @_;
-	my $physical_name = move_file($gvcf,$patient,"dragen-calling","gvcf.gz","tbi","backup");
 	my $prod = $patient->gvcfFileName("dragen-calling");
+	move_file2($gvcf,$prod,"tbi");
+	#system("rsync -rav  $url"."$bam $prod ");
 	
-	ln_encode_json($physical_name,$prod);
+	#ln_encode_json($physical_name,$prod);
 	tabix($prod,"vcf");
 }
 
 sub move_ploidy {
 	my ($vcf,$patient) = @_;
-	my $physical_name = move_file($vcf,$patient,"dragen-ploidy","vcf.gz","tbi");
 	
 	my $prod = $patient->vcfFileName("dragen-ploidy");
-	ln_encode_json($physical_name,$prod);
+	move_file2($vcf,$prod,"tbi");
 	tabix($prod,"vcf");
 }
 
 sub move_vcf {
 	my ($vcf,$patient) = @_;
-	my $physical_name = move_file($vcf,$patient,"dragen-calling","vcf.gz","tbi","backup");
 	
-	my $prod = $patient->getVariationsFileName("dragen-calling");
+	
 	my $prod = $patient->vcfFileName("dragen-calling");
-	ln_encode_json($physical_name,$prod);
+		move_file2($vcf,$prod,"tbi");
 	tabix($prod,"vcf");
 }
 sub move_count {
@@ -259,10 +268,9 @@ sub move_count {
 
 sub move_cnv {
 	my ($t1,$patient) = @_;
-	my $physical_name = move_file($t1,$patient,"dragen-cnv","vcf.gz","tbi","backup");
 	my $dir = $patient->project->getVariationsDir("dragen-cnv");
 	my $prod = "$dir/".$prefix.".cnv.vcf.gz";
-	system("ln -fs  $physical_name $prod");
+	move_file2($t1,$prod,"tbi");
 	tabix($prod,"vcf");
 	
 }
@@ -275,9 +283,8 @@ sub tabix {
 sub move_sv {
 	my ($t1,$patient) = @_;
 	my $dir = $project->getVariationsDir("dragen-sv");
-	my $physical_name = move_file($t1,$patient,"dragen-sv","vcf.gz","tbi","backup");
 	my $prod = $dir."/".$prefix.".sv.vcf.gz";
-	ln_encode_json($physical_name,$prod);
+		move_file2($t1,$prod,"tbi");
 	tabix($prod,"vcf");
 	
 }
@@ -291,9 +298,9 @@ sub move_sj {
 sub move_str {
 	my ($vcf,$patient) = @_;
 	my $dir = $project->getVariationsDir("dragen-str");
-	my $physical_name = move_file($vcf,$patient,"dragen-str","vcf.gz","tbi","backup");
+	
 	my $prod = $dir."/".$prefix.".repeats.vcf.gz";
-	ln_encode_json($physical_name,$prod);
+	move_file2($vcf,$prod,"tbi");
 	tabix($prod,"vcf");
 }
 

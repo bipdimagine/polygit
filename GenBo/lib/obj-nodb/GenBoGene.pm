@@ -681,9 +681,13 @@ sub score {
 	my $score =0;
 	$score += 0.5 if $self->pLI ne "-" && $self->pLI > 0.95;
 	$score += 1 if $self->is_omim_morbid();
-
+	if ($self->external_name =~ /^RNU/) {
+		$score += 2;#  $polyScore == 0; 
+	}
 	my $polyScore = $self->project->lmdbpolyScore->get($self->id);
+	
 	return $score unless $polyScore;
+	
 	my $phenotypes = $self->getProject->getPhenotypes();
 	
 	my @pscore;
@@ -705,8 +709,10 @@ sub score {
 	#warn Dumper(@pscore);
 	
 	$score += max(@pscore) if @pscore;
+	
 	return $score if ($use_phenotype);
 	$self->{score} = $score;
+	
 	return $score;
 }
  
@@ -746,6 +752,9 @@ sub raw_score {
 				$score += 0.2 * (scalar(@o));
 			}
 			warn $score if $debug;
+		}
+		if ($self->external_name =~ /^RNU/) {
+			$score +=2  ;#if $score < 1;#  $polyScore == 0; 
 		} 
 		warn $score if $debug;
 		#die() if $debug;

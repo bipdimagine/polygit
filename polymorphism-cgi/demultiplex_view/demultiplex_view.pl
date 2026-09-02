@@ -31,13 +31,15 @@ my $last_demultiplex = 1;
 $last_demultiplex = undef if $view_all;
 
 my ($h_files, $h_files_date);
-my $origin_path = '/data-isilon/sequencing/ngs/demultiplex/';
+my $buffer = new GBuffer;
+my $origin_path = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
+#my $origin_path = '/data-isilon/sequencing/ngs/demultiplex/';
+#
 my $is_first_check = 1;
 my ($list_paths_found) = list_html_files_in_dir($origin_path, $is_first_check);
 $is_first_check = undef;
 
 
-my $buffer = new GBuffer;
 
 if ($run_name and $export_xls) {
 	my $this_path = $origin_path.'/'.$run_name;

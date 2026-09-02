@@ -519,7 +519,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 $pm->wait_all_children();
 my $pr = $project_names;
 $pr =~ s/,/_/g;
-$dir_stats .= $run_name . "." . $pr;
+$dir_stats.= $run_name . "." . $pr;
 
 system( "mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav " . $dir_out . "/Reports/ $dir_stats/ ; chmod -R a+rwx $dir_stats;" );
 
@@ -642,6 +642,9 @@ sub report {
 	$tb2->load(@rows);
 	print $tb2;
 	print "\n ------------------------------\n";
+	if ($delete) {
+		system ("rm -r $dir_bcl_tmp");
+	}
 }
 
 sub create_3_fastq {

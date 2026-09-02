@@ -173,8 +173,7 @@ sub concatVcf {
 #my $cmd = " $bcftools merge   $variant_string -o $fileout --force-samples >$fileout " ;
 
 	my $cmd = " $bcftools merge   $variant_string -o $fileout  >$fileout 2>/dev/null";
-	$cmd = qq{$bcftools merge $variant_string -Ou | $bcftools view  -e 'COUNT(GT="mis")>0' -Oz -o $fileout};
-	warn $cmd;
+	$cmd = qq{$bcftools merge $variant_string -Ou | $bcftools view  -v snps -e 'COUNT(GT="mis")>0'  -o $fileout};
 	system($cmd) unless -e $fileout;
 	warn "end";
 	return $fileout;
@@ -219,7 +218,7 @@ sub fast_plink {
 		next if length($ref) > 1;
 		next if length($alt) > 1;
 		$max_chr{$chrom}++;
-		next if ( $max_chr{$chrom} > 80_000 );
+		next if ( $max_chr{$chrom} > 10_000 );
 		next if $ref =~ /,/;
 		next if $alt =~ /,/;
 		next if scalar(@gsamples) ne scalar(@samples);

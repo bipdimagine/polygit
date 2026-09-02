@@ -167,16 +167,27 @@ sub run_pipeline_rna {
 	my ($fastq1,$fastq2);
 	my $align = "false";
 	$align = "true" if (exists $pipeline->{align});
+	#if (exists $pipeline->{align}){
+	#	warn "1";
+	#	 ($fastq1,$fastq2) = dragen_util::get_fastq_file($patient,$dir_pipeline);
+	#	 warn "2";
+	#	 
+	#}
+#	if (-e $bam){
+#		$align = "false";
+#		warn "## $align";
+#		return;
+#	}
 	
 	my $buffer_ori = GBuffer->new();
 	my $project_ori = $buffer_ori->newProject( -name => $projectName );
 	my $patient_ori = $project_ori->getPatient($patients_name);
 	
 	if ($version && exists $pipeline->{align} ){
-		$patient_ori->{alignmentMethods} =['dragen-align','hisat2'];
+		$patient_ori->{alignmentMethods} =['dragen-align','hisat2','star'];
 		my $bamfile = $patient_ori->getBamFile();
 		$param_align = "-b $bamfile --enable-map-align-output true  --enable-rna=true ";
-		#$param_align .= "--output-format CRAM " if $version =~/HG38/;
+		$param_align .= " --output-format CRAM " if $cram;
 		
 	}	
 	
@@ -216,6 +227,8 @@ sub run_pipeline_rna {
 	
 	if (exists $pipeline->{vcf} or exists $pipeline->{count}) {
 		my $gtf =  $project->gtf_file();
+		$gtf =~ s/^\/data-(pure|isilon)/\/data-dragen/; # dragen n'a pas accès au gtf qui est dans /data-pure/public-data/repository/<genome_version>/annotations/
+		warn $gtf;
 		die("'$gtf' does not exist") unless -e $gtf;
 		$param_align .= "-a $gtf ";
 	}
@@ -380,9 +393,9 @@ if (exists $pipeline->{sv}){
 }
 
 my $param_str = "";
-#if (exists $pipeline->{str}){
-#	$param_str = qq{ --repeat-genotype-enable true };
-#}
+if (exists $pipeline->{str}){
+	$param_str = qq{ --repeat-genotype-enable true };
+}
 $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
 
 

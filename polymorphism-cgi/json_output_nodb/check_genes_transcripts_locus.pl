@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # permet de renvoyer petit a petit les print et non pas de tout mettre en buffer et tout sortir a la fin du script
 $| = 1;
 use CGI qw/:standard :html3/;
@@ -111,6 +111,10 @@ if ($genes) {
 }
 
 my ($h_found_by_locus, $h_found_by_transcript);
+my $real_start;
+my $real_end;
+my $real_chr;
+
 if ($locus) {
 	push(@lSearched, 'Locus ' . $locus);
 	foreach my $this_locus ( split( ',', $locus ) ) {
@@ -124,13 +128,17 @@ if ($locus) {
 			$start = $end;
 			$end = $t;
 		}
-		my $chr = $project->getChromosome($chr_name);
-		foreach my $gene ( @{ $chr->getGenesByPosition( $start, $end ) } ) {
+		 $real_chr = $project->getChromosome($chr_name);
+		my @genes = sort{$a->start <=> $b->start} @{ $real_chr->getGenesByPosition( $start, $end ) };
+		foreach my $gene ( @genes ) {
 			$h_found_by_locus->{$gene->external_name()}->{$init_this_locus} = undef;
 			next if (exists $h_genes->{$gene->external_name()});
 			$h_genes->{$gene->external_name()} = $gene->id();
 			
+			
 		}
+		$real_start = $genes[0]->start;
+		$real_end = $genes[-1]->end;
 	}
 }
 
@@ -289,11 +297,40 @@ my $nb_genes_error = 0;
 my $last_gene_name;
 my $gene = $project->newGene("ENSG00000114861_3");
 my $gene_score = get_gene_score($gene);
-
 if ($h_genes) {
+	my $genes_stats;
+	if ($trio_project and $trio_patient) {
+		my $parquet = $project->parquet_cache_variants();
+		my $p = $project->getPatient($trio_patient);
+		my $t =time;
+		my $table_patient = "patient_".$p->id."_type";
+		my $table_transmission = "patient_".$p->id."_transmission";
+		my $table_heho = "patient_".$p->id."_type";
+		my $chr_sql = $real_chr->ucsc_name;
+		my $sql = qq{ SELECT gene_name,$table_transmission,$table_heho,variant_gnomad_ac   FROM '$parquet' a where variant_chromosome = '${chr_sql}' and variant_start > $real_start and variant_start < $real_end and ${table_patient} <> 0 ;};
+		my $cmd = qq{duckdb -column -noheader -c "$sql"};
+		my @array_ref =`$cmd`;
+		warn abs(time - $t);
+		#warn Dumper keys %$h_genes;
+		foreach my $l (@array_ref) {
+			chomp($l);
+			my($gene_id,$v,$vhe,$ac) = split(" ",$l);
+			next if $gene_id eq "-";
+			my $g = $project->newGene($gene_id);
+			my $gene_name = $g->external_name();
+			next unless exists $h_genes->{$gene_name};
+			$genes_stats->{$g->id}->{id} = $g->id;
+			$genes_stats->{$g->id}->{name} = $g->external_name;
+			$genes_stats->{$g->id}->{transmission}->{$v} ++;
+			$genes_stats->{$g->id}->{heho}->{$vhe} ++;
+			$genes_stats->{$g->id}->{ac} ++ if $ac < 30;
+			
+		}
+	}
 	foreach my $gene_key_name ( sort keys %$h_genes ) {
 		my $gene;
 		my $gene_id = $h_genes->{$gene_key_name};
+		
 		eval { $gene = $project->newGene($gene_id); };
 		if ( $@ or not defined($gene) ) {
 			$hRes->{$gene_key_name} = 'NOT;' . $annotation;
@@ -371,27 +408,42 @@ if ($h_genes) {
 		my $out_line = $cgi->start_Tr( {style =>"font-size:11px;max-height:60px;overflow-y: auto;vertical-align:center !important;"} );
 		my $gene_score;
 		if ($trio_project and $trio_patient) {
+			my $patient_trio = $project->getPatient($trio_patient);
 			$sort = 'gene_score' unless $sort;
 			$gene_score = get_gene_score($gene);
 			$out_line .= html_polygenescout::print_gene_score($gene_score);
 			$out_line .= html_polygenescout::print_locus_hg38_hg19($gene);
 			$out_line .= html_polygenescout::print_gene_basic_tables_infos($hResGene->{$gene_name}, $trio_phenotype);
-			if ( $buffer->hasHgmdAccess($user) ) {
+			#if ( $buffer->hasHgmdAccess($user) ) {
 				$out_line .= html_polygenescout::print_hgmd_concepts($nb_concepts, $concept_list, $used_hgmd);
-			}
+			#}
+			
 #			$out_line .= html_polygenescout::print_link_dejavu($cmd_link);
-			$out_line .= html_polygenescout::print_tab_variants_project($gene->getChromosome->id(), $external_name, $trio_project, $trio_patient, $h_genes,$gene->project);
+			my $c_variants ="";
+			if ($genes_stats){
+				my $gid = $h_genes->{$external_name};
+				$c_variants = html_polygenescout::print_tab_variants_project( $patient_trio,$genes_stats->{$gid});
+			}
+			else {
+				$c_variants = html_polygenescout::print_tab_variants_project_ori($gene->getChromosome->id(), $external_name, $trio_project, $trio_patient, $h_genes,$gene->project);
+			}
+			$out_line .=$c_variants;
+			# html_polygenescout::print_tab_variants_project($gene->getChromosome->id(), $external_name, $trio_project, $trio_patient, $h_genes,$gene->project);
 			if ( $buffer->hasHgmdAccess($user) ) {
 				$out_line .= html_polygenescout::print_hgmd_total_mut($total_mut, $external_name);
 				$out_line .= html_polygenescout::print_hgmd_total_new($total_new, $external_name);
+			}
+			else {
+				$out_line .= html_polygenescout::print_hgmd_total_mut("-", $external_name);
+				$out_line .= html_polygenescout::print_hgmd_total_new("-", $external_name);
 			}
 			
 		}
 		else {
 			if ($use_phenotype_score) {
 				$sort = 'gene_score' unless $sort;
-				$gene_score = get_gene_score($gene);
-				#$gene_score = get_gene_score_from_phenotype($external_name, $use_phenotype_score);
+				#$gene_score = get_gene_score($gene);
+				$gene_score = get_gene_score_from_phenotype($external_name, $use_phenotype_score);
 				$out_line .= html_polygenescout::print_gene_score($gene_score);
 			}
 			$out_line .= html_polygenescout::print_locus_hg38_hg19($gene);
@@ -497,7 +549,7 @@ if ($h_genes) {
 		}
 	}
 }
-
+warn "END";
 if ($sort and $sort eq 'locus') {
 	foreach my $chr_id (sort {$a <=> $b} keys %$h_lines_sorted) {
 		foreach my $start (sort {$a <=> $b} keys %{$h_lines_sorted->{$chr_id}}) {

@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use FindBin qw($Bin);
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use GenBoNoSqlLmdb;
@@ -267,6 +267,7 @@ foreach my $patient (@{$project->getPatients}){
 	warn "******************************************************************** ";
 	warn "*************************** end fork ******************************* ";
 	warn "******************************************************************** ";
+	
 	#warn Dumper $all_tab;
 	#
 			#warn "end patient";
@@ -282,6 +283,8 @@ foreach my $patient (@{$project->getPatients}){
 		my $filegz = $dir_out."/".$patient->name.".dude.lid.gz";
 		system("$bgzip -f $file && $tabix -p bed $file.gz ");
 	}
+	my $file_done = $project->getFileName("dude");
+	 system ("touch $file_done");
 	
 sub get_genes {
 	my ($intspan,$res,$chr,$limit) =@_;

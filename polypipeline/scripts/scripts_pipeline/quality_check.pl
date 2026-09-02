@@ -58,6 +58,8 @@ my @types = ();
 #@types =  ("files","mendelian","duplicate_regions","coverage_stats","bam_stats","coverage_transcripts","statistics_variations");
 #@types =  ("identity","statistics_variations");
 my $project = $buffer->newProjectCache( -name => $projectName );
+my $file_done = $project->getFileName("dude");
+unlink $file_done if -e $file_done;
 unless($steps){
 	 @types = ("files","mendelian","statistics_variations","coverage_stats","bam_stats","duplicate_regions","coverage_transcripts");
 	 if ($project->isGenome){
@@ -73,6 +75,7 @@ if ($patients_name){
 	#warn $patients_name;
 	my $z  = $project->get_only_list_patients($patients_name);
 }
+warn scalar(@{$project->getPatients()}) ;
 my( @selected_patient) = map {$_->name } @{$project->getPatients()};
 die() unless @selected_patient;
 $project->disconnect();
@@ -177,6 +180,7 @@ my $steps = {
 	},
 	
 	"bam_stats" => sub{
+		warn "bam_stats";
 		my $buffer = GBuffer->new();
 		my $project = $buffer->newProject( -name => $projectName );
 		$project->get_only_list_patients(join(",",@selected_patient));
@@ -204,6 +208,31 @@ foreach my $type (@types){
 	$steps->{$type}();
 	warn "\n\n# $type END\n\n";
 }
+
+	if ($cache == 1){
+			#warn "cache";
+			#die();
+			my $buffer = GBuffer->new();
+			 $project = $buffer->newProject( -name => $projectName );
+			 if ($project->isGenome or $project->isExome){
+			 	foreach my $patient (@{$project->getPatients}){
+			 		system("$Bin/upd/getUPD.pl -project=$projectName -patient=".$patient->name);
+			 		system("$Bin/upd/region_ho.pl -project=$projectName -patient=".$patient->name);
+			 	}
+				
+			 }
+
+			 system("$Bin/identito_vigilence.pl -project=$projectName");
+			  my ($dbh,$projectid,$groupid) = @_;
+			  my $dbh = $buffer->dbh();
+			  my $groupid = 12 ;
+			  my $projectid = $project->id;
+        my $sql = qq{    
+                insert IGNORE PolyprojectNGS.ugroup_projects (ugroup_id,project_id) values ($groupid,$projectid);
+        };
+        $dbh->do($sql) or die($sql);
+			 system ("touch $file_done");
+		}
 
 exit(0);
 

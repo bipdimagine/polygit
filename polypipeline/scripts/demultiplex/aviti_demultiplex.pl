@@ -131,7 +131,7 @@ foreach my $project_name (split(",",$project_names)){
 	$bcl_dir = $run->bcl_dir;
 	die("Can't find bcl directory : ".$bcl_dir) unless (-d $bcl_dir);
 	die("Problem different bcl dir : $bcl_dir ".$run->bcl_dir) if ($bcl_dir && $run->bcl_dir() ne $bcl_dir);
-	$dir_tmp = $buffer->config_path("root","tmp");
+	$dir_tmp = $buffer->config_path("root","tmp")."/";
 	$bcl_tmp = $dir_tmp.'bcl/'.$run_name.'/';
 	make_path($bcl_tmp) unless (-d $bcl_tmp);
 	$dir_out = $dir_tmp.'fastq/'.$run_name.'/';

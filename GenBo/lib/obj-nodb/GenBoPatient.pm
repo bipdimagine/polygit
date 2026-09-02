@@ -2181,6 +2181,19 @@ sub fileNoSqlDepth {
 	return $self->NoSqlDepthDir . "/" . $self->name . ".depth.lmdb";
 }
 
+sub getFileName {
+		my ($self,$step) = @_;
+		if ($step eq "binary_depth") {
+			return $self->fileNoSqlDepth()
+		}
+		elsif ($step eq "deepvariant" or $step eq "melt" or $step eq "duplicate_region_calling" or $step =~ /freebayes/i) {
+			return $self->vcfFileName($step);
+		}
+		elsif ($step eq "coverage"){
+			return $self->getCoverageFileName();
+		}
+		else {die("nothing konwn about $step ")};
+}
 sub fileWiseCondor {
 	my ($self) = @_;
 	system( "mkdir " . $self->getProject->getCoverageDir() . "/wisecondor/" )
@@ -3567,7 +3580,7 @@ sub ploidy_value2 {
 
 sub cnv_region_ratio_norm {
 	my ( $self, $chr_name, $start, $end ) = @_;
-	my $sum  = $self->getNoSqlDepth->getMean( $chr_name, $start, $end );
+	my $sum  = $self->meanDepth( $chr_name, $start, $end );
 	if ($self->nb_reads) {
 		my $total = $self->nb_reads->{norm};
 		my $ratio1 = int($sum / $total);
@@ -3644,6 +3657,14 @@ sub mean_align_quality {
 }
 
 ## Validations Methods
+
+
+sub getValidationVariation {
+	my ( $self, $val_id) = @_;
+	return undef unless exists $self->validations->{$val_id};
+	my $tvid = $self->validations->{$val_id};
+	return $tvid->[0];
+}
 
 has validations => (
 	is => 'ro',

@@ -29,6 +29,7 @@ GetOptions(
 );
 
 
+confess("script obsolete");
 my $complete = $dir."RTAComplete.txt"; # MISEQ
 $complete = $dir."CopyComplete.txt" unless ($dir =~ m{/MISEQ/}); # 10X, ISEQ, NEXTSEQ500, NOVASEQ
 warn $complete;
