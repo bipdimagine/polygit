@@ -493,6 +493,7 @@ my $vgenes =[];
 my $nb2 = 0;
 my $hchr;
 my @list_genes_session_sorted;
+my (@genes_local_validation_high, @genes_local_validation_to_do);
 $| = 1 ;
 
 my $session;
@@ -536,11 +537,51 @@ else {
 		}
 	}
 	
+	my $h_genes_local_validations;
+#	foreach my $val_id (keys %{$project->validations()}) {
+#		my $value = $project->validations->{$val_id}->[0]->{validation};
+#		my $gene_id = $project->validations->{$val_id}->[0]->{gene_id};
+#		my $poly_id = $project->validations->{$val_id}->[0]->{polyid};
+#		if ($value >= 4) { $h_genes_local_validations->{high}->{$gene_id}->{$poly_id} = undef; }
+#	}
+	foreach my $val_id (keys %{$patient->validations()}) {
+		my $value = $project->validations->{$val_id}->[0]->{validation};
+		my $gene_id = $project->validations->{$val_id}->[0]->{gene_id};
+		my $poly_id = $project->validations->{$val_id}->[0]->{polyid};
+		if ($value == -3) { $h_genes_local_validations->{todo}->{$gene_id}->{$poly_id} = undef; }
+		elsif ($value >= 4) { $h_genes_local_validations->{high}->{$gene_id}->{$poly_id} = undef; }
+	}
+	
+	my @genes_others;
+	foreach my $g (@$genes) {
+		my ($found_high, $found_todo);
+		if (exists $h_genes_local_validations->{high}->{$g->{id}}) {
+			my $is_ok;
+			foreach my $var_id (keys %{$g->{variant}}) {
+				$is_ok = 1 if exists $h_genes_local_validations->{high}->{$g->{id}}->{$var_id};
+			}
+			$found_high = 1  if $is_ok;
+			push(@genes_local_validation_high, $g) if $is_ok;
+		}	
+		if (exists $h_genes_local_validations->{todo}->{$g->{id}} and not $found_high) {
+			my $is_ok;
+			foreach my $var_id (@{$g->{variants}}) {
+				$is_ok = 1 if exists $h_genes_local_validations->{todo}->{$g->{id}}->{$var_id};
+			}
+			$found_todo = 1  if $is_ok;
+			push(@genes_local_validation_to_do, $g) if $is_ok;
+		}	
+		if (not $found_high and not $found_todo)  { push(@genes_others, $g); }
+	}
+		
 	my $sct = time;
 	warn "genes:".scalar(@$genes);
 	warn "end max_score :".abs(time -$sct);
 	$sct = time;
-	@list_genes_session_sorted = sort{$b->{max_score} <=> $a->{max_score}} @$genes;
+	@list_genes_session_sorted = sort{$b->{max_score} <=> $a->{max_score}} @genes_others;
+#	if (@genes_local_validation_high) { unshift @list_genes_session_sorted, sort{$b->{max_score} <=> $a->{max_score}} @genes_local_validation_high; }
+#	if (@genes_local_validation_to_do) { unshift @list_genes_session_sorted, sort{$b->{max_score} <=> $a->{max_score}} @genes_local_validation_to_do; }
+	
 	my $t =time;
 	
 	if ($project->isGenome()) {
@@ -629,11 +670,24 @@ $t     = time;
 #my $stdout_end = tee_stdout {
 	
 	warn "genes:".scalar(@$genes);
+	if (@genes_local_validation_high) {
+		foreach my $gene (@genes_local_validation_high) { $gene->{uid} = $gene->{id}."_".int(rand(time)) unless exists $gene->{uid}; }
+		my @this_genes = sort{$b->{max_score} <=> $a->{max_score}} @genes_local_validation_high;
+		print $cgi->start_div({class=>"panel panel-danger ",style=>"padding:0px;border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;max-height:400px;overflow-y:auto;" });
+		print $cgi->div({class=>"panel-heading", style=>"font-size:11px;"},qq{Local validation <b><span class="glyphicon glyphicon-arrow-right"></span> HIGH</b>});
+		refine_heterozygote_composite_score_fork( $project, \@this_genes,$hchr ,$buffer_polyviewer) ;
+		print "</div></div>";
+	}
+	if (@genes_local_validation_to_do) {
+		foreach my $gene (@genes_local_validation_to_do) { $gene->{uid} = $gene->{id}."_".int(rand(time)) unless exists $gene->{uid}; }
+		print $cgi->start_div({class=>"panel panel-warning ",style=>"padding:0px;border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;max-height:400px;overflow-y:auto;" });
+		print $cgi->div({class=>"panel-heading", style=>"font-size:11px;"},qq{Local validation <b><span class="glyphicon glyphicon-arrow-right"></span> TO DO</b>});
+		my @this_genes = sort{$b->{max_score} <=> $a->{max_score}} @genes_local_validation_to_do;
+		refine_heterozygote_composite_score_fork( $project, \@this_genes,$hchr ,$buffer_polyviewer) ;
+		print "</div></div>";
+	}
 	if (@$genes){
-		
 		$genes = refine_heterozygote_composite_score_fork( $project, $genes,$hchr ,$buffer_polyviewer) ;
-	#	warn "dsdssd " unless $genes;
-	#	error("coucou") unless $genes;# == undef;
 	}
 	else {
 		if ($gene_name_filtering ) {
