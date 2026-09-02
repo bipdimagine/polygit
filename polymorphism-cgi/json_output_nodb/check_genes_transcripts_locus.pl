@@ -307,10 +307,9 @@ if ($h_genes) {
 		my $table_transmission = "patient_".$p->id."_transmission";
 		my $table_heho = "patient_".$p->id."_type";
 		my $chr_sql = $real_chr->ucsc_name;
-		my $sql = qq{ SELECT gene_name,$table_transmission,$table_heho,variant_gnomad_ac   FROM '$parquet' a where variant_chromosome = '${chr_sql}' and variant_start > $real_start and variant_start < $real_end and ${table_patient} <> 0 ;};
+		my $sql = qq{ SELECT gene_name,$table_transmission,$table_heho,variant_gnomad_ac   FROM '$parquet' a where variant_chromosome = '${chr_sql}' and variant_start > $real_start and variant_end < $real_end and ${table_patient} <> 0 ;};
 		my $cmd = qq{duckdb -column -noheader -c "$sql"};
 		my @array_ref =`$cmd`;
-		warn abs(time - $t);
 		#warn Dumper keys %$h_genes;
 		foreach my $l (@array_ref) {
 			chomp($l);
