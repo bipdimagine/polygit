@@ -31,8 +31,6 @@ my $project = $buffer->newProject( -name => $project_name );
 my $patient = $project->getPatient($patient_name);
 my $dir_out= $project->getAlignmentPipelineDir($patient->name);
 my $bam_out = $dir_out."/".$patient->name.".bam";
-die($bam_out) unless -e $bam_out;
-my $ref               = $project->genomeFasta();
 my $cram_out = $patient->getCramFileName("pbmm2");
 if (-e $cram_out){
 	if ($force){
@@ -44,6 +42,9 @@ if (-e $cram_out){
 		exit(0);
 	}
 }
+die($bam_out) unless -e $bam_out;
+my $ref               = $project->genomeFasta();
+
 $fork =30 if $fork > 40;
 my $cmd2 = "cd $dir_out && samtools view -C -T $ref -o $cram_out $bam_out -@ $fork && samtools index  $cram_out -@ $fork";
 system("$cmd2") unless -e $cram_out;
