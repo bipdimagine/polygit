@@ -280,6 +280,9 @@ bowtie2:run_singularity.sh bowtie2.sif bowtie2
 #cellranger
 cellranger:/data-bipd/data-pure/software/bin.biocluster//cellranger
 
+#velocyto
+velocyto:exec_singularity.sh velocyto.sif velocyto
+
 #breakdancer
 bam2cfg:/software/distrib/breakdancer/bam2cfg.pl
 breakdancer:/data-bipd/data-pure/software/bin.biocluster//breakdancer-max
@@ -329,13 +332,13 @@ duckdb:duckdb
 ################
 
 #deepvariant
-deepvariant-sif:/data-bipd//data-pure/software/SINGULARITY/deepvariant.sif
+deepvariant-sif:/data-bipd/data-pure/software/SINGULARITY/deepvariant.sif
 
 #deeptrio
-deeptrio-sif:/data-bipd//data-pure/software/SINGULARITY/deeptrio.sif
+deeptrio-sif:/data-bipd/data-pure/software/SINGULARITY/deeptrio.sif
 
 #deepsomatic
-deepsomatic-sif:/data-bipd//data-pure/software/SINGULARITY/deepsomatic.sif
+deepsomatic-sif:/data-bipd/data-pure/software/SINGULARITY/deepsomatic.sif
 
 #bcftools
 bcftools-sif:/data-bipd/data-pure/software/SINGULARITY/deepsomatic.sif

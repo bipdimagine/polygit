@@ -567,12 +567,10 @@ my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp "
 #  /rclone copy /data-dragen/bcl/20260807_LH00788_0292_A23LWYWLT3 /data-beegfs/tmp/run_7579.NGS2026_108031787216034.69438/  --progress --transfers 16 --checkers 32
 warn $rsync_cmd;
 my $exit_rsync = system($rsync_cmd);
-my $retry      = 0;
-
-#while($exit_rsync >> 8 == 23 and $retry < 3) {
-while ( $exit_rsync != 0 and $retry < 3 ) {
-	
-my $exit_rsync = system($rsync_cmd);
+warn $exit_rsync;
+sleep(3);
+my $retry = 0;
+while ( $exit_rsync == 23 and $retry < 3 ) {
 	$retry++;
 	warn("rsync error, new try $retry/3");
 	$exit_rsync = system($rsync_cmd);
