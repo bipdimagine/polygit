@@ -1428,6 +1428,7 @@ sub validations {
 			$data->{local_text} = $project->buffer->value_validation->{$data->{local_value}};
 			$self->{local_value} = $data->{local_text};
 			$self->variant->{local_value} = $data->{local_value};
+			$self->variant->gene->{has_local_validation} = 1;
 		}
 		my $h_var_forced_viewing = $project->buffer->config_variants_forced_viewing->{lc($self->project->current_genome_version())};
 		if (exists $h_var_forced_viewing->{$self->variant->gene->{name}}) {
@@ -2085,6 +2086,7 @@ my $validation_value = 0;
 if ($local_validation->{validation}) {
  	$validation_value = $local_validation->{validation};
  	$validation_term = $project->buffer->value_validation->{$validation_value};
+	$self->variant->gene->{has_local_validation} = 1;
 }
 #$saved = $all_validations->{$val_id}->[0]->{validation}  if exists $all_validations->{$val_id};
 

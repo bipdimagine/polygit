@@ -3144,8 +3144,8 @@ sub print_hotspot {
 	my $project = $patient->project;
 	my $pname = $patient->name();
 	my $cgi          = new CGI();
-	print $cgi->start_div({class=>"panel panel-warning ",style=>"padding:0px;border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;max-height:400px;overflow-y:auto;" });
-	print $cgi->div({class=>"panel-heading"},qq{HOTSPOT - $fileName});
+	print $cgi->start_div({class=>"panel panel-info ",style=>"padding:0px;border-color:white;-webkit-border-radius: 3px;-moz-border-radius: 3px;border-radius: 3px;border: 1px solid black;max-height:400px;overflow-y:auto;" });
+	print $cgi->div({class=>"panel-heading", style=>"font-size:11px;"},qq{<b>HOTSPOT</b> - $fileName});
 	my $div_alert;	
 	my $s_id = $patient->{name};
 
