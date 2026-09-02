@@ -42,6 +42,7 @@ my $create_fastq_umi;
 my $no_demux_only;
 my $input_mask;
 my $trim = '';
+my $other_args;
 
 GetOptions(
 	'projects=s'			=> \$project_names,
@@ -51,8 +52,9 @@ GetOptions(
 	'create_fastq_umi'		=> \$create_fastq_umi,
 	'mask=s'				=> \$input_mask,
 	'trim!'					=> \$trim,			# Trim adapters (par défaut pour RNAseq seulement)
+	'other_args=s'			=> \$other_args,	# To add other arguments in Bases2Fastq cmd line
 	'help|?'				=> sub {pod2usage(-verbose => 2,-noperldoc=>1)},
-) || confess("Possibles options are: projects, run, mimsatches, create_fastq_umi, no_demux_only, mask, help.
+) || confess("Possibles options are: projects, run, mimsatches, create_fastq_umi, no_demux_only, mask, trim, other_args, help.
 Use $0 --help to see the full documentation.\n");
 
 # Vérifications options
@@ -239,7 +241,8 @@ foreach my $read (keys %$cycles){
 			$mask->{$read} = "Y". $len_cb->[$i_index]."N".($l-$len_cb->[$i_index]);
 		}
 		else {
-			die("Error: length of BC $read (".$len_cb->[$i_index].") is larger than the number of cycles ($l)");
+			die("Error: length of BC $read (".$len_cb->[$i_index].") is larger than the number of cycles ($l)") 
+				unless (prompt("BC $read length (".$len_cb->[$i_index].") is larger than the number of cycles ($l). Continue anyway ? (y/n) ", -yes_no));
 		}
 		$i_index ++;
 	}
@@ -304,9 +307,11 @@ if ($input_mask or not prompt( "Use - " . colored(['bright_red on_black'], join(
 	$input_mask = prompt("Enter your mask: ") unless ($input_mask);
 	$input_mask =~ s/ //g;
 #	warn "Use this mask: ".$input_mask;
-	my $motif_mask = '([RI][12]):([YN](?:\d+|\*))+';
-	my $motif_mask_umi = '(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)';
-	my $re = qr{^(?:$motif_mask|$motif_mask_umi)(?:[,;](?:$motif_mask|$motif_mask_umi))*$};
+#	my $motif_mask = '([IR]\d+:)*([RI][12]):([YN](?:\d+|\*))+';
+#	my $motif_mask_umi = '(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)';
+#	my $re = qr{^(?:$motif_mask|$motif_mask_umi)(?:[,;](?:$motif_mask|$motif_mask_umi))*$};
+	my $motif_mask = '(Umi|[IR]\d+):((?:[RI][12]:)*(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)';
+	my $re = qr{^(?:$motif_mask)(?:[,;](?:$motif_mask))*$};
 #	/^(?:([RI][12]):([YN](?:\d+|\*))+|(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*))(?:[,;](?:([RI][12]):([YN](?:\d+|\*))+|(Umi):([RI][12]:(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)))*$/
 	die("Error: Invalid Sequencing Mask Format\nThe sequencing mask you entered ('$input_mask') does not match the required syntax.\nMore informations in the documentation: aviti_demultiplex.pl --help") unless ($input_mask =~ $re);
 	$mask->{$1} = $2 while ($input_mask =~ /([RI][12]|Umi):((?:[RI][12]:)?(?:[YN](?:\d+|\*))+(?:-[RI][12]:(?:[YN](?:\d+|\*))+)*)/g);
@@ -372,13 +377,13 @@ if (keys %$ok_in_project) {
 }
 if (keys %patients) {
 	print colored(['bright_red on_black']," Samples OK in project(s) NOT in RunManifest:".scalar(keys %patients))."\n";
-	map {print $_."\t".$patients{$_}."\n"} keys %patients;
+	map {print $_."\t".$patients{$_}."\n"} sort keys %patients;
 	print "nb error: ".scalar (keys %patients)."\n";
 	die() unless (prompt("continue anyway ? (y/n)  ", -yes_no));
 }
 if (keys %$error_not_in_project) {
 	print colored(['bright_yellow on_black']," Samples in RunManifest NOT in project: ".scalar(keys %$error_not_in_project) )."\n";
-	map {print $_."\n"} keys %$error_not_in_project;
+	map {print $_."\n"} sort keys %$error_not_in_project;
 	print " nb error: ".scalar (keys %$error_not_in_project)."\n";
 	die() unless (prompt("continue anyway ? (y/n)  ", -yes_no));
 		
@@ -430,6 +435,7 @@ $cmd .= "-B $dir_tmp /software/distrib/BASE2FASTQ/bases2fastq.2.2.sif bases2fast
 $cmd .= "--error-on-missing ";
 $cmd .= "--run-manifest $ss1 --num-unassigned 500 --num-threads 40 ";
 $cmd .= "--group-fastq --no-projects ";
+$cmd .= $other_args.' ' if ($other_args);
 $cmd .= "$bcl_dir $dir_out" unless ($bcl_dir =~ /AVITI\/IMAGINE/);
 $cmd .= "$bcl_tmp $dir_out" if ($bcl_dir =~ /AVITI\/IMAGINE/);
 
@@ -438,7 +444,7 @@ unless ($no_demux_only) {
 	my $out_demux_only = $dir_out =~ s/\/$/.demux_only\//r . time.'/';
 	make_path($out_demux_only) unless (-d $out_demux_only);
 	my $cmd_demux_only = $cmd;
-	$cmd_demux_only =~ s/--num-threads 40/--num-threads 5 --demux-only/;
+	$cmd_demux_only =~ s/--num-threads 40/--num-threads 5 --demux-only --skip-multi-qc/;
 	$cmd_demux_only =~ s/$dir_out/$out_demux_only/;
 	warn $cmd_demux_only;
 	my $exit = system('time '.$cmd_demux_only);
@@ -461,7 +467,7 @@ unless ($no_demux_only) {
 # Complete demultiplex
 warn $cmd;
 sleep(2);
-my $exit = system("echo $cmd | run_cluster.pl -cpu=40");
+my $exit = system("echo $cmd | $Bin/../../../polyscripts/system_utility/run_cluster.pl -cpu=40 -name='demultiplex'");
 die("Error while demultiplexing") if ($exit);
 
 # Copy fastq
@@ -498,7 +504,7 @@ $pm->wait_all_children();
 # Demultiplex stats
 my $pr = $project_names;
 $pr =~ s/,/_/g;
- $dir_stats .= $run_name.".".$pr.'/';
+$dir_stats .= $run_name.".".$pr.'/';
 system("mkdir $dir_stats --mode 777") unless (-d $dir_stats);
 make_path($dir_stats,{chmod=>0777}) unless (-d $dir_stats);
 warn("rsync $dir_out* $dir_stats ; chmod -R a+rwx $dir_stats");
@@ -573,23 +579,60 @@ sub report {
 	print "\n ------------------------------\n";
 	
 	print "-- By Samples : --\n";	
-	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# Polonies", "% Polonies") ) ; # if ($type == 1);
+#	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# Polonies", "% Polonies") ) ; # if ($type == 1);
+#	@rows = ();
+#	foreach my $p (sort keys %$bypatient){
+#		my @row;
+#		push(@row,colored::stabilo("blue",$p,1));
+#		if ($bypatient->{$p}->{'count'} < 1000000){
+#			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
+#		}
+#		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > 3*$sd){
+#			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
+#		}
+#		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > $sd){
+#			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
+#		}
+#		else {
+#			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'},1),colored::stabilo("green",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
+#		}
+#		push(@rows,\@row);
+	my @all_patients;
+	my $buffer  = GBuffer->new();
+	push (@all_patients, @{$buffer->newProject( -name => $_ )->getPatients}) foreach (split( ",", $project_names ));
+	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# Polonies", "% Polonies", 'Expected') ) ; # if ($type == 1);
 	@rows = ();
 	foreach my $p (sort keys %$bypatient){
+		my @pat = grep {$_->name eq $p =~ s/_RC$//r} @all_patients;
+		my $expected_reads = 0;
+		$expected_reads = $pat[0]->getExpectedReads if (scalar @pat);
 		my @row;
 		push(@row,colored::stabilo("blue",$p,1));
+		my $color;
 		if ($bypatient->{$p}->{'count'} < 1000000){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
+			$color = 'red';
+		}
+		elsif ($expected_reads) {
+			if ($bypatient->{$p}->{'count'} <= 0.9*$expected_reads or $bypatient->{$p}->{'count'} > 2*$expected_reads){
+				$color = 'red';
+			}
+			elsif ($bypatient->{$p}->{'count'} <= $expected_reads or $bypatient->{$p}->{'count'} > 1.5*$expected_reads){
+				$color = 'yellow';
+			}
 		}
 		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > 3*$sd){
-			push(@row,colored::stabilo("red",$bypatient->{$p}->{'count'},1),colored::stabilo("red",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
+			$color = 'red';
 		}
 		elsif (abs( $bypatient->{$p}->{'count'} - $mean ) > $sd){
-			push(@row,colored::stabilo("yellow",$bypatient->{$p}->{'count'},1),colored::stabilo("yellow",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
+			$color = 'yellow';
 		}
 		else {
-			push(@row,colored::stabilo("green",$bypatient->{$p}->{'count'},1),colored::stabilo("green",sprintf("%.1f",$bypatient->{$p}->{'percent'}),1)) ;
+			$color = 'green';
 		}
+		push( @row, colored::stabilo( $color, $bypatient->{$p}->{'count'} =~ s/\B(?=(\d{3})+(?!\d))/ /gr, 1 ),
+					colored::stabilo( $color, sprintf("%.1f",$bypatient->{$p}->{'percent'}), 1 ),
+					colored::stabilo( $color, $expected_reads =~ s/\B(?=(\d{3})+(?!\d))/ /gr, 1 )
+		) ;
 		push(@rows,\@row);
 	}
 	$tb2->load(@rows);
@@ -611,6 +654,7 @@ Optionels:
 	no_demux_only              ne pas faire l'étape demux only, lancer directement le démultiplexage complet
 	create_fastq_umi           générer des fastq pour les UMI
 	mask <s>                   masque de démultiplexage, détail de la syntaxe dans la documentation complète
+	other_args                 autre arguments à passer à Bases2Fastq (voir https://docs.elembio.io/docs/bases2fastq/optional-arguments/)
 	help                       affiche un message d'aide détaillé
 
 ";

@@ -24,7 +24,7 @@ sub get_fastq_file {
 		warn  $cp->{R1}  if $cp->{R1} =~ /_I1_0/;;
 		$find_I1 ++ if $cp->{R1} =~ /_I1_0/;;
 		next if $cp->{R1} =~ /_I1_0/;
-		die($dir_fastq." ".Dumper $cp) if ($cp->{R2} !~ /_R2_/ and $cp->{R2} !~ /_R2./);
+		die("Fastq filenames must contain '_R1' or '_R2'.\n".$dir_fastq." ".Dumper $cp."\n") if ($cp->{R2} !~ /_R2_/ and $cp->{R2} !~ /_R2\./);
 		my $file1 = $dir_fastq."/".$cp->{R1};
 		die($file1) unless -e  $file1;
 		my $file2 = $dir_fastq."/".$cp->{$r2};

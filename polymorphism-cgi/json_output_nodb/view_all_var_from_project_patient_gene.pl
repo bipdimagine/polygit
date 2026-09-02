@@ -48,6 +48,7 @@ my $keep_var_id = $cgi->param('keep');
 my $skip_header = $cgi->param('skip_header');
 my $hide_filtred_model = $cgi->param('hide_filtred_model');
 
+
 confess("\n\nERROR: -project option mandatory. Die.\n\n") unless ($project_name);
 confess("\n\nERROR: -patient option mandatory. Die.\n\n") unless ($patient_name);
 my $transcript_name;
@@ -75,6 +76,11 @@ my @header_transcripts_cnv = ("consequence", "enst", "nm", "ccds", "appris", "st
 my $buffer = new GBuffer;
 my $project = $buffer->newProjectCache( -name => $project_name );
 my $patient = $project->getPatient($patient_name);
+
+if ($patient->isParent && $patient->getFamily->isTrio()) {
+	my $fam = $patient->getFamily();
+	$patient = $fam->getChildren->[0];
+}
 
 my $h_new = $buffer->queryHgmd->get_hash_last_released_DM();
 my $hAllVarIds;
@@ -271,7 +277,8 @@ sub view_html_variants {
 		update_variant_editor::table_validation($patient,$hvariation,$g);
 		#update_variant_editor::trio($v, $hvariation, $patient);
 		
-		my $model = lc($v->getTransmissionModel($patient->getFamily(), $patient));
+		my $fam = $patient->getFamily();
+		my $model = lc($v->getTransmissionModel($fam, $fam->getChildren->[0]));
 		if ($keep_var_id and $keep_var_id eq $v->id()) {
 			$this_score += 100000;
 			$h_scaled_score->{$this_score}->{$var_id} = $hvariation;
@@ -297,11 +304,11 @@ sub view_html_variants {
 			$this_score += 900000;
 			$hvariation_by_model->{uniparental}->{$var_id} = undef;
 		}
-		elsif ($only_model eq 'mother' and ($model eq 'mother' or ($model eq 'compound' and $v->isMotherTransmission($patient->getFamily(),$patient)))) {
+		elsif ($only_model eq 'mother' and ($model eq 'mother' or ($model eq 'compound' and $v->isMotherTransmission($fam, $fam->getChildren->[0])))) {
 			$this_score += 50000;
 			$hvariation_by_model->{mother}->{$var_id} = undef;
 		}
-		elsif ($only_model eq 'father' and ($model eq 'father' or ($model eq 'compound' and $v->isFatherTransmission($patient->getFamily(),$patient)))) {
+		elsif ($only_model eq 'father' and ($model eq 'father' or ($model eq 'compound' and $v->isFatherTransmission($fam, $fam->getChildren->[0])))) {
 			$this_score += 50000;
 			$hvariation_by_model->{father}->{$var_id} = undef;
 		}
