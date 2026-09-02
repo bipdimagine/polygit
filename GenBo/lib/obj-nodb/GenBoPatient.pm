@@ -1852,6 +1852,7 @@ sub getBamFile {
 		my $files = $self->getBamFiles();
 		return $files->[0] if scalar(@$files) == 1;
 		if ($nodie) {
+			confess();
 			warn "NO BAM FILES " . $self->name." methods :".Dumper  $self->alignmentMethods();
 			return;
 		}
@@ -2184,7 +2185,13 @@ sub fileNoSqlDepth {
 sub getFileName {
 		my ($self,$step) = @_;
 		if ($step eq "binary_depth") {
-			return $self->fileNoSqlDepth()
+			return $self->fileNoSqlDepth();
+		}
+		elsif ($step eq "wisecondor") {
+			return $self->fileWiseCondor();
+		}
+		elsif ($step eq "calling_wisecondor") {
+			return $self->project->getCallingPipelineDir("wiseCondor")."/".$self->name."_aberrations.bed";
 		}
 		elsif ($step eq "deepvariant" or $step eq "melt" or $step eq "duplicate_region_calling" or $step =~ /freebayes/i) {
 			return $self->vcfFileName($step);

@@ -179,7 +179,7 @@ hisat2:/data-bipd/data-pure/software/bin.biocluster//hisat2
 AnnotSV:/software/distrib/AnnotSV_2.0/bin/AnnotSV
 
 # BROAD 
-gatk4:/software/distrib/GATK/gatk-4/gatk-4.2.3.0/gatk
+gatk4:gatk
 gatk:/data-bipd/data-pure/software/bin.biocluster//GenomeAnalysisTK.jar
 picard_path:/data-bipd/data-pure/software/bin.biocluster//picard.jar
 picard:/data-bipd/data-pure/software/bin.biocluster//picard.jar
@@ -214,10 +214,10 @@ bedtools:/data-bipd/data-pure/software/bin.biocluster//bedtools
 sambamba:/data-bipd/data-pure/software/bin.biocluster//sambamba
 
 #vcflib
-vcffirstheader:/data-bipd/data-pure/software/bin.biocluster//vcffirstheader
-vcfstreamsort:/data-bipd/data-pure/software/bin.biocluster//vcfstreamsort
-vcfuniq:/data-bipd/data-pure/software/bin.biocluster//vcfuniq
-vcffilter:/data-bipd/data-pure/software/bin.biocluster//vcffilter
+vcffirstheader:exec_singularity.sh vcflib.sif vcffirstheader
+vcfstreamsort:exec_singularity.sh vcflib.sif vcfstreamsort
+vcfuniq:exec_singularity.sh vcflib.sif vcfuniq
+vcffilter:exec_singularity.sh vcflib.sif vcffilter
 
 #fgbio
 fgbio:/data-bipd/data-pure/software/bin.biocluster//fgbio.jar
@@ -229,7 +229,7 @@ plink:/data-bipd/data-pure/software/bin.biocluster//plink
 bazam:/software/distrib/miniconda3/bin/bazam
 
 #rnaseq
-featureCounts:/data-bipd/data-pure/software/bin.biocluster//featureCounts
+featureCounts:exec_singularity.sh subread.sif /usr/local/bin/featureCounts 
 fastqScreen:/software/distrib/FastQ-Screen/fastq_screen
 
 #insertion
@@ -316,7 +316,7 @@ epi2me:env NXF_SINGULARITY_CACHEDIR=/data-isilon/SINGULARITY/EPI2ME nextflow run
 
 
 # MELT 
-melt:/software/distrib/MELT/MELTv2.2.2/MELT.jar
+melt:/data-bipd/data-pure/software/distrib/MELT/MELTv2.2.2/MELT.jar
 
 # liftOver
 liftOver:/data-bipd/data-pure/software/bin.biocluster//liftOver
