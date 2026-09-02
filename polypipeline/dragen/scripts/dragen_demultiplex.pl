@@ -459,7 +459,7 @@ while ( $checkComplete == 1 ) {
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
 my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp "; # --temp-dir=/data-pure/testfs-bipd/tmpDemul
 warn $rsync_cmd;
-my $exit_rsync = system($rsync_cmd) || my $exit_rsync = $? >> 8;
+my $exit_rsync = system($rsync_cmd);
 warn $exit_rsync;
 sleep(3);
 my $retry = 0;

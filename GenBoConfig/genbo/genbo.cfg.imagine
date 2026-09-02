@@ -282,6 +282,9 @@ bowtie2:run_singularity.sh bowtie2.sif bowtie2
 #cellranger
 cellranger:/software/bin/cellranger
 
+#velocyto
+velocyto:exec_singularity.sh velocyto.sif velocyto
+
 #breakdancer
 bam2cfg:/software/distrib/breakdancer/bam2cfg.pl
 breakdancer:/software/bin/breakdancer-max
