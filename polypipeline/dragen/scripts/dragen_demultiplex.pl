@@ -46,19 +46,18 @@ my $big_run;
 my $sc;
 my $delete;
 GetOptions(
-	'project=s'  => \$project_names,
-	'l2=s'       => \$l2,
-	'run=s'      => \$run_name_option,
-	'mismatch=i' => \$mismatch,
-	'trim!'  => \$trim,      # Trim adapters (par défaut pour RNAseq seulement)
-	'mask=s' => \$input_mask,
-	'keep_umi' => \$noTrimUMI
-	, # keep UMI in I1/I2 fastq, otherwise trimed by default and just kept in the read headers
-	'fastq_index'   => \$fastq_index,    # generate I1/I2 fastq
-	'singlecell|sc' => \$sc,
-	'big_run'       => \$big_run,
-	'delete!'       => \$delete,
-
+	'project=s'		=> \$project_names,
+	'l2=s'			=> \$l2,
+	'run=s'			=> \$run_name_option,
+	'mismatch=i'	=> \$mismatch,
+	'trim!'			=> \$trim,			# Trim adapters (par défaut pour RNAseq seulement)
+	'mask=s'		=> \$input_mask,
+	'keep_umi'		=> \$noTrimUMI,		# keep UMI in I1/I2 fastq, otherwise trimed by default and just kept in the read headers
+	'fastq_index'	=> \$fastq_index,	# generate I1/I2 fastq
+	'singlecell|sc'	=> \$sc,
+	'big_run'		=> \$big_run,
+	'delete!'		=> \$delete,
+	
 ) || confess("Error in command line arguments");
 
 my $bcl_dir;
@@ -72,9 +71,7 @@ my $dir_bcl_tmp;
 my $adaptors;
 my $hbc;
 
-unless ( defined $delete ) {
-	$delete = 1 if ( prompt( "Delete Bcl after demultipex (y/n) ", -yes ) );
-}
+unless ( defined $delete ) { $delete = 1 if ( prompt( "Delete Bcl after demultipex (y/n) ", -yes ) );}
 
 foreach my $project_name ( split( ",", $project_names ) ) {
 	my $buffer  = GBuffer->new();
@@ -83,16 +80,9 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	my $run;
 	if ( scalar(@$runs) > 1 ) {
 		unless ($run_name_option) {
-			print colored( ['bright_red on_black'],
-					"Hey Manue you have "
-				  . scalar(@$runs)
-				  . " runs in the project(s) $project_name. You have to choose one and add -run on the command line"
-			) . "\n";
+			print colored( ['bright_red on_black'], "Hey Manue you have " . scalar(@$runs) . " runs in the project(s) $project_name. You have to choose one and add -run on the command line") . "\n";
 			foreach my $run (@$runs) {
-				print colored( ['bright_green on_black'],
-					$run->plateform_run_name )
-				  . " "
-				  . colored( ['bright_blue on_black'], $run->date ) . "\n";
+				print colored( ['bright_green on_black'], $run->plateform_run_name ) . " " . colored( ['bright_blue on_black'], $run->date ) . "\n";
 			}
 			die();
 		}
@@ -110,8 +100,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 		if ( $capture->umi ) {
 			$mask     = $capture->umi->{mask} unless defined $mask;
 			$umi_name = $capture->umi->{name};
-			die("problem more than one mask ")
-			  if $mask ne $capture->umi->{mask};
+			die("problem more than one mask ") if $mask ne $capture->umi->{mask};
 		}
 	}
 	foreach my $p ( @{ $project->getPatients } ) {
@@ -125,12 +114,6 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	$trim = 1 if ( $project->isRnaseq and $trim eq '' );
 	if ($trim) {
 		undef $adaptors;
-
-# Nextera Mate Pair Adapters: CTGTCTCTTATACACATCT+AGATGTGTATAAGAGACAG # FastQC: CTGTCTCTTATA
-# Nextera Transposase Adapters: TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG+GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG
-# Illumina Universal Adapter: R1:AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC; R2:AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT # FastQC: AGATCGGAAGAG
-# Illumina Small RNA Adapter: # FastQC:	ATGGAATTCTCG
-# SOLID Small RNA Adapter: # FastQC:	CGCCTTGGCCGT
 		my $illuminaAdaptors = Bio::SeqIO->new( -file => $project->getIlluminaAdaptors, '-format' => 'Fasta' );
 		my $tsoAdaptors = Bio::SeqIO->new( -file => $project->getTsoAdaptors, '-format' => 'Fasta' );
 		foreach my $fasta ( $illuminaAdaptors, $tsoAdaptors ) {
@@ -142,27 +125,18 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 
 	$run_name = $run->run_name;
 
-	die( "can't find bcl directory : " . $run->bcl_dir() )
-	  unless -e $run->bcl_dir();
+	die( "can't find bcl directory : " . $run->bcl_dir() ) unless -e $run->bcl_dir();
 
 	if ( $bcl_dir && $run->bcl_dir() ne $bcl_dir ) {
 		die( "problem different bcl dir : $bcl_dir " . $run->bcl_dir );
 	}
 	$bcl_dir     = $run->bcl_dir;
 	$dir_bcl_tmp = "/data-dragen/bcl/" . $project->getRun->run_name() . "/";
-	$dir_bcl_tmp = "/data-dragen/bcl2/" . $project->getRun->run_name() . "/"
-	  if ($big_run);
-	$dir_out   = $project->project_dragen_demultiplex_path();
+	$dir_bcl_tmp = "/data-dragen/bcl2/" . $project->getRun->run_name() . "/" if ($big_run);
+	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
-	if ( $project->getCaptures->[0]->name =~ /^transcriptome_10X/ and not $sc )
-	{
-		$sc = 1
-		  if (
-			prompt(
-"Is this project SC 10X ? Use SampleSheet10X.csv instead of the document in database ? ",
-				-yes
-			)
-		  );
+	if ( $project->getCaptures->[0]->name =~ /^transcriptome_10X/ and not $sc ) {
+		$sc = 1 if ( prompt( "Is this project SC 10X ? Use SampleSheet10X.csv instead of the document in database ? ", -yes) );
 	}
 	if ($sc) {
 		die(    "No SampleSheet10X.csv: '$bcl_dir/SampleSheet10X.csv'."
@@ -172,8 +146,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	}
 	next if $aoa;
 	my $csv_tmp = $bcl_dir . "/SP." . time . ".csv";
-	die("no sample sheet in database ")
-	  unless ( $run->sample_sheet or -e $bcl_dir . 'SampleSheet10X.csv' );
+	die("no sample sheet in database ") unless ( $run->sample_sheet or -e $bcl_dir . 'SampleSheet10X.csv' );
 	my $toto = $run->sample_sheet;
 
 	#v2
@@ -194,13 +167,7 @@ my $lines;
 my $titles;
 my $current_title;
 my $ss_version = 1;
-$ss_version = 2
-  if (
-	grep {
-		$_->[0] =~ /^\[BCLConvert_/
-		  or ( $_->[0] =~ /^FileFormatVersion$/ and $_->[1] == 2 )
-	} @$aoa
-  );
+$ss_version = 2 if (grep{$_->[0] =~ /^\[BCLConvert_/ or ($_->[0] =~ /^FileFormatVersion$/ and $_->[1] == 2)} @$aoa);
 
 foreach my $line (@$aoa) {
 	if ( $line->[0] =~ /^\[/ ) {
@@ -214,27 +181,18 @@ foreach my $line (@$aoa) {
 }
 my $settings_title = '[Settings]';
 $settings_title = '[BCLConvert_Settings]' if ( $ss_version == 2 );
-unshift( @$titles, $settings_title )
-  unless grep( $_ eq $settings_title, @$titles );
+unshift( @$titles, $settings_title ) unless grep( $_ eq $settings_title, @$titles );
 
 my $data_title = '[Data]';
 $data_title = '[BCLConvert_Data]' if ( $ss_version == 2 );
-die("Missing $data_title section in samplesheet")
-  unless ( $lines->{$data_title} );
+die("Missing $data_title section in samplesheet") unless ( $lines->{$data_title} );
 my $lheader_data = shift @{ $lines->{$data_title} };
 if ( scalar(@$lheader_data) ne scalar( @{ $lines->{$data_title}->[0] } ) ) {
 	my $tb = Text::Table->new( { is_sep => 1 }, @$lheader_data, );
 	$tb->load( $lines->{$data_title}->[0] );
 	print $tb;
 	print "\n";
-	die(
-			'Error: '
-		  . scalar(@$lheader_data)
-		  . " fields in $data_title header vs "
-		  . scalar(
-			@{ $lines->{$data_title}->[0] } . " in $data_title first sample"
-		  )
-	);
+	die('Error: '.scalar(@$lheader_data) . " fields in $data_title header vs " . scalar( @{ $lines->{$data_title}->[0] } . " in $data_title first sample") );
 }
 
 my $error_not_in_project = {};
@@ -247,6 +205,8 @@ my $pos_sample_name = firstidx { $_ eq "Sample_Name" } @$lheader_data;
 my $pos_cb1 = firstidx { lc $_ eq "index" } @$lheader_data;
 my $pos_cb2 = firstidx { lc $_ eq "index2" } @$lheader_data;
 my $len_cb;
+$len_cb->[0] = length( $lines->{$data_title}->[0]->[$pos_cb1] );
+$len_cb->[1] = length( $lines->{$data_title}->[0]->[$pos_cb2] ) unless ( $pos_cb2 eq '-1' );
 
 #<<<<<<< HEAD
 #foreach my $line ( @{ $lines->{$data_title} } ) {
@@ -276,11 +236,7 @@ foreach my $data ( @{ $lines->{$data_title} } ) {
 	die("CB de taille differente") if ( ( $pos_cb2 ne '-1' ) and ( $len_cb->[1] ne length( $data->[$pos_cb2] ) ) );
 }
 
-#$len_cb->[0] = length( $lines->{$data_title}->[0]->[$pos_cb1] );
-#$len_cb->[1] = length( $lines->{$data_title}->[0]->[$pos_cb2] ) unless ( $pos_cb2 eq '-1' );
-
 my $guess_mask;
-
 #if ($mask){
 
 my $config = XMLin(
@@ -289,14 +245,11 @@ my $config = XMLin(
 	ForceArray => [ 'reads', 'read' ]
 );
 my $reads = $config->{Run}->{Reads}->{Read};
-my $rc    = 1
-  if (
-	grep {
-			  $_->{Number} == 3
-		  and $_->{IsIndexedRead} eq 'Y'
-		  and $_->{IsReverseComplement} eq 'Y'
-	} @$reads
-  );
+my $rc = 1 if (	grep {
+					$_->{Number} == 3 
+		  			and $_->{IsIndexedRead} eq 'Y' 
+		 			and $_->{IsReverseComplement} eq 'Y'
+				} @$reads );
 
 #warn colored(['on_red'],"Index2 IsReverseComplement='Y' in RunInfo. The **I2** mask will be interpreted in reverse !!!") if ($rc);
 warn "Index2 IsReverseComplement='Y' in RunInfo." if ($rc);
@@ -312,10 +265,7 @@ foreach my $read (@$reads) {
 			push( @$guess_mask, "I" . $read->{NumCycles} );
 		}
 		elsif ( $l > $len_cb->[$i_index] ) {
-			push( @$guess_mask,
-					"I"
-				  . $len_cb->[$i_index] . "N"
-				  . ( $l - $len_cb->[$i_index] ) );
+			push( @$guess_mask, "I" . $len_cb->[$i_index] . "N" . ( $l - $len_cb->[$i_index] ) );
 		}
 		else {
 			die( "Cycles length < index length : $l < " . $len_cb->[$i_index] );
@@ -369,24 +319,17 @@ else {
 
 $mask = join( ";", @$guess_mask ) unless $mask;
 
-my $choice =
-  prompt( "use - "
-	  . colored( ['bright_red on_black'], "$mask" )
-	  . " - for demultipexing  (y/n) ? " )
-  unless ($input_mask);
-if ( $input_mask or $choice ne "y" ) {
+my $choice = prompt( "use - " . colored( ['bright_red on_black'], "$mask" ) . " - for demultipexing  (y/n) ? " ) unless ($input_mask);
+if ($input_mask or $choice ne "y") {
 	$input_mask = prompt("enter your mask  ? ") unless ($input_mask);
 	$input_mask =~ s/ //g;
 	my $motif_mask = '([YIN][0-9*]+)+(;([YIN][0-9*]+)+)+';
-	die(
-"Error: Invalid Sequencing Mask Format\nThe sequencing mask you entered ('$input_mask') does not match the required syntax."
-	) unless ( $input_mask =~ $motif_mask );
+	die("Error: Invalid Sequencing Mask Format\nThe sequencing mask you entered ('$input_mask') does not match the required syntax.") unless ($input_mask =~ $motif_mask);
 	warn "Use this mask: $input_mask";
 	sleep(3);
 	$mask = $input_mask;
 }
 if ($rc) {
-
 	# inverser mask I2 si en RC
 	my @mask    = split( ';', $mask );
 	my @mask_i2 = ( $mask[2] =~ /[A-Za-z]\d+/g );
@@ -404,7 +347,6 @@ foreach my $set ( @{ $lines->{$settings_title} } ) {
 
 ### read mask ;
 my @amask = split( ";", $mask );
-
 #my $pos_umi = firstidx { $_ =~ /U/ } @amask;
 
 ### read mask ;
@@ -418,32 +360,26 @@ if ( scalar(@bc) == 1 ) {
 	foreach my $data ( @{ $lines->{$data_title} } ) {
 		if ( scalar(@bc) == 1 ) {
 			splice( @$data, $pos_cb2, 1 );
-
 			#my $pos_cb2 = firstidx { $_ eq "index2" } @$lheader_data;
 		}
 	}
 }
 
-my ($adapter_R1) =
-  grep { $_->[0] eq 'AdapterRead1' } @{ $lines->{$settings_title} };
-my ($adapter_R2) =
-  grep { $_->[0] eq 'AdapterRead2' } @{ $lines->{$settings_title} };
+my ($adapter_R1) = grep {$_->[0] eq 'AdapterRead1'} @{$lines->{$settings_title}};
+my ($adapter_R2) = grep {$_->[0] eq 'AdapterRead2'} @{$lines->{$settings_title}};
 
 $lines->{$settings_title} = [];
 my $nb_mis = 0;
 $nb_mis = $mismatch if $mismatch;
 push( @{ $lines->{$settings_title} }, [ "BarcodeMismatchesIndex1", $nb_mis ] );
-push( @{ $lines->{$settings_title} }, [ "BarcodeMismatchesIndex2", $nb_mis ] )
-  if scalar(@bc) == 2;
+push( @{ $lines->{$settings_title} }, [ "BarcodeMismatchesIndex2", $nb_mis ] ) if scalar(@bc) == 2;
 push( @{ $lines->{$settings_title} }, [ "TrimUMI", 0 ] ) if $noTrimUMI;
-push( @{ $lines->{$settings_title} }, [ "CreateFastqForIndexReads", 1 ] )
-  if $fastq_index;
+push( @{ $lines->{$settings_title} }, [ "CreateFastqForIndexReads", 1 ] ) if $fastq_index;
 push( @{ $lines->{$settings_title} }, $adapter_R1 ) if ($adapter_R1);
 push( @{ $lines->{$settings_title} }, $adapter_R2 ) if ($adapter_R2);
 push( @{ $lines->{$settings_title} }, [ "OverrideCycles", $mask ] ) if $mask;
 
 if ($trim) {
-
 	# RNAseq: Trim les adaptateurs
 	die("$settings_title AdapterRead1 already in samplesheet") if ( grep { /AdapterRead1/ } @{ $lines->{$settings_title} } );
 	die("$settings_title AdapterRead2 already in samplesheet") if ( grep { /AdapterRead2/ } @{ $lines->{$settings_title} } );
@@ -472,24 +408,20 @@ foreach my $data ( @{ $lines->{$data_title} } ) {
 	next if $name =~ /_RC$/;
 	next if exists $dj->{$name};
 	next unless $name;
-	$error_not_in_project->{$name} = $patients{$name}
-	  unless exists $patients{$name};
+	$error_not_in_project->{$name} = $patients{$name} unless exists $patients{$name};
 	$ok_in_project->{$name}++ unless not $patients{$name};
 	$ok->{$name}++;
 	delete $patients{$name};
 	$dj->{$name}++;
 
 }
+
 my $error;
 if ( keys %$ok ) {
-	print colored( ['bright_green on_black'],
-		" SAMPLES OK : " . scalar( keys %$ok ) )
-	  . "\n";
+	print colored( ['bright_green on_black'], " SAMPLES OK : " . scalar( keys %$ok ) ) . "\n";
 }
 if ( keys %patients ) {
-	print colored( ['bright_red on_black'],
-		" SAMPLES IN PROJECT NOT IN SAMPLE SHEET :" . scalar( keys %patients ) )
-	  . "\n";
+	print colored( ['bright_red on_black'], " SAMPLES IN PROJECT NOT IN SAMPLE SHEET :" . scalar( keys %patients ) ) . "\n";
 	map { print $_. "\t" . $patients{$_} . "\n" } keys %patients;
 	my $choice = prompt("continue anyway  (y/n) ? ");
 	die() if ( $choice ne "y" );
@@ -504,8 +436,7 @@ if ( keys %$error_not_in_project ) {
 	print " nb error : " . scalar( keys %$error_not_in_project ) . "\n";
 	my $choice = prompt("continue anyway  (y/n) ? ");
 	die() if ( $choice ne "y" );
-
-#$lines->{$data_title} = change_sample_sheet($pos_sample,$lines->{$data_title},$error_not_in_project);
+	#$lines->{$data_title} = change_sample_sheet($pos_sample,$lines->{$data_title},$error_not_in_project);
 }
 
 #if ($error && $run_name_option) {
@@ -514,11 +445,10 @@ if ( keys %$error_not_in_project ) {
 #}
 #elsif  ($error) {die();}
 
-
+unshift( @{ $lines->{$data_title} }, $lheader_data );
 my $outcsv;
 
 foreach my $title ( @{$titles} ) {
-	warn $title;
 	push( @$outcsv, [$title] );
 	my $alines = [];
 	if ($title ne $data_title ){
@@ -544,11 +474,10 @@ csv( in => $outcsv, out => $ss, sep_char => "," );
 #die($ss);
 
 sleep(1);
+
 # sleep tant que le run n'est pas fini
 my $complete = $bcl_dir . 'RTAComplete.txt';    # MISEQ
-$complete = $bcl_dir . 'CopyComplete.txt'
-  if ( $bcl_dir =~ m{/(10X|ISEQ|NEXTSEQ500|NOVASEQ|NOVASEQX)/} )
-  ;    # 10X, ISEQ, NEXTSEQ500, NOVASEQ, NOVASEQX
+$complete = $bcl_dir . 'CopyComplete.txt' if ( $bcl_dir =~ m{/(10X|ISEQ|NEXTSEQ500|NOVASEQ|NOVASEQX)/} );    # 10X, ISEQ, NEXTSEQ500, NOVASEQ, NOVASEQX
 warn $complete;
 my $checkComplete = 1;
 $checkComplete = 0 if -f $complete;
@@ -560,22 +489,21 @@ while ( $checkComplete == 1 ) {
 	$checkComplete = 0 if ( -f $complete );
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
-my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp "
-  ;    # --temp-dir=/data-pure/testfs-bipd/tmpDemul
+my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp ";    # --temp-dir=/data-pure/testfs-bipd/tmpDemul
   $rsync_cmd = "rclone copy $bcl_dir/ $dir_bcl_tmp/ --progress --transfers 16 --checkers 32";
-  
-#  /rclone copy /data-dragen/bcl/20260807_LH00788_0292_A23LWYWLT3 /data-beegfs/tmp/run_7579.NGS2026_108031787216034.69438/  --progress --transfers 16 --checkers 32
+#  rclone copy /data-dragen/bcl/20260807_LH00788_0292_A23LWYWLT3 /data-beegfs/tmp/run_7579.NGS2026_108031787216034.69438/  --progress --transfers 16 --checkers 32
 warn $rsync_cmd;
 my $exit_rsync = system($rsync_cmd);
 warn $exit_rsync;
 sleep(3);
 my $retry = 0;
-while ( $exit_rsync == 23 and $retry < 3 ) {
-	$retry++;
-	warn("rsync error, new try $retry/3");
-	$exit_rsync = system($rsync_cmd);
-}
-die("Rsync error ($exit_rsync), please retry") if ($exit_rsync);
+#while ( $exit_rsync != 0 and $retry < 3 ) {
+#	$retry++;
+#	warn $exit_rsync;
+#	warn("rsync error, new try $retry/3");
+#	$exit_rsync = system($rsync_cmd);
+#}
+die("rclone copy error ($exit_rsync), please retry") if ($exit_rsync);
 my $ss1 = $dir_bcl_tmp . "/" . $samp_name;
 
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss1 --force --bcl-num-parallel-tiles 4 --bcl-num-conversion-threads 4 --bcl-num-compression-threads 4 --bcl-num-decompression-threads 4 };
@@ -588,7 +516,6 @@ warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
 #die;
 $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
 die() if $exit ne 0;
-
 #exit(0);
 warn "END DEMULTIPEX \n let's copy ";
 my $fork = 6;
@@ -597,9 +524,8 @@ my $dir_stats;
 foreach my $project_name ( split( ",", $project_names ) ) {
 	my $buffer  = GBuffer->new();
 	my $project = $buffer->newProject( -name => $project_name );
-	$dir_stats =
-	  $buffer->config_path( "root", "project_data" ) . "/ngs/demultiplex/";
-	my $runs = $project->getRuns;
+	$dir_stats = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
+	my $runs    = $project->getRuns;
 	my $run;
 	if ($run_name_option) {
 		($run) = grep { $_->plateform_run_name eq "$run_name_option" } @$runs;
@@ -615,11 +541,9 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 
 		my $pid = $pm->start and next;
 
-		my ( $fastq1, $fastq2 ) =
-		  dragen_util::get_fastq_file( $p, $out_fastq, $dir_out, "delete" );
-
+		my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out,"delete" );
+		
 		warn $fastq1 . " " . $fastq2;
-
 		#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
 
 		$pm->finish( 0, {} );
@@ -631,13 +555,10 @@ $pm->wait_all_children();
 my $pr = $project_names;
 $pr =~ s/,/_/g;
 
-$dir_stats.= $run_name . "." . $pr;
-
+$dir_stats .= $run_name . "." . $pr;
 #/data-isilon/sequencing/ngs/demultiplex/
 
-system( "mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav "
-	  . $dir_out
-	  . "/Reports/ $dir_stats/ ; chmod -R a+rwx $dir_stats;" );
+system( "mkdir -p $dir_stats ;chmod -R a+rwx $dir_stats; rsync -rav " . $dir_out . "/Reports/ $dir_stats/ ; chmod -R a+rwx $dir_stats;" );
 
 report( $dir_stats . "/Demultiplex_Stats.csv" );
 
@@ -661,9 +582,7 @@ sub report {
 	}
 
 	print "-- BY LINES : --\n";
-	my $tb =
-	  Text::Table->new( ( colored::stabilo( "blue", "Lane", 1 ), "# reads" ) )
-	  ;    # if ($type == 1);
+	my $tb = Text::Table->new( ( colored::stabilo( "blue", "Lane", 1 ), "# reads" ) ) ;    # if ($type == 1);
 	my @l;
 	my @rows;
 	my $stat = Statistics::Descriptive::Full->new();
@@ -695,7 +614,6 @@ sub report {
 	print "\n ------------------------------\n";
 
 	print "-- By Sample : --\n";
-
 #	my $tb2 = Text::Table->new( ( colored::stabilo( "blue", "Sample", 1 ), "# reads" ) ) ;    # if ($type == 1);
 #	@rows = ();
 #	foreach my $p ( sort keys %$bypatient ) {
@@ -719,7 +637,6 @@ sub report {
 	push (@all_patients, @{$buffer->newProject( -name => $_ )->getPatients}) foreach (split( ",", $project_names ));
 	
 	my $tb2 = Text::Table->new( (colored::stabilo("blue", "Sample" , 1),  "# reads", 'expected reads') ) ; # if ($type == 1);
-	
 	@rows = ();
 	$stat->add_data(values %$bypatient);
 	$mean = $stat->mean();
@@ -734,7 +651,6 @@ sub report {
 		if ($bypatient->{$p} < 1000000){
 			$color = 'red';
 		}
-
 		elsif ($expected_reads) {
 			if ($bypatient->{$p} <= 0.9*$expected_reads or $bypatient->{$p} > 2*$expected_reads){
 				$color = 'red';
@@ -773,7 +689,6 @@ sub create_3_fastq {
 	my ( $fastq1, $fastq2, $patient ) = @_;
 	my $fastq3_prod = $fastq2;
 	$fastq3_prod =~ s/_R2/_R3/;
-
 	#system("mv $fastq2 $fastq3");
 	open( FASTQR, "zcat $fastq2 | " );
 
