@@ -811,6 +811,19 @@ has cadd_score => (
 	 	},
 );
 
+has phyloP_score => (
+	is		=> 'ro',
+	lazy =>1,
+	default => sub {
+		my $self = shift;
+		my $chr_id = $self->getChromosome->id();
+		my $id = $chr_id.'!'.$self->start();
+	 	my $score = $self->getChromosome->rocksdb("phylop")->get_raw($id);
+	 	return $score if $score;
+	 	return "-";
+	 },
+);
+
 has promoterAI => (
 	is		=> 'ro',
 	lazy =>1,
