@@ -4036,7 +4036,7 @@ qq{<button type="button" $btn_class onClick="update_grid_gene_phenotypes('ENSG00
 				style =>
 "vertical-align:middle;padding:1px;text-align: center;vertical-align:middle"
 			},
-qq{ <span  class="stamp2" style="border-color:$color;color:$color">+$term+<br><span style='font-size=08px'>$pn:$st_date</span></span>}
+qq{ <span  class="stamp" style="border-color:$color;color:$color">+<b>$term</b>+<br><span style='font-size=08px'>$pn<br>$st_date</span></span>}
 		);
 
 		foreach my $h (@headers_validations) {
