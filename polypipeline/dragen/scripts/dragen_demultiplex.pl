@@ -439,13 +439,8 @@ if ( keys %$error_not_in_project ) {
 	#$lines->{$data_title} = change_sample_sheet($pos_sample,$lines->{$data_title},$error_not_in_project);
 }
 
-#if ($error && $run_name_option) {
-#		my $choice = prompt("continue anyway  (y/n) ? ");
-#		die() if ($choice ne "y");
-#}
-#elsif  ($error) {die();}
 
-unshift( @{ $lines->{$data_title} }, $lheader_data );
+#unshift( @{ $lines->{$data_title} }, $lheader_data );
 my $outcsv;
 
 foreach my $title ( @{$titles} ) {
