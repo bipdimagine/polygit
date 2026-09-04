@@ -59,7 +59,9 @@ foreach my $bam (@$ubams_revio){
 			my $sm = $1;
 			my $pname = $patient->name;
 			if ($sm ne $patient->name ){
-				print colored("Erreur RG/name $bam - ubam: $sm - DB: $pname", 'red'), "\n";
+				print colored("ERROR RG/name $bam - ubam: $sm - DB: $pname", 'red'), "\n";
+				print "If you want to change the RG/name in bam, use '$Bin/change_bam_rg.pl -project $project_name -patient $patient'\n";
+				print "Else, change patient name in database/polyproject\n";
 				die();
 			}
 		}
@@ -91,7 +93,7 @@ if (-e $ubam) {
 		warn "Nombre de reads ubam mergé : $nb_reads_merged \n";	
 		chomp($nb_reads_merged);
 		if ($nb_reads_merged != $nb_reads_revio) {
-			warn ("Le nombre de reads ne correspond pas: ubams Revio $nb_reads_revio vs ubam mergé $nb_reads_merged. Merge de nouveau");
+			warn (colored("Le nombre de reads ne correspond pas: ubams Revio $nb_reads_revio vs ubam mergé $nb_reads_merged. Merge de nouveau", 'yellow'));
 			$force = 1;
 		}
 	}
@@ -100,7 +102,7 @@ if (-e $ubam) {
 		unlink $ubam.".bai" if -e $ubam.".bai";
 	}
 	else {
-		warn "already done";
+		warn "Already done: $ubam";
 		exit();
 	}
 }
@@ -117,7 +119,10 @@ if (-e $ubam) {
 	chomp($nb_reads_merged);
 	if ($nb_reads_merged != $nb_reads_revio) {
 		#unlink $ubam;
-		confess ("ERROR Le nombre de reads ne correspond pas: ubams Revio $nb_reads_revio vs ubam mergé $nb_reads_merged");
+		confess (colored("ERROR Le nombre de reads ne correspond pas: ubams Revio $nb_reads_revio vs ubam mergé $nb_reads_merged", 'red'));
+	}
+	else {
+		warn colored("Done! Output: $ubam", 'green') . "\n";
 	}
 }
 
