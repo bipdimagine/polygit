@@ -750,6 +750,7 @@
         			document.getElementById('ncboost').checked = false;
         			//document.getElementById('phylop').checked = false;
         			document.getElementById('b_keep_pathogenic').checked = true;
+        			document.getElementById('b_keep_only_ho').checked = false;
         			document.getElementById('b_view_all_var').checked = false;
 					var cookie_user = dojo.cookie("username");
 					var cookie_pwd = dojo.cookie("passwd");
@@ -1238,6 +1239,8 @@
 				
 				if (document.getElementById('b_keep_pathogenic').checked == true) { options['keep_pathogenic'] = 1; }
 				
+				if (document.getElementById('b_keep_only_ho').checked == true) { options['keep_only_ho'] = 1; }
+				
 				var found_included = false;
 				var listOnlyProjects = [];
 				var found_excluded = false;
@@ -1623,18 +1626,28 @@
 		                            </td>
 		                        </tr>
 		                        
-								<tr><td><span style="font-size:11px;">&nbsp;</span></td></tr>
+		                        <tr><td><span style="font-size:10px;">&nbsp;</span></td><td></td></tr>
+		                        
+		                        <tr>
+		                        	<td colspan='2'>
+					                	<div>
+						                	<input type="checkbox" id="b_keep_pathogenic" checked>
+											<label style='font-size:9px;' for="b_keep_pathogenic">Keep var pathogenic</label>
+				                		</div>
+			                		</td>
+		                		</tr>
+		                        
 		                        <tr>
 		                        	<td colspan='2'>
 					                	<div>
 						                	<input type="checkbox" id="promoter_ai" onchange="toggleDiv('div_select_promoter_ai', this.checked)">
-											<label for="promoter_ai">use promoterAI</label>
+											<label style='font-size:9px;' for="promoter_ai">use promoterAI</label>
 				                		</div>
 						                
 				                		<div style="display:none;" id="div_select_promoter_ai">
 					                		<center>
-						                		<span style="font-size:11px;"><b>&nbsp;</b></span>
-						                		<span style="font-size:11px;"><b>Promoter AI</b></span>
+						                		<span style="font-size:9px;"><b>&nbsp;</b></span>
+						                		<span style="font-size:9px;"><b>Promoter AI</b></span>
 									    		<div id="slider_promoter_ai" jsId="slider_promoter_ai" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:3,maximum:3,discreteValues:3,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:150px; height: 25px;"'>
 													<div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:3, style:{height:"5px"}'> </div>
 										                <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
@@ -1649,12 +1662,11 @@
 					                </td>
 				                </tr>
 				                
-								<tr><td><span style="font-size:8px;">&nbsp;</span></td></tr>
 				                <tr>
 				                	<td colspan='2'>
 				                		<div>
 						                	<input type="checkbox" id="ncboost" onchange="toggleDiv('div_select_ncboost', this.checked)">
-											<label for="ncboost">use NCBoost-2</label>
+											<label style='font-size:9px;' for="ncboost">use NCBoost-2</label>
 				                		</div>
 					                	
 				                		<div style="display:none;" id="div_select_ncboost">
@@ -1673,9 +1685,17 @@
 						                </div>
 					                </td>
 	                        	</tr>
+		                        
+		                        <tr>
+		                        	<td colspan='2'>
+					                	<div>
+						                	<input type="checkbox" id="b_keep_only_ho" checked>
+											<label style='font-size:9px;' for="b_keep_only_ho">Only HO</label>
+				                		</div>
+			                		</td>
+		                		</tr>
 				                
 				                <!--
-								<tr><td><span style="font-size:8px;">&nbsp;</span></td></tr>
 				                <tr>
 				                	<td colspan='2'>
 				                		<div>
@@ -1772,8 +1792,8 @@
 								
 								<tr><td><span style="font-size:15px;">&nbsp;</span></td><td></td></tr>
 								<tr>
-									<td><span style="margin-top:15px;font-size:13px;">DejaVu</span></td>
-									<td><span style="font-size:13px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+									<td><span style="margin-top:15px;font-size:11px;">DejaVu</span></td>
+									<td><span style="font-size:11px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
 									<td>
 										<div id="td_slider_dejavu">
 											<div id="slider_dv_pv" jsId="slider_dv_pv" data-dojo-type="dijit/form/HorizontalSlider" onChange="check_slider_gnomad_ac" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:4,maximum:6,discreteValues:6,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:130px; height: 10px;"'>
@@ -2009,15 +2029,6 @@
 					    					<form>
 											    <input style="width:140px;font-size:12px;" type="string" id="select_genes" name="select_genes" placeholder="CDK6, BRCA2">
 											</form>
-										</div>
-									</td>
-								</tr>
-		                		<tr>
-		                			<td><span style="font-size:11px;">Keep variants<br>clinvar pathogenic&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
-		                			<td>
-										<div class="hide-on-collapse" style="margin-top: 15px;">
-					    					<input class="form-check-input" type="checkbox" value="" id="b_keep_pathogenic" checked>
-											<label class="form-check-label" for="b_keep_pathogenic" style="vertical-align:middle;font-size:9px;"></label>
 										</div>
 									</td>
 								</tr>

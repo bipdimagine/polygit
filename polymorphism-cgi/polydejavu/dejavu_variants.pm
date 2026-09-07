@@ -142,6 +142,11 @@ has max_gnomad_ac_ho => (
 	lazy    => 1,
 );
 
+has only_ho => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 has only_ill_patients => (
 	is		=> 'rw',
 	lazy    => 1,
@@ -695,6 +700,7 @@ sub get_table_project_patients_infos {
 		foreach my $id (keys %{$h_infos_patients}) {
 			my $pat_name = $h_infos_patients->{$id}->{name};
 			next if not $pat_name;
+			next if $self->only_ho() and $h_infos_patients->{$id}->{heho} eq 'He';
 			$hres->{$pat_name} = $h_infos_patients->{$id};
 		}
 	}
