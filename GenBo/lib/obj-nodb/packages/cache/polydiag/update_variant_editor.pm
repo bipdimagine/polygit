@@ -333,7 +333,7 @@ sub valamut_igv {
 	my ($v,$hvariation,$patient,$debug) = @_;
 		
 		my $bam;
-		eval { $bam = $patient->getBamFileName(); };
+		eval { $bam = $patient->getAlignFileName(); };
 		if ($@) { $bam = undef; }
 		my $start = $v->start();
 		my $chr = $v->getChromosome();
@@ -354,7 +354,7 @@ sub valamut_igv {
 				my @bams;
 				my @names;
 					foreach my $p (@{$patient->getFamily->getPatients()}){
-						next unless -e $p->getBamFileName;
+						next unless -e $p->getAlignFileName;
 						push(@bams,$p->bamUrl);
 						push(@names,$p->name());
 					}

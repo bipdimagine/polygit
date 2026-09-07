@@ -100,9 +100,7 @@ foreach my $var_id (@{$buffer->queryClinvarPathogenic->getAllVarIds_onlyLastRele
 
 my @lGenes;
 if ($keep_var_id) {
-	warn "cocuou";
 	my $v = $project->getVariant($keep_var_id);
-	warn "dididi";
 	@lGenes = (@{$v->getGenes()});
 }
 else {
@@ -139,9 +137,6 @@ eval {
 	}
 };
 if($@) {
-	
-	warn Dumper $@;
-	
 	my $hashRes;
 	$hashRes->{html_table} = "Not Available -> Analyse too old for project $project_name (PolyViewer not available for $project_name / patient $patient_name)";
 	print $cgi->header('text/json-comment-filtered');
