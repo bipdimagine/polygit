@@ -69,6 +69,7 @@ my $phased;
 my $neb;
 my $pad;
 my $cram;
+my $somatic;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -80,6 +81,7 @@ GetOptions(
 	'neb=s' => \$neb,
 	'padding=s' => \$pad,
 	'cram=s' => \$cram,
+	'somatic=s' => \$somatic,
 	#'low_calling=s' => \$low_calling,
 );
 my $pipeline = {};
@@ -96,7 +98,7 @@ my $project = $buffer->newProject( -name => $projectName , -version =>$version);
  $ssh->login("$username");
 
 
-
+die() if $somatic;
 my $tm = "/staging/tmp/";
 
 if ($project->isGenome){
@@ -146,8 +148,11 @@ if ($rna == 1) {
 }
 
 warn "move";
-warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move";
-system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version && touch $ok_move");
+my $method = "dragen-calling";
+
+$method = "dragen-somatic" if $somatic;
+warn "$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version -dragen_method=${method} && touch $ok_move";
+system("$Bin/dragen_move.pl -project=$projectName -patient=$patients_name -command=$spipeline -rna=$rna -cram=$cram -version=$version -dragen_version=$dragen_version -dragen_method=${method} && touch $ok_move");
 
 
 
@@ -325,7 +330,7 @@ elsif (exists $pipeline->{align}){
 	if ($fastq1) {
 		my $runid = $patient->getRun()->id;
 		$param_align = " -1 $fastq1 -2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true ";
-	
+		$param_align = " --tumor-fastq1 $fastq1 --tumor-fastq2 $fastq2 --RGID $runid  --RGSM $prefix --enable-map-align-output true " if $somatic;
 		if ($umi){
 			$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
 		}
@@ -348,14 +353,18 @@ elsif (exists $pipeline->{align}){
 else {
 	my $bam = $patient->getBamFileName();
 	my $opt = "--bam-input";
+	$opt = "--tumor-bam-input" if $somatic;
 	$bam = $patient->getCramFileName("dragen-align") if $cram;
 	unless (-e $bam){
 		$bam = $patient->getDragenDir("pipeline")."/".$patient->name.".bam";
 		$bam = $patient->getDragenDir("pipeline")."/".$patient->name.".cram" if $cram;
 		confess() unless -e $bam;
 	}
-
-	$opt = "--cram-input" if $bam =~ /cram/;
+	if  ($bam =~ /cram/) {
+	$opt = "--cram-input" ;
+	$opt = "--tumor-cram-input" if $somatic;
+	}
+	
 	$param_align = qq{ $opt $bam --enable-map-align false --enable-map-align-output false };
 }
 my $param_gvcf = "";
@@ -399,9 +408,21 @@ if (exists $pipeline->{str}){
 	$param_str = qq{ --repeat-genotype-enable true };
 }
 $param_phased = "--vc-combine-phased-variants-distance ".$phased if $phased;
+my $somatic_arg ="";
+if ($somatic ){
+	 
+	 my $noise = "/data-pure/public-data/repository/".$project->annotation_genome_version."/systematic-noise-baseline-collection/WGS_v2.0.0_systematic_noise.snv.bed.gz";
+	if ($project->isCapture) {
+	  $noise = "/data-pure/public-data/repository/".$project->annotation_genome_version."/systematic-noise-baseline-collection/WES_v2.0.0_systematic_noise.snv.bed.gz";
+	}
+	
+	$somatic_arg =" --vc-systematic-noise $noise --vc-skip-germline-tagging true ";
+	
+}
+#--enable-targeted=false
 
 
-$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str." --enable-targeted=false $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+$cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str."$somatic_arg   $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 
 $patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;

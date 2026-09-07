@@ -84,6 +84,7 @@ my $rna;
 my $phased = 0;
 my $neb;
 my $pad;
+my $somatic;
 
 GetOptions(
 	'project=s' => \$project_name,
@@ -98,6 +99,7 @@ GetOptions(
 	"phased=s" => \$phased,
 	"neb=s" => \$neb,
 	"padding=s" => \$pad,
+	"somatic=s" =>\$somatic,
 	#'low_calling=s' => \$low_calling,
 ) or confess ("Error in command line arguments");
 
@@ -648,6 +650,7 @@ sub run_command {
 #	else {
 	#$lims->{$pname}->{$t} = "PLANNED"; 
 	$pad.="";
+	
 	$job->{cmd} = "perl $script_perl/dragen_command.pl -project=".$hp->{project}." -patient=".$hp->{name} ." -command=".join(",",@{$hp->{run_pipeline}});
 	$job->{cmd} .= " -padding=$pad" if $pad;
 	$job->{cmd} .= " -umi=1 " if $umi;
@@ -655,6 +658,7 @@ sub run_command {
 	$job->{cmd} .= " -version=$version " if $version;
 	$job->{cmd} .= " -phased=$phased " if $phased;
 	$job->{cmd} .= " -neb=$neb " if $neb;
+	$job->{cmd} .= " -somatic=$somatic " if $somatic;
 	
 	$job->{cmd} .= " -cram=$cram " if $cram;
 #	warn $job->{cmd};

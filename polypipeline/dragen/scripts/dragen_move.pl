@@ -54,6 +54,7 @@ my $limit;
 my $version;
 my $cram;
 my $dragen_version;
+my $dragen_method;
 GetOptions(
 	'project=s' => \$projectName,
 	'patients=s' => \$patients_name,
@@ -63,7 +64,8 @@ GetOptions(
 	'version=s' =>\$version,
 	'rna=s' =>\$rna,
 	'cram=s' =>\$cram,
-	'dragen_version' =>\$dragen_version,
+	'dragen_version=s' =>\$dragen_version,
+	'dragen_method=s' =>\$dragen_method,
 	#'low_calling=s' => \$low_calling,
 );
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
@@ -178,7 +180,7 @@ exit(0);
 
 sub move_stats {
 	my ($dir1,$dir2,$patient) = @_;
-	system("rsync -rav $dir1/".$patient->name."*csv $dir2/ ");
+	system("rsync -rav --remove-source-files $dir1/".$patient->name."*csv $dir2/ ");
 	
 }
 
@@ -190,8 +192,8 @@ sub move_file {
 		backup($physical_name);
 	}
 	#--remove-source-files
-	system("rsync -rav  $url"."$file $physical_name ");
-	system ("rsync -rav  $url"."$file.".$idxtype." $physical_name.".$idxtype);
+	system("rsync -rav --remove-source-files $url"."$file $physical_name ");
+	system ("rsync -rav  --remove-source-files $url"."$file.".$idxtype." $physical_name.".$idxtype);
 	return $physical_name;
 }
 
@@ -209,8 +211,8 @@ sub move_cram {
 sub move_file2 {
 	my ($bam1,$bam2,$ext) = @_;
 	die() unless  -e $bam1;
-	system("rsync -rav  $url"."$bam1 $bam2 ");
-	system("rsync -rav  $url"."${bam1}.${ext} ${bam2}.${ext} ");
+	system("rsync -rav --remove-source-files $url"."$bam1 $bam2 ");
+	system("rsync -rav --remove-source-files $url"."${bam1}.${ext} ${bam2}.${ext} ");
 	
 }
 
@@ -222,8 +224,8 @@ sub move_bam {
 		return;
 	}
 	move_file2($bam,$prod,"bai");
-	system("rsync -rav  $url"."$bam $prod ");
-	system("rsync -rav  $url"."${bam}.bai ${prod}.bai ");
+	#system("rsync -rav --remove-source-files $url"."$bam $prod ");
+	#system("rsync -rav --remove-source-files $url"."${bam}.bai ${prod}.bai ");
 	
 	#my $physical_name = move_file($bam,$patient,"dragen-align","bam","bai");
 	
@@ -234,7 +236,7 @@ sub move_bam {
 
 sub move_gvcf {
 	my ($gvcf,$patient) = @_;
-	my $prod = $patient->gvcfFileName("dragen-calling");
+	my $prod = $patient->gvcfFileName("$dragen_method");
 	move_file2($gvcf,$prod,"tbi");
 	#system("rsync -rav  $url"."$bam $prod ");
 	
@@ -254,15 +256,15 @@ sub move_vcf {
 	my ($vcf,$patient) = @_;
 	
 	
-	my $prod = $patient->vcfFileName("dragen-calling");
+	my $prod = $patient->vcfFileName("$dragen_method");
 		move_file2($vcf,$prod,"tbi");
 	tabix($prod,"vcf");
 }
 sub move_count {
 	my ($t1,$t2,$patient) = @_;
 	my $dir = $patient->project->getTargetCountDir();
-	system("rsync -rav  $url"."$t1 $dir/");
-	system("rsync -rav  $url"."$t2 $dir/");
+	system("rsync -rav --remove-source-files  $url"."$t1 $dir/");
+	system("rsync -rav --remove-source-files $url"."$t2 $dir/");
 }
 
 
