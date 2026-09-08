@@ -811,6 +811,7 @@ has tiny_rocks_cache_dir => (
 	
 	}
 );
+
 has parquet_cache_dir => (
 	is      => 'ro',
 	lazy    => 1,
@@ -1728,8 +1729,10 @@ sub get_gencode_from_capture {
 	return -1 unless scalar( @{ $self->getCaptures() } );
 	my $vs;
 	map { $vs->{ $_->gencode_version }++ } @$captures;
-	my @t = keys %$vs;
-	confess() if ( scalar(@t) > 1 );
+	my @t = grep {$_ > 0} keys %$vs;
+	return 0 if  scalar(@t) == 0;
+	confess(@t) if ( scalar(@t) > 1 );
+	
 	my $gencode = 0;
 	if ( scalar(@t) == 1 and $t[0] > 0 ) {
 		$gencode = $t[0];
