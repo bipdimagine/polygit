@@ -2169,19 +2169,14 @@ sub table_sex {
 my $t = time;
 	foreach my $p ( sort { $a->name cmp $b->name } @{ $run->getPatients } ) {
 		print ".";
-		warn $p->name;
 		next if $p->alignmentMethod() eq 'no_align';
 		my $icon = $p->return_icon;
 		my $name = $p->name;
 		my $c1   = "pink";
 		$c1 = "blue" if $p->sex == 1;
-		warn "------";
 		my $cov      = $p->coverage();
-		warn $cov;
-		warn "pppppppppppppppppp";
 		my $mean     = $cov->{mean};
 		my $x30      = $cov->{"30x"};
-		warn "+++";
 		my $cov_sry  = $p->coverage_SRY();
 		warn $cov_sry;
 		my $sex_eval = $p->compute_sex();
@@ -2205,7 +2200,6 @@ qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2p
 #		warn "id";
 		
 		( $iv, $iverror ) = (0,0);
-		warn "ooo";
 		if ($p->identity_vigilance()) { ( $iv, $iverror ) = construct_identito_vigilence($p); }
 		warn "---";
 #		warn "end";
@@ -2233,7 +2227,6 @@ qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2p
 	  	};
 
 	}
-	warn "end";
 #warn abs(time -$t);
 	$out .= qq{	  	
 </ul>
