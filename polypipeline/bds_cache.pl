@@ -377,9 +377,13 @@ sub control_patients {
 		my $s2 = $patient->compute_sex;
 		my $cov_sry  = $patient->coverage_SRY();
 		my $color= "green";
-		if ($s1 ne $s2) {
+		if ($s1 ne $s2 && $s2 ne "-1") {
 			push(@$error,$patient);
 			$color = "red";
+		}
+		if ($s2 eq "-1") {
+			#push(@$error,$patient);
+			$color = "grey";
 		}
 			push(@$lines,[colored::stabilo("$color",$patient->name,1),colored::stabilo("$color",$s1,1),colored::stabilo("$color",$s2,1),colored::stabilo("$color",$cov_sry,1)] ); 
 		
