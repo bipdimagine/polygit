@@ -79,6 +79,7 @@ my $out_json = $cgi->param('out_json');
 my $only_pat_with_var = $cgi->param('only_pat_with_var');
 my $only_pat_with_var_he = $cgi->param('only_pat_with_var_he');
 my $only_pat_with_var_ho = $cgi->param('only_pat_with_var_ho');
+my $only_ho = $cgi->param('only_ho');
 my $debug = $cgi->param('debug');
 my $is_polybtf = $cgi->param('is_polybtf');
 
@@ -896,6 +897,7 @@ sub update_list_variants_from_dejavu {
 		my $after = scalar(keys %{$h_dv_rocks_ids->{$gene_dejavu->getChromosome->id()}});
 		print '._new_not_in_dv:'.($after - $before).'_.';
 	}
+	
 #	die;
 	($hVariantsDetails) = check_variants($h_dv_rocks_ids, $gene_dejavu);
 	
@@ -1153,6 +1155,13 @@ sub check_variants {
 			warn 'rocks: '.$var->rocksdb_id if $debug;
 			warn $h_dv_var_ids->{$var_id}->{rocks_id} if $debug;
 			
+#						my $pass;
+#						if ($only_ho) {
+#							$pass++ if $h_local->{$rocksid}->{$proj_id}->{ho} > 0;
+#						}
+#						else { $pass++; }
+#						next if not $pass;
+			
 			next if (not exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id} and not exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$h_dv_var_ids->{$var_id}->{rocks_id}});
 			warn '7 - ok rocks id' if $debug;
 	
@@ -1162,7 +1171,14 @@ sub check_variants {
 			$h_dv = $h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id} if (exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$var->rocksdb_id});
 			$h_dv = $h_dv_rocks_ids->{$var->getChromosome->id()}->{$h_dv_var_ids->{$var_id}->{rocks_id}} if (exists $h_dv_rocks_ids->{$var->getChromosome->id()}->{$h_dv_var_ids->{$var_id}->{rocks_id}});
 			
+			my $pass_only_ho = 1;
+					#warn Dumper $h_dv;
 			foreach my $proj_id (keys %{$h_dv}) {
+				if ($only_ho) {
+					$pass_only_ho = undef;
+					$pass_only_ho++ if $h_dv->{$proj_id}->{ho} > 0;
+				}
+				
 				#next if not exists $hProjectsIds->{$proj_id};
 				my $proj_name;
 				if (exists $hProjectsIds->{$proj_id}) {
@@ -1196,6 +1212,7 @@ sub check_variants {
 					$is_from_no_dejavu = 1 if (-e $parquet_nodv);
 				}
 			}
+			next if not $pass_only_ho;
 			
 			if (not @list_parquets and not $is_from_no_dejavu) {
 				delete $hres->{$var_id};

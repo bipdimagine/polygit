@@ -1292,6 +1292,8 @@
 					else { url += "&only_my_projects=" + filter_type_project; }
 				}
 				
+				if (document.getElementById('b_only_ho').checked == true) { url += "&only_ho=1"; }
+				
 				var l_models = [];
 				if (document.getElementById('strict_denovo').checked == true) { l_models.push('strict_denovo'); }
 				if (document.getElementById('denovo').checked == true) { l_models.push('denovo'); }
