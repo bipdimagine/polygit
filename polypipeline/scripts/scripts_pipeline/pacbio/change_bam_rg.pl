@@ -21,7 +21,7 @@ GetOptions(
 	'project=s'		=> \$project_name,
 	'patient=s'		=> \$patient_name,
 	'no_exec'		=> \$no_exec,
-	'force'			=> \$force,
+	'force=s'			=> \$force,
 	"cpu|threads|fork=i"	=> \$threads,
 ) || confess("\nError in command line arguments");
 
@@ -225,8 +225,8 @@ foreach my $bam (@{$patient->uBams_revio()}) {
 	} else {
 		warn "Skipping (SM OK): $bam";
 		push @final_bams, $bam;
-		warn "\n";
 	}
+	warn "\n";
 }
 
 # Phase 4: Merge des BAMs
