@@ -23,7 +23,7 @@ GetOptions(
 	"patient=s"=>\$patient_name,
 	"fork=s" =>\$fork,
 	"force=s"=>\$force,
-);
+) || confess ("Error in command line arguments");
 my $date = `date`;
 chomp($date);
 $fork =256 unless $fork;
@@ -31,7 +31,7 @@ my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
 my $patient = $project->getPatient($patient_name);
 my $stforce = "";
-$stforce = "force=1" if $force;
+$stforce = "-force=1" if $force;
 
 my $cmd_align = qq{$Bin/pbmm2.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
 warn $cmd_align;
