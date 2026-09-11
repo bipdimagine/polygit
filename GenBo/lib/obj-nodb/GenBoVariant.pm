@@ -3791,11 +3791,11 @@ sub infos_dejavu_parquet {
 	my $find_pos_s = $self->start() - (20 + $self->length());
 	my $find_pos_e = $self->start() + (20 + $self->length());
 	if ($self->getProject->current_genome_version() eq 'HG38') {
-		$sql .= " WHERE chr38='".$self->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
+		$sql .= " WHERE concat(chr38)='".$self->getChromosome->id()."' and pos38 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
 	}
 	elsif ($self->getProject->current_genome_version() eq 'HG19') {
 		$sql = "SELECT chr19 as chr ,pos19 as pos,  * FROM read_parquet(['".$parquet."'])" ;
-		$sql .= " WHERE chr19='".$self->getChromosome->id()."' and pos19 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
+		$sql .= " WHERE concat(chr19)='".$self->getChromosome->id()."' and pos19 BETWEEN '".$find_pos_s."' and '".$find_pos_e."';" ;
 	}
 	else { confess("\n\nERROR VAR PARQUET DEJAVU !\n\n"); }
 	my $duckdb = $project->buffer->software('duckdb');
