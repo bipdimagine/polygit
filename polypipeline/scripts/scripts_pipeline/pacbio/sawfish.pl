@@ -25,7 +25,7 @@ GetOptions(
 	"patient=s" => \$patient_name,
 	"fork=s" => \$fork,
 	"force=s"  =>\$force,
-);
+) || confess ("Error in command line arguments");
 die("miss fork") unless $fork;
 
 

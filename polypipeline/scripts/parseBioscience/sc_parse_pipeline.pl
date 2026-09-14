@@ -1,6 +1,5 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use Data::Dumper;
-use File::Find;
 use Getopt::Long;
 
 use strict;
@@ -12,7 +11,6 @@ use lib "$Bin/../../../GenBo/lib/obj-nodb/packages";
 use lib "$Bin/../../packages";
 use lib "$Bin/../../../polypipeline/dragen/scripts/";
 use dragen_util;
-use file_util;
 use GBuffer;
 
 my $projectName;
@@ -31,6 +29,7 @@ my $no_exec;
 my $dry_run;
 my $other_opt;
 my $cpu = 40;
+$cpu = 128 if `hostname` eq "master\n";
 my $help;
 
 GetOptions(
@@ -104,6 +103,7 @@ my $patients = $project->get_only_list_patients($patients_name);
 die("No patient $patients_name in project $projectName") unless $patients;
 
 
+my $splitpipe = $project->buffer->software("splitpipe");
 
 # ALL: process data from each sublibrary individually
 if (grep {/all/} @steps) {
@@ -116,15 +116,17 @@ if (grep {/all/} @steps) {
 		my ($fastq1,$fastq2,$dirf);
 		my $fastq = $subl->fastqFiles;
 		my $fastq_dir = $subl->getSequencesDirectory;
+		my $subcmd;
 		if (scalar @$fastq > 1) {
 			warn "cp fastq ".$subl->name;
 			($fastq1,$fastq2,$dirf) = dragen_util::get_fastq_file($subl,$dir_pipeline);
 		}
 		elsif (scalar @$fastq == 1) {
-			warn "rsync fastq ".$subl->name;
+#			warn "rsync fastq ".$subl->name;
 			$fastq1 = $fastq->[0]->{R1};
 			$fastq2 = $fastq->[0]->{R2};
-			system("rsync --size-only $fastq1 $fastq2 $dir_pipeline"); # --no-times
+			$subcmd = "rsync --size-only --no-times $fastq1 $fastq2 $dir_pipeline && ";
+#			system("rsync --size-only $fastq1 $fastq2 $dir_pipeline"); # --no-times
 			$fastq1=~ s/^$fastq_dir/$dir_pipeline/;
 			$fastq2=~ s/^$fastq_dir/$dir_pipeline/;
 		}
@@ -132,19 +134,20 @@ if (grep {/all/} @steps) {
 			confess("No fastq found for patient ".$subl->name.": $fastq_dir");
 		}
 		my $name = $subl->name;
-		my $subcmd = "singularity run --cleanenv";
+#		$subcmd .= "singularity run --cleanenv";
 		# si erreur ne trouve pas la librairie libxml2: "error while loading shared libraries: libxml2.so.2"
 		#$subcmd .= ' --env LD_LIBRARY_PATH=/miniconda/lib:$LD_LIBRARY_PATH';
-		$subcmd .= " -B $dir -B $index" unless ($analysis);
+#		$subcmd .= " -B $dir -B $index" unless ($analysis);
 		my $parent_dir;
 		if ($parent_project and $analysis =~ /^bcr|tcr$/) {
 			$name =~ /(.*)_[bt]cr/i;
 			$parent_dir = $parent_project->getProjectRootPath if (-d $parent_project->getProjectRootPath.$1);
 			$parent_dir = $parent_project->getCountingDir("split-pipe") if (-d $parent_project->getCountingDir("split-pipe").$1);
 			die ("No parent directory found for the corresponding WT sublibrary '$1' in project $parent_project_name") unless (-d $parent_dir);
-			$subcmd .= " -B $parent_dir";
+#			$subcmd .= " -B $parent_dir";
 		}
-		$subcmd .= " -B $dir_pipeline /data-beegfs/software/sif/splitpipe.1.5.1.sif split-pipe --mode all";
+#		$subcmd .= " -B $dir_pipeline /data-bipd/data-pure/software/SINGULARITY/splitpipe.1.5.1.sif split-pipe --mode all";
+		$subcmd = " $splitpipe --mode all" ;
 		$subcmd .= " --chemistry $chem ";
 		if ($analysis =~ /^bcr|tcr$/) {
 			$subcmd .= " --$analysis\_analysis";
@@ -202,7 +205,7 @@ if (grep {/all/} @steps) {
 # COMB: combine the processed data from each sublibrary into a single dataset
 if (grep {/comb(ine)?/} @steps) {
 	my @names = map{ $dir."sublibraries/".$_->name()} @$all_patients;
-	my $cmd2 = "singularity run --cleanenv -B  $dir -B $index ";
+#	my $cmd2 = "singularity run --cleanenv -B  $dir -B $index ";
 #	my $cmd2 = "singularity run --cleanenv -B  $dir -B $index -B $dir_pipeline";
 	my $parent_dir;
 	if ($parent_project and $analysis =~ /^bcr|tcr$/) {
@@ -210,10 +213,11 @@ if (grep {/comb(ine)?/} @steps) {
 		$parent_dir = $parent_project->getCountingDir("split-pipe") if (-d $parent_project->getCountingDir("split-pipe"));
 		$parent_dir = $parent_project->getCountingDir("split-pipe").'/comb/' if (-d $parent_project->getCountingDir("split-pipe").'/comb/');
 		die ("No parent directory found for the corresponding combined WT sublibrary in project $parent_project_name") unless (-d $parent_dir);
-		$cmd2 .= " -B $parent_dir";
+#		$cmd2 .= " -B $parent_dir";
 	}
-	$cmd2 .= " /data-beegfs/software/sif/splitpipe.1.5.1.sif";
-	$cmd2 .= " split-pipe --mode comb" ;
+#	$cmd2 .= " /data-bipd/data-pure/software/SINGULARITY/splitpipe.1.5.1.sif";
+#	$cmd2 .= " split-pipe --mode comb" ;
+	my $cmd2 = " $splitpipe --mode comb" ;
 	if ($analysis =~ /^bcr|tcr$/) {
 		$cmd2 .= ' --immune_genome human' if ($release =~ /^HG/);
 		$cmd2 .= ' --immune_genome mouse' if ($release =~ /^MM/);
@@ -323,7 +327,7 @@ Optionels:
 					par défaut: fait les deux à la suite
 	run <s>				Numéro du run si le projet en contient plusieurs (utilisé pour récupérer la plan de plaque)
 	sample_list <s>			Liste des échantillons et de leurs puis correspondants, séparés par un espace.
-	sample_table <s>			Fichier excel Parse contenant le plan de plaque.
+	sample_table <s>		Fichier excel Parse contenant le plan de plaque.
 					Si sample_table et sample_list sont omis, utilise le document dans la base de donnée comme plan de plaque
 	bcr/tcr				Analyse des BCR ou TCR
 	parent_project <s>		Chemin des résultats de l'analyse whole transcriptome associée. Pour l'analyse de BCR/TCR uniquement

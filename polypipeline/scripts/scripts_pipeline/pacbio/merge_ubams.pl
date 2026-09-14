@@ -26,7 +26,7 @@ GetOptions(
 	'project=s'				=> \$project_name,
 	"patient=s"				=> \$patient_name,
 	"no_exec"				=> \$no_exec,
-    'force'					=> \$force,
+    'force=s'				=> \$force,
 	"cpu|threads|fork=i"	=> \$threads,
 ) || confess("\nError in command line arguments");
 
@@ -84,11 +84,17 @@ foreach my $bam (@$ubams_revio){
 	close($fh);
 	
 }
+#warn "Sum ubam sizes: " . format_bits($ubam_size_sum);
 warn "Nombre de reads total Revio : $nb_reads_revio \n";	
 
 # Check reads nb if ubam already exists
 if (-e $ubam) {
 	unless ($force) {
+#	my $ubam_size = -s $ubam;
+#	warn "Merged ubam size: " . format_bits($ubam_size);
+#	my $size_ratio = abs($ubam_size_sum - $ubam_size) / $ubam_size_sum;
+#	warn "Merged BAM size does not match the sum of Revio BAM sizes: " . format_bits($ubam_size) . " vs " . format_bits($ubam_size_sum) . ". Force merge.";
+#	$force = 1 if ($size_ratio < 0.1);
 		my ($nb_reads_merged) = `samtools idxstats -@ $threads $ubam` =~ /^\*\t\d+\t\d+\t(\d+)/m;
 		warn "Nombre de reads ubam mergé : $nb_reads_merged \n";	
 		chomp($nb_reads_merged);
@@ -113,6 +119,14 @@ my $cmd  = qq{$samtools merge --write-index -f -o $ubam -@ $threads }.join(" ",@
 warn $cmd;
 system($cmd) unless ((-e $ubam and not $force) or $no_exec);
  
+# Check sizes
+#my $ubam_size = -s $ubam;
+#my $size_ratio = abs($ubam_size_sum - $ubam_size) / ($ubam_size_sum + $ubam_size);
+#if ($size_ratio >= 0.1) {
+#	system("rm $ubam");
+#	confess("ERROR $project_name $patient_name" . "\n" . "Total ubam size: " . format_bits($ubam_size_sum) . " vs merged ubam size: " . format_bits($ubam_size));
+#}
+
 if (-e $ubam) {
 	my ($nb_reads_merged) = `samtools idxstats $ubam` =~ /^\*\t\d+\t\d+\t(\d+)/m;
 	warn "Nombre de reads ubam mergé : $nb_reads_merged \n";	
@@ -129,5 +143,24 @@ if (-e $ubam) {
 exit(0);
 
 
-
-
+sub format_bits {
+    my ($bits) = @_;
+    
+    return "0 B" if $bits == 0;
+    
+    my @units = ('', 'K', 'M', 'G', 'T', 'P', 'E');
+    my $unit_index = 0;
+    my $size = $bits;
+    
+    while ($size >= 1024 && $unit_index < $#units) {
+        $size /= 1024;
+        $unit_index++;
+    }
+    
+    # Formater avec une précision adaptée
+    if ($size == int($size)) {
+        return sprintf("%d%s", $size, $units[$unit_index]);
+    } else {
+        return sprintf("%.1f%s", $size, $units[$unit_index]);
+    }
+}
