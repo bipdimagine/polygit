@@ -314,6 +314,11 @@ has only_chromosome  => (
 	lazy    => 1,
 );
 
+has only_region => (
+	is		=> 'rw',
+	lazy    => 1,
+);
+
 has only_genes  => (
 	is		=> 'rw',
 	lazy    => 1,
@@ -329,6 +334,58 @@ has hash_variant_pathogenic  => (
 	lazy    => 1,
 );
 
+sub check_he_composite {
+	my ($self, $hVariantsDetails) = @_;
+	my ($h_he_comp, $h_cons);
+	foreach my $var_id (keys %{$hVariantsDetails}) {
+		my @l_genes;
+		foreach my $gene_id (keys %{$hVariantsDetails->{$var_id}->{polyviewer_variant}->{hgenes}}) {
+			push(@l_genes, $gene_id);
+			foreach my $h_tr (@{$hVariantsDetails->{$var_id}->{polyviewer_variant}->{hgenes}->{$gene_id}->{tr}}) {
+				next if not $h_tr->{nm};
+				push(@{$h_cons->{$var_id}->{$h_tr->{consequence}}}, $h_tr->{nm});
+			}
+		}
+		my $gac = $hVariantsDetails->{$var_id}->{polyviewer_variant}->{gnomad_ac};
+		my $dv_samples = $hVariantsDetails->{$var_id}->{polyviewer_variant}->{dejavu_similar_patients};
+		foreach my $h_pat_proj (@{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}}) {
+			next if lc($h_pat_proj->{heho}) ne 'he';
+			my $proj_name = $h_pat_proj->{project_name};
+			my $pat_name = $h_pat_proj->{patient_name};
+			my $model = lc($h_pat_proj->{model});
+			if ($model eq 'mother' or $model eq 'father') {
+				foreach my $gene_id (@l_genes) {
+					my $g = $self->project->newGene($gene_id);
+					my $g_name = $g->external_name();
+					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{dejavu_similar_patients} = $dv_samples;
+					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{gnomad_ac} = 0;
+					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{gnomad_ac} = $gac if $gac;
+					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{gene_id} = $gene_id;
+					my @l_cons;
+					foreach my $cons (keys %{$h_cons->{$var_id}}) {
+						my $nm = join(', ', sort @{$h_cons->{$var_id}->{$cons}});
+						my $color = 'black';
+						if (exists $self->project->impacts_ensembl_annotations->{high}->{$cons}) { $color = 'red'; }
+						elsif (exists $self->project->impacts_ensembl_annotations->{medium}->{$cons}) { $color = 'orange'; }
+						elsif (exists $self->project->impacts_ensembl_annotations->{low}->{$cons}) { $color = 'green'; }
+						push(@l_cons, qq{<tr><td><center>$nm</center></td><td><center><span style='color:$color;'>$cons</span></center></td></tr>});
+					}
+					my $html_cons = join('', @l_cons);
+					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{consequences} = qq{<table class='table table-striped'>$html_cons</table>};
+				}
+			}
+		}
+	}
+	foreach my $proj_pat (keys %$h_he_comp) {
+		my $pat_ok;
+		foreach my $gene_id (keys %{$h_he_comp->{$proj_pat}}) {
+			if (exists $h_he_comp->{$proj_pat}->{$gene_id}->{father} and exists $h_he_comp->{$proj_pat}->{$gene_id}->{mother}) { $pat_ok++; }
+			else { delete $h_he_comp->{$proj_pat}->{$gene_id}; } 
+		}
+		delete $h_he_comp->{$proj_pat} if not $pat_ok;
+	}
+	return ($h_he_comp);
+}
 
 sub check_variants_from_gene {
 	my ($self, $h_dv_rocks_ids) = @_;
@@ -1039,6 +1096,9 @@ sub print_line_variant_all_patients {
 			}
 		}
 #	}
+
+	eval { $print_html->variant->type; };
+	if ($@) { return; }
 	my $cgi = $print_html->cgi;
 	my $icon = qq{<img width="32" height="32" src="https://img.icons8.com/external-gliphyline-royyan-wijaya/32/external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15.png" alt="external-laptop-laptop-collection-glyphyline-gliphyline-royyan-wijaya-15"/>};
 	$icon   = qq{<img width="24" height="24" src="https://img.icons8.com/external-tal-revivo-filled-tal-revivo/24/external-live-preview-of-a-smart-class-education-school-filled-tal-revivo.png" alt="external-live-preview-of-a-smart-class-education-school-filled-tal-revivo"/>};
