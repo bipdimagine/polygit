@@ -136,10 +136,13 @@ sub getProjectListsRNA {
 #			$hDone->{$name} = undef if $ok_dragen;
 #		}
 		
-		my $path_polyrna = $pathRoot.'/HG38_CNG/polyRNA/';
-		if (-d $path_polyrna) {
-			push(@lbuttons_rna, '2::'.$h->{name});			
-			$hDone->{$name} = undef;
+		my @list_releases = ('HG19_MT','HG38','HG38_CNG','MM38','MM39');
+		foreach my $release (@list_releases) {
+			my $path_polyrna = $pathRoot.'/'.$release.'/polyRNA/';
+			if (-d $path_polyrna) {
+				push(@lbuttons_rna, '2::'.$h->{name});			
+				$hDone->{$name} = undef;
+			}
 		}
 		
 		my @lAnalysis;
