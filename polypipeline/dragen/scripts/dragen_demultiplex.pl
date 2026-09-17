@@ -70,7 +70,7 @@ my $umi_name;
 my $dir_bcl_tmp;
 my $adaptors;
 my $hbc;
-
+my $obj_patient;
 unless ( defined $delete ) { $delete = 1 if ( prompt( "Delete Bcl after demultipex (y/n) ", -yes ) );}
 
 foreach my $project_name ( split( ",", $project_names ) ) {
@@ -82,6 +82,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 		unless ($run_name_option) {
 			print colored( ['bright_red on_black'], "Hey Manue you have " . scalar(@$runs) . " runs in the project(s) $project_name. You have to choose one and add -run on the command line") . "\n";
 			foreach my $run (@$runs) {
+				$run->fastq_dir();
 				print colored( ['bright_green on_black'], $run->plateform_run_name ) . " " . colored( ['bright_blue on_black'], $run->date ) . "\n";
 			}
 			die();
@@ -91,6 +92,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	}
 	else {
 		$run = $runs->[0];
+		$run->fastq_dir();
 	}
 	warn $run->name();
 
@@ -104,9 +106,19 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 		}
 	}
 	foreach my $p ( @{ $project->getPatients } ) {
-		$patients{ $p->name }     = $project->name;
-		$hbc->{ $p->name }->{bc1} = $p->barcode;
+		if($p->getSampleProfile =~/flex$/){
+			$obj_patient->{ $p->barcode }     = $p;
+			$patients{ $p->barcode }     = $project->name;
+			$hbc->{$p->barcode }->{bc1} = 1;
+		}
+		else{
+			$patients{ $p->name }     = $project->name;
+			$obj_patient->{ $p->name }     = $p;
+				$hbc->{ $p->name }->{bc1} = $p->barcode;
+		}
+		
 		$hbc->{ $p->name }->{bc2} = $p->barcode2;
+		
 	}
 
 	# RNAseq NEB: récupère les adaptateurs à trimmer
@@ -229,6 +241,7 @@ $len_cb->[1] = length( $lines->{$data_title}->[0]->[$pos_cb2] ) unless ( $pos_cb
 #	die( $len_cb->[0] . " $name ::  $bc1 " . length($bc1) )
 #	  if $len_cb->[0] ne length($bc1);
 #=======
+
 foreach my $data ( @{ $lines->{$data_title} } ) {
 	next unless $data->[$pos_cb1];
 	#v2
@@ -465,9 +478,9 @@ foreach my $title ( @{$titles} ) {
 }
 my $samp_name = "file" . time . ".csv";
 my $ss        = $bcl_dir . "/" . $samp_name;
+
 csv( in => $outcsv, out => $ss, sep_char => "," );
 #die($ss);
-
 sleep(1);
 
 # sleep tant que le run n'est pas fini
@@ -485,12 +498,13 @@ while ( $checkComplete == 1 ) {
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
 my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp ";    # --temp-dir=/data-pure/testfs-bipd/tmpDemul
-  $rsync_cmd = "rclone copy $bcl_dir/ $dir_bcl_tmp/ --progress --transfers 16 --checkers 32";
+  $rsync_cmd = "rclone copy --local-no-set-modtime $bcl_dir/ $dir_bcl_tmp/ --progress --transfers 16 --checkers 32";
 #  rclone copy /data-dragen/bcl/20260807_LH00788_0292_A23LWYWLT3 /data-beegfs/tmp/run_7579.NGS2026_108031787216034.69438/  --progress --transfers 16 --checkers 32
 warn $rsync_cmd;
 my $exit_rsync = system($rsync_cmd);
 warn $exit_rsync;
 sleep(3);
+
 my $retry = 0;
 #while ( $exit_rsync != 0 and $retry < 3 ) {
 #	$retry++;
@@ -516,37 +530,64 @@ warn "END DEMULTIPEX \n let's copy ";
 my $fork = 6;
 my $pm   = new Parallel::ForkManager($fork);
 my $dir_stats;
-foreach my $project_name ( split( ",", $project_names ) ) {
 	my $buffer  = GBuffer->new();
-	my $project = $buffer->newProject( -name => $project_name );
-	$dir_stats = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
+foreach my $p (values %$obj_patient){
+	
+	my $project = $p->project;
+	$project->{buffer} = $buffer;
+	warn $project;
+	warn $project->buffer;
+	$p->{buffer} = $buffer;
 	my $runs    = $project->getRuns;
 	my $run;
 	if ($run_name_option) {
 		($run) = grep { $_->plateform_run_name eq "$run_name_option" } @$runs;
 	}
 	else {
-		$run = $runs->[0];
+		$run =$runs->[0];
 	}
+	$dir_stats = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
 	my $out_fastq = $run->fastq_dir();
-	system("mkdir $out_fastq ; chmod g+rwx $out_fastq ")
-	  unless ( -d $out_fastq );
-
-	foreach my $p ( @{ $project->getPatients } ) {
-
-		my $pid = $pm->start and next;
-
-		my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out,"delete" );
-		
-		warn $fastq1 . " " . $fastq2;
-		#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
-
-		$pm->finish( 0, {} );
+	my $pid = $pm->start and next;
+	my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out,"delete" );
+	warn $fastq1 . " " . $fastq2;
+	$pm->finish( 0, {} );
 	}
-
-}
-
 $pm->wait_all_children();
+
+
+
+#foreach my $project_name ( split( ",", $project_names ) ) {
+#	my $buffer  = GBuffer->new();
+#	my $project = $buffer->newProject( -name => $project_name );
+#	$dir_stats = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
+#	my $runs    = $project->getRuns;
+#	my $run;
+#	if ($run_name_option) {
+#		($run) = grep { $_->plateform_run_name eq "$run_name_option" } @$runs;
+#	}
+#	else {
+#		$run = $runs->[0];
+#	}
+#	my $out_fastq = $run->fastq_dir();
+#	system("mkdir $out_fastq ; chmod g+rwx $out_fastq ")
+#	  unless ( -d $out_fastq );
+#
+#	foreach my $p ( @{ $project->getPatients } ) {
+#		my $pid = $pm->start and next;
+#
+#		my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out,"delete" );
+#		
+#		warn $fastq1 . " " . $fastq2;
+#		#system ("rsync -rav $dir_out/".$p->name."_S* $out_fastq/");
+#
+#		$pm->finish( 0, {} );
+#	}
+#
+#}
+#
+#$pm->wait_all_children();
+
 my $pr = $project_names;
 $pr =~ s/,/_/g;
 
