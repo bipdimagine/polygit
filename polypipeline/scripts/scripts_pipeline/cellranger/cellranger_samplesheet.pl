@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use FindBin qw($Bin);
@@ -6,37 +6,38 @@ use lib "$Bin/../../../../GenBo/lib/";
 use lib "$Bin/../../../../GenBo/lib/GenBoDB";
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../packages";
-use Logfile::Rotate;
-use Cwd;
-use PBS::Client;
+#use Logfile::Rotate;
+#use Cwd;
+#use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
 use IO::Prompt;
-use Sys::Hostname;
+#use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
-use Moose;
-use MooseX::Method::Signatures;
+#use Moose;
+#use MooseX::Method::Signatures;
 #use bds_steps;   
 use file_util;
-use Class::Inspector;
-use Digest::MD5::File ;
+#use Class::Inspector;
+#use Digest::MD5::File ;
 use GBuffer;
 use GenBoProject;
-use colored; 
-use Config::Std;
-use Text::Table;
-use Time::Local 'timelocal';
-use File::Temp qw/ tempfile tempdir /;
+#use colored; 
+#use Config::Std;
+#use Text::Table;
+#use Time::Local 'timelocal';
+#use File::Temp qw/ tempfile tempdir /;
 use Term::Menus;
-use Proc::Simple;
-use Storable;
-use JSON::XS;
+#use Proc::Simple;
+#use Storable;
+#use JSON::XS;
 use XML::Simple qw(:strict);
 use Cwd 'abs_path';
 use File::Path qw(make_path);
 use Text::CSV qw(csv);
 use Carp;
+use autodie qw(system open);
 
 
 my $projectNames;
@@ -44,7 +45,7 @@ my $patients_name;
 my $mismatch = 1;
 my $multi;
 my $no_exec;
-my $no_rc;
+my $rc;
 my $help;
 
 GetOptions(
@@ -52,7 +53,7 @@ GetOptions(
 	'mismatches=i'				=> \$mismatch,
 	'multi|flex'				=> \$multi,
 	'no_exec'					=> \$no_exec,
-	'no_rc'						=> \$no_rc,
+	'rc!'						=> \$rc,
 	'help'						=> \$help,
 ) || die("Error in command line arguments\n");
 
@@ -60,7 +61,7 @@ usage() if $help;
 die("-project argument is mandatory") unless ($projectNames);
 die("-mismatches can be 0, 1, 2.") unless ($mismatch =~ /^[012]$/);
 warn "mismatch(es)=$mismatch";
-warn '-multi=' if ($multi);
+warn '-multi' if ($multi);
 
 my $run;
 my $projects;
@@ -78,6 +79,13 @@ warn 'Run: '. $run->plateform_run_name;
 my $machine = $run->infosRun->{machine};
 my $bcl_dir = $run->bcl_dir;
 warn 'BCL dir: '.$bcl_dir;
+
+unless (defined $rc) {
+	$rc = 1;
+	$rc = 0 if ($machine eq 'NOVASEQX');
+}
+warn "BC2 in forward" unless ($rc);
+warn "BC2 in reverse complement" if ($rc);
 
 # Récupère tous les projets du run
 my $dbh = $buffer->dbh();
@@ -99,7 +107,7 @@ my $patient_names = join(',',map {$_->[0]} @sel);
 my $config = XMLin("$bcl_dir/RunInfo.xml", KeyAttr => { reads => 'Reads' }, ForceArray => [ 'reads', 'read' ]);
 my $lane_count = $config->{Run}->{FlowcellLayout}->{LaneCount};
 	
-my $samplesheet = $bcl_dir."SampleSheet10X.csv";
+my $samplesheet = $bcl_dir."SampleSheetSC.csv";
 my $outcsv_headers;
 #push(@$outcsv_headers, ["[Header]"],["FileFormatVersion","2"],["[BCLConvert_Settings]"],["CreateFastqForIndexReads","0"],["TrimUMI","0"],["[BCLConvert_Data]"]);
 push(@$outcsv_headers, ["[Settings]"],["CreateFastqForIndexReads","0"],["[Data]"]) unless ($run->sequencing_method eq 'atac');
@@ -130,17 +138,17 @@ foreach my $project (@$projects){
 		$desc = $project->description =~ s/ /_/r if ($tproj);
 #		$desc = $1 if ($desc =~ /^(SC\d+)/);
 		my $pname = $pat->name;
-		$pname = $pat->somatic_group if ($multi);
+		$pname = $pat->barcode if ($multi);
+#		warn $pname;
 		my $bc = $pat->barcode;
-		die ("ERROR in sample barcode for '$pname': $bc.\nShould be SI-XX-[A-H][1-12] or barcode sequence of 8 or 10 nt. without 'N'.")
-			unless ($bc =~ /^SI-[GNT][ANST]-[A-H](?:[1-9]|1[0-2])$/ or $bc =~ /^[ATCG]{8,10}$/);
+		die ("ERROR in sample barcode for '$pname': $bc.\nShould be SI-XX-[A-H][1-12] for 10X, [A-H][1-6] or UDI_Plate_(WT|EC)_[1-48] for Parse Biosciences, or barcode sequence of 8 or 10 nt. without 'N'.")
+			unless ($bc =~ /^SI-[GNT][ANST]-[A-H](?:[1-9]|1[0-2])$/ or $bc =~ /^[A-H][1-6]$/ or $bc =~ /^UDI_Plate_(WT|EC)_\d{1,2}$/ or $bc =~ /^[ATCG]{8,10}$/);
 		
 		# BC 10X SI-XX
 		if ($bc =~ /^SI-([3GNPT][0ANST]3?)-[A-H](?:[1-9]|1[0-2])$/) {
 			my $bc_name = $bc;
-#			warn $bc_name;
 			my $kit = $1;
-			my $file_index = "/data-isilon/public-data/10X/sample_indexes_set_sequences/";
+			my $file_index = "/data-pure/public-data/10X/sample_indexes_set_sequences/";
 			
 			# Single Index
 			if ($kit =~ /^[NG]A$/) {
@@ -151,7 +159,7 @@ foreach my $project (@$projects){
 				my $indexes = csv (in => $file_index, sep => ",");
 				while($indexes->[0]->[0] =~ /^#|^index_name$/) {shift @$indexes};
 				my @barcodes = grep {$_->[0] eq $bc_name} @{$indexes};
-				die("ERROR ".scalar @barcodes."barcodes '$bc_name' found in $file_index") unless (scalar @barcodes == 1);
+				die("ERROR ".scalar @barcodes." barcodes '$bc_name' found in $file_index") unless (scalar @barcodes == 1);
 				shift @{$barcodes[0]};
 				foreach my $b (@{$barcodes[0]}) {
 					push(@$outcsv, [$_,"$pname","$pname","$bc_name","$b","$desc"]) for (1 .. $lane_count);
@@ -163,27 +171,51 @@ foreach my $project (@$projects){
 				die("Single and dual indexes mixed, run separately") if ($nb_index and $nb_index != 2);
 				$nb_index = 2;
 				$file_index .= "Dual_Index_Kit_$kit\_Set_A.csv";
-				my $indexes = csv (in => $file_index, sep => ",");
+				my $indexes = csv (in => $file_index, sep => ",", headers => "auto", comment_str => "#");
 				while($indexes->[0]->[0] =~ /^#|^index_name$/) {shift @$indexes};
 				my @barcodes = grep {$_->[0] eq $bc_name} @{$indexes};
-				die("ERROR ".scalar @barcodes."barcodes '$bc_name' found in $file_index") unless (scalar @barcodes == 1);
+				die("ERROR ".scalar @barcodes." barcodes '$bc_name' found in $file_index") unless (scalar @barcodes == 1);
 				my $bc1 = $barcodes[0][1];
 				my $bc2 = $barcodes[0][2];
-				my $bc2_rc = $barcodes[0][3];
-				for my $lane (1 .. $lane_count) {
-					 if ($machine eq 'NOVASEQX') {
-					 	push(@$outcsv, ["$lane","$pname","$pname","$bc_name","$bc1","$bc_name","$bc2","$desc"]);
-						push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc_name","$bc1","$bc_name","$bc2_rc","$desc"]) unless ($no_rc);
-					 }
-					 else {
-					 	push(@$outcsv, ["$lane","$pname","$pname","$bc_name","$bc1","$bc_name","$bc2_rc","$desc"]);
-						push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc_name","$bc1","$bc_name","$bc2","$desc"]) unless ($no_rc);
-					 }
-				}
+				my $bc2 = $barcodes[0][3] if ($rc);
+			 	push(@$outcsv, [$_,$pname,$pname,$bc_name,$bc1,$bc_name,$bc2,$desc]) for (1 .. $lane_count);
+#				my $bc2_rc = $barcodes[0][3];
+#				my $bc2_rc = $barcodes[0][2] if ($rc);
+#				for my $lane (1 .. $lane_count) {
+#					 if ($machine eq 'NOVASEQX') {
+#					 	push(@$outcsv, ["$lane","$pname","$pname","$bc_name","$bc1","$bc_name","$bc2","$desc"]);
+#						push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc_name","$bc1","$bc_name","$bc2_rc","$desc"]) if ($rc);
+#					 }
+#					 else {
+#					 	push(@$outcsv, ["$lane","$pname","$pname","$bc_name","$bc1","$bc_name","$bc2_rc","$desc"]);
+#						push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc_name","$bc1","$bc_name","$bc2","$desc"]) if ($rc);
+#					 }
+#				}
 			}
-			else {die("Error in $pname BC: $bc_name. No sample index kit set $kit: '$file_index'.")}
+			else {die("Error in $pname BC: $bc_name. No 10X sample index kit set $kit: '$file_index'.")}
 		}
 		
+		# BC Parse Bioscience WT
+		elsif ($bc =~ /^[A-H][1-6]$/ or $bc =~ /^UDI_Plate_(WT|EC)_\d{1,2}$/) {
+			my $bc_name = $bc;
+			my $kit = $1;
+			confess ('UDI_Plate_EC not configured') if ($1 eq 'EC');
+			
+			# Dual Index WT
+			my $file_index = "/data-pure/public-data/ParseBiosciences/indexes/UDI_WT_sequences.csv";
+			$nb_index = 2;
+			my $indexes = csv (in => $file_index, sep => ",", headers => "auto");
+			my @barcodes = grep {$bc_name eq $_->{'well_position'} or $bc_name eq $_->{'Index name'}} @$indexes;
+			die("ERROR ".scalar @barcodes." barcodes '$bc_name' found in $file_index") unless (scalar @barcodes == 1);
+			$bc_name = $barcodes[0]->{'Index name'};
+			my $bc1 = $barcodes[0]->{'i7_index'};
+			my $bc2 = $barcodes[0]->{'i5_index'};
+			$bc2 = $barcodes[0]->{'i5_index_reverse_complement'} if ($rc);
+#		 	push(@$outcsv, [$_,$pname,$pname,$bc_name,$bc1,$bc_name,$bc2,$desc]) for (1 .. $lane_count);
+		 	push(@$outcsv, [$pname,$pname,$bc_name,$bc1,$bc_name,$bc2,$desc]);
+		}
+
+
 		# BC sequence
 		elsif ($bc =~ /^[ATCG]{8,10}$/ and not $multi) {
 			my $bc2 = $pat->barcode2;
@@ -191,10 +223,12 @@ foreach my $project (@$projects){
 			$nb_index = 2;
 			die("Single and dual indexes mixed, run separately") if ($nb_index and $nb_index != 2);
 			die ("ERROR sample barcode2 for '$pname': $bc2.\nShould be barcode sequence of 8 or 10 nt. without 'N'.") if ($bc2 !~ /^[ATCG]{8,10}$/);
-			my $bc2_rc = reverse($bc2) =~ tr/ATCG/TAGC/r;
+#			my $bc2_rc = reverse($bc2) =~ tr/ATCG/TAGC/r;
+			$bc2 = reverse($bc2) =~ tr/ATCG/TAGC/r if ($rc);
+			die unless $bc2;
 			for my $lane (1 .. $lane_count) {
-				push(@$outcsv, ["$lane","$pname","$pname","$bc","$bc","$bc2","$bc2","$desc"]);
-				push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc","$bc","$bc2_rc","$bc2_rc","$desc"]) unless ($no_rc);
+				push(@$outcsv, ["$lane","$pname","$pname","$bc","","$bc2","","$desc"]);
+#				push(@$outcsv, ["$lane","$pname\_RC","$pname\_RC","$bc","$bc","$bc2_rc","$bc2_rc","$desc"]) if ($rc);
 			}
 		}
 		elsif ($bc =~ /^[ATCG]{8,10}$/ and not $multi) {
@@ -205,18 +239,23 @@ foreach my $project (@$projects){
 }
 
 push(@$outcsv_headers, ["Lane","Sample_ID","Sample_Name","I7_Index_ID","index","Sample_Project"]) if ($nb_index == 1);
-push(@$outcsv_headers, ["Lane","Sample_ID","Sample_Name","I7_Index_ID","index","I5_Index_ID","index2","Sample_Project"]) if ($nb_index == 2);
+push(@$outcsv_headers, ["Sample_ID","Sample_Name","I7_Index_ID","index","I5_Index_ID","index2","Sample_Project"]) if ($nb_index == 2);
 unshift(@$outcsv, @$outcsv_headers);
 
 csv (in => $outcsv, out => $samplesheet, sep_char=> ",");
 warn 'Sample Sheet: '.$samplesheet;
 
-my $cmd = "$Bin/../../../dragen/scripts/dragen_demultiplex.pl --project=$projectNames -mismatch=$mismatch -sc";
+my $cmd = "$Bin/../../../dragen/scripts/dragen_demultiplex.pl -project=$projectNames -mismatch=$mismatch -sc -delete";
+#my $cmd = "dragen_demultiplex.sh -project=$projectNames -mismatch=$mismatch -sc -delete";
 $cmd .= " -keep_umi -fastq_index" if ($run->sequencing_method eq 'atac');
 warn $cmd;
 if ($run->sequencing_method eq 'atac') {
 	print colored("For scATACseq, use mask ", 'bold');
 	print colored("Y50;I8;U16;Y50", 'bold red'), "\n";
+}
+elsif ($run->sequencing_method eq 'arc') {
+	print colored("For scATACseq, use mask ", 'bold');
+	print colored("Y50;I8;U24;Y49", 'bold red'), "\n";
 }
 my $exit = system ($cmd) unless ($no_exec);
 confess("ERROR $cmd") if ($exit);

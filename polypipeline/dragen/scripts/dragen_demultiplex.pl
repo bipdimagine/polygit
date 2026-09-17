@@ -107,6 +107,7 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 		$patients{ $p->name }     = $project->name;
 		$hbc->{ $p->name }->{bc1} = $p->barcode;
 		$hbc->{ $p->name }->{bc2} = $p->barcode2;
+		$hbc->{ $p->barcode }->{bc1} = 1;
 	}
 
 	# RNAseq NEB: récupère les adaptateurs à trimmer
@@ -136,17 +137,17 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
 	if ( $project->getCaptures->[0]->name =~ /^transcriptome_10X/ and not $sc ) {
-		$sc = 1 if ( prompt( "Is this project SC 10X ? Use SampleSheet10X.csv instead of the document in database ? ", -yes) );
+		$sc = 1 if ( prompt( "Is this project SC 10X or Parse ? Use SampleSheetSC.csv instead of the document in database ? ", -yes) );
 	}
 	if ($sc) {
-		die(    "No SampleSheet10X.csv: '$bcl_dir/SampleSheet10X.csv'."
+		die(    "No SampleSheetSC.csv: '$bcl_dir/SampleSheetSC.csv'."
 			  . "Have you run '$Bin/../../../scripts/scripts_pipeline/cellranger/cellranger_samplesheet.pl' -project=$project_names ?"
-		) unless ( -f $bcl_dir . 'SampleSheet10X.csv' );
-		$aoa = csv( in => $bcl_dir . 'SampleSheet10X.csv' );
+		) unless ( -f $bcl_dir . 'SampleSheetSC.csv' );
+		$aoa = csv( in => $bcl_dir . 'SampleSheetSC.csv' );
 	}
 	next if $aoa;
 	my $csv_tmp = $bcl_dir . "/SP." . time . ".csv";
-	die("no sample sheet in database ") unless ( $run->sample_sheet or -e $bcl_dir . 'SampleSheet10X.csv' );
+	die("no sample sheet in database ") unless ( $run->sample_sheet or -e $bcl_dir . 'SampleSheetSC.csv' );
 	my $toto = $run->sample_sheet;
 
 	#v2
@@ -208,32 +209,31 @@ my $len_cb;
 $len_cb->[0] = length( $lines->{$data_title}->[0]->[$pos_cb1] );
 $len_cb->[1] = length( $lines->{$data_title}->[0]->[$pos_cb2] ) unless ( $pos_cb2 eq '-1' );
 
-#<<<<<<< HEAD
-#foreach my $line ( @{ $lines->{$data_title} } ) {
-#	my $name = $line->[$pos_sample];
-#	next unless exists $hbc->{$name};
-#
-#	my $bc1 = $line->[$pos_cb1];
-#	my $bc2 = "";
-#	unless ( $pos_cb2 eq '-1' ) {
-#		$bc2 = $line->[$pos_cb2];
-#		die("CB de taille differente $name $bc1 - $bc2")
-#		  if ( ( $pos_cb2 ne '-1' ) and ( length($bc1) ne length($bc2) ) );
-#	}
-#
-#	unless ($len_cb) {
-#		warn $name;
-#		$len_cb->[0] = length($bc1);
-#		$len_cb->[1] = length($bc2);
-#	}
-#	die( $len_cb->[0] . " $name ::  $bc1 " . length($bc1) )
-#	  if $len_cb->[0] ne length($bc1);
-#=======
-foreach my $data ( @{ $lines->{$data_title} } ) {
-	next unless $data->[$pos_cb1];
-	#v2
-	die( $len_cb->[0] . " ::  " . $data->[$pos_cb1] ) if $len_cb->[0] ne length( $data->[$pos_cb1] );
-	die("CB de taille differente") if ( ( $pos_cb2 ne '-1' ) and ( $len_cb->[1] ne length( $data->[$pos_cb2] ) ) );
+foreach my $line ( @{ $lines->{$data_title} } ) {
+	my $name = $line->[$pos_sample];
+	next unless exists $hbc->{$name};
+
+	my $bc1 = $line->[$pos_cb1];
+	my $bc2 = "";
+	unless ( $pos_cb2 eq '-1' ) {
+		$bc2 = $line->[$pos_cb2];
+		die("CB de taille differente $name $bc1 - $bc2")
+		  if ( ( $pos_cb2 ne '-1' ) and ( length($bc1) ne length($bc2) ) );
+	}
+
+	unless ($len_cb) {
+		warn $name;
+		$len_cb->[0] = length($bc1);
+		$len_cb->[1] = length($bc2);
+	}
+	die( $len_cb->[0] . " $name ::  $bc1 " . length($bc1) )
+	  if $len_cb->[0] ne length($bc1);
+
+#foreach my $data ( @{ $lines->{$data_title} } ) {
+#	next unless $data->[$pos_cb1];
+#	#v2
+#	die( $len_cb->[0] . " ::  " . $data->[$pos_cb1] ) if $len_cb->[0] ne length( $data->[$pos_cb1] );
+#	die("CB de taille differente") if ( ( $pos_cb2 ne '-1' ) and ( $len_cb->[1] ne length( $data->[$pos_cb2] ) ) );
 }
 
 my $guess_mask;
@@ -454,7 +454,7 @@ foreach my $title ( @{$titles} ) {
 	#	warn Dumper $line;
 		my $name;
 		$name = $line->[$pos_sample];
-		$line->[$pos_sample_name] = $name unless ( $pos_sample_name < 0 );
+		$line->[$pos_sample_name] = $name unless ( $pos_sample_name < 0);
 		$name =~ s/_RC//;
 		next unless  exists $hbc->{$name};
 		
@@ -485,7 +485,7 @@ while ( $checkComplete == 1 ) {
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
 my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp ";    # --temp-dir=/data-pure/testfs-bipd/tmpDemul
-  $rsync_cmd = "rclone copy $bcl_dir/ $dir_bcl_tmp/ --progress --transfers 16 --checkers 32";
+  $rsync_cmd = "rclone copy $bcl_dir/ $dir_bcl_tmp/ --progress --transfers 16 --checkers 32 --refresh-times --size-only ";
 #  rclone copy /data-dragen/bcl/20260807_LH00788_0292_A23LWYWLT3 /data-beegfs/tmp/run_7579.NGS2026_108031787216034.69438/  --progress --transfers 16 --checkers 32
 warn $rsync_cmd;
 my $exit_rsync = system($rsync_cmd);
@@ -504,6 +504,7 @@ my $ss1 = $dir_bcl_tmp . "/" . $samp_name;
 my $cmd = qq{dragen --bcl-conversion-only=true --bcl-input-directory $dir_bcl_tmp --output-directory $dir_out --sample-sheet $ss1 --force --bcl-num-parallel-tiles 4 --bcl-num-conversion-threads 4 --bcl-num-compression-threads 4 --bcl-num-decompression-threads 4 };
 $cmd .= "--strict-mode true ";    # abort if any files are missing or corrupt
 $cmd .= "--create-fastq-for-index-reads true " if $fastq_index;
+#$cmd .= '--bcl-only-lane 1 ';
 warn $cmd;
 
 my $exit = 0;
