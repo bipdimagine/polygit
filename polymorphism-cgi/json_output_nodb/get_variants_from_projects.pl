@@ -484,12 +484,20 @@ if ($region or $only_genes) {
 ### PART 3 - check variants from calling variables
 my ($hGenes, $hVariantsDetails) = $dejavu_variants->check_variants_from_gene($h_rocks_to_view);
 
+my ($he_comp, $max_impact_hecomp) = $dejavu_variants->check_he_composite($hVariantsDetails);
+
 my $nb_var = scalar(keys %{$hVariantsDetails});
 print '...html...nbVar:'.$nb_var.'.';
+
 my $nb_genes = scalar(keys %{$hGenes});
 if ($only_genes) {
 	foreach my $gene_id (keys %$hGenes)	{
 		delete $hGenes->{$gene_id} if not exists $dejavu_variants->{hash_only_genes}->{$gene_id};
+	}
+	foreach my $proj_pat (keys %{$he_comp}) {
+		foreach my $gene_id (keys %{$he_comp->{$proj_pat}}) {
+			delete $he_comp->{$proj_pat}->{$gene_id} if not exists $dejavu_variants->{hash_only_genes}->{$gene_id};
+		}
 	}
 }
 $nb_genes = scalar(keys %{$hGenes});
@@ -700,6 +708,69 @@ if ($h_phenos) {
 $html .= "</tr></table></div>";
 undef $h_phenos; 
 
+if (scalar keys %$he_comp > 0) {
+	$html .= "<br><br>";
+	my $color_b = 'orange';
+	my $this_b_cmd = qq{collapse("panel_hecomp")};
+	$html .= qq{<div class="btn btn-brown btn-xs" data-toggle='collapse' onClick='$this_b_cmd' data-target="#panel_hecomp" aria-expanded='false' aria-controls='panel_hecomp' style="font-size:14px;color:white;background-color:$color_b;border-right: 4px solid $color_b;border-left: 4px solid $color_b;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;"> </span> <span aria-hidden="true" style="padding-top:2px;float:left;"></span> Found Potential He Composites&nbsp;&nbsp;&nbsp;</div></div>};
+	$html .= qq{<div loading="lazy" class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="panel_hecomp" loading="lazy">};
+	$html .= "<div style='height:500px; overflow-y:auto; overflow-x:hidden;border:1px solid black;'>";
+	$html .= qq{<table id='table_he_comp' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="5" data-page-list="[5, 10, 20, 100]" data-resizable='true' class='table' style='font-size:13px;'>};
+	$html .= "<thead>";
+	$html .= $cgi->start_Tr({style=>"background-color:#E9DEFF;"});
+	$html .= qq{<th data-field="project" data-filter-control="input" data-filter-control-placeholder="NGS2020_10151"</th>};
+	$html .= qq{<th data-field="patient" data-filter-control="input" data-filter-control-placeholder=""</th>};
+	$html .= qq{<th data-field="gene" data-filter-control="input" data-filter-control-placeholder=""</th>};
+	$html .= qq{<th data-field="mother" data-filter-control="input" data-filter-control-placeholder=""</th>};
+	$html .= qq{<th data-field="father" data-filter-control="input" data-filter-control-placeholder=""</th>};
+	$html .= qq{<th data-field="link"></th>};
+	$html .= $cgi->end_Tr();
+	$html .= "</thead>";
+	$html .= "<tbody>";
+	foreach my $proj_pat (keys %{$he_comp}) {
+		my ($proj, $pat) = split('!', $proj_pat);
+		foreach my $gene_name (keys %{$he_comp->{$proj_pat}}) {
+			$html .= "<tr style='height:10px; vertical-align:top;'>";
+			$html .= "<td style='height:10px; vertical-align:top;'><center><b><u>$proj</u></b></center></td>";
+			$html .= "<td style='height:10px; vertical-align:top;'><center><b>$pat</b></center></td>";
+			my $gene_id;
+			$html .= "<td style='height:10px;'><center>$gene_name</center></td>";
+			foreach my $parent ('mother', 'father') {
+				$html .= "<td style='height:10px; vertical-align:top;'><center><table class='table table-striped' data-toggle='table' style='vertical-align:top;'>";
+				$html .= "<tr style='height:10px; vertical-align:top;'>";
+				$html .= "<td style='padding:2px 4px;'><center><b>Var</b></center></td>";
+				$html .= "<td style='padding:2px 4px;'><center><b>G.AC</b></center></td>";
+				$html .= "<td style='padding:2px 4px;'><center><b>DV Samp.</b></center></td>";
+				$html .= "<td style='padding:2px 4px;'><center><b>Cons.</b></center></td>";
+				$html .= "</tr>";
+				foreach my $var_id (keys %{$he_comp->{$proj_pat}->{$gene_name}->{$parent}}) {
+					my $gac = $he_comp->{$proj_pat}->{$gene_name}->{$parent}->{$var_id}->{gnomad_ac};
+					my $dv = $he_comp->{$proj_pat}->{$gene_name}->{$parent}->{$var_id}->{dejavu_similar_patients};
+					$gene_id = $he_comp->{$proj_pat}->{$gene_name}->{$parent}->{$var_id}->{gene_id};
+					my $consequences = $he_comp->{$proj_pat}->{$gene_name}->{$parent}->{$var_id}->{consequences};
+					$html .= "<tr style='height:10px; vertical-align:top; padding:0;'>";
+					my $color = "purple";
+					$color = "blue" if lc($parent) eq 'father';
+					$html .= "<td style='padding:2px 4px;vertical-align:top; padding:0;height:10px;'><center><span style='color:$color;'>$var_id</span></center></td>";
+					$html .= "<td style='padding:2px 4px;vertical-align:top; padding:0;'><center>$gac</center></td>";
+					$html .= "<td style='padding:2px 4px;vertical-align:top; padding:0;'><center>$dv</center></td>";
+					$html .= "<td style='padding:2px 4px;vertical-align:top; padding:0;'><center>$consequences</center></td>";
+					$html .= "</tr>";
+				}
+				$html .= "</table></center></td>";
+			}
+			my $panel_id = 'panel_'.$gene_id;
+			my $table_id = 'table_'.$panel_id;
+			my $cmd = qq{show_he_comp_patient('$panel_id', '$table_id', '$pat')};
+			$html .= "<td style='height:10px;'><button type='button' onClick=\"$cmd\" class='btn btn-secondary'>View<br>patient</button></td>";
+		}
+		$html .= "</tr>";
+	}
+	$html .= "</tbody>";
+	$html .= "</table>";
+	$html .= "</div>";
+	$html .= "</div>";
+}
 
 my $nb_genes = scalar keys %$h_html_genes;
 my $data_search = 'false';
