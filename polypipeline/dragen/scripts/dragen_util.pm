@@ -4,8 +4,13 @@ use Data::Dumper;
 use Carp qw(confess);
 sub get_fastq_file {
 	my ($patient,$dir_pipeline, $dir_fastq,$type) = @_;
+	warn $dir_pipeline;
+	my $flex;
+	$flex = 1 if ($patient->getSampleProfile =~/flex$/);
 	my $name=$patient->name();
+	$name = $patient->barcode if $flex;
 	$dir_fastq = $patient->getSequencesDirectory() unless $dir_fastq;
+	warn $dir_fastq;
 	my $files_pe1 = file_util::find_file_pe($patient,"",$dir_fastq,1);
 	return unless @$files_pe1;
 	my $cmd;
@@ -36,8 +41,8 @@ sub get_fastq_file {
 	}
 	my $cmd1 = join(" ",@r1);
 	my $cmd2 = join(" ",@r2);
-	my $fastq1 = $dir_pipeline."/".$patient->name."_S1_L001_R1_001.fastq.gz";
-	my $fastq2 = $dir_pipeline."/".$patient->name."_S1_L001_R2_001.fastq.gz";
+	my $fastq1 = $dir_pipeline."/".$name."_S1_L001_R1_001.fastq.gz";
+	my $fastq2 = $dir_pipeline."/".$name."_S1_L001_R2_001.fastq.gz";
 	my $nb_rclone  =scalar @files_rclone;
 
 	
@@ -49,10 +54,10 @@ sub get_fastq_file {
 		elsif ($type eq "copy" && $nb_rclone == 2 ){
 			my $rclone_arg = join(" --include ",@files_rclone);
 			warn "RCLONE ";
-			warn "rclone copy $dir_fastq --include  $rclone_arg $dir_pipeline --transfers 2  --checkers 2 2>/dev/null";
-			system("rclone copy $dir_fastq  --include $rclone_arg $dir_pipeline --transfers 2  --checkers 2 2>/dev/null");
-			system("mv $dir_pipeline/".$files_rclone[0]." ".$fastq1) if $files_rclone[0] ne $patient->name."_S1_L001_R1_001.fastq.gz";
-			system("mv $dir_pipeline/".$files_rclone[1]." ".$fastq2) if $files_rclone[1] ne $patient->name."_S1_L001_R1_001.fastq.gz";
+			warn "rclone copy $dir_fastq --include  $rclone_arg $dir_pipeline --transfers 2  --checkers 2 -L 2>/dev/null";
+			system("rclone copy $dir_fastq  --include $rclone_arg $dir_pipeline --transfers 2  --checkers 2 -L 2>/dev/null");
+			system("ln -s  $dir_pipeline/".$files_rclone[0]." ".$fastq1) if $files_rclone[0] ne $name."_S1_L001_R1_001.fastq.gz";
+			system("ln -s  $dir_pipeline/".$files_rclone[1]." ".$fastq2) if $files_rclone[1] ne $name."_S1_L001_R2_001.fastq.gz";
 		}
 		else {
 		warn "cat $cmd1 > $fastq1";
@@ -77,8 +82,8 @@ sub get_fastq_file {
 		}
 		my $cmd1 = join(" ",@r1);
 		my $cmd2 = join(" ",@r2);
-		my $fastq1 = $dir_pipeline."/".$patient->name."_S1_L001_I1_001.fastq.gz";
-		my $fastq2 = $dir_pipeline."/".$patient->name."_S1_L001_I2_001.fastq.gz";
+		my $fastq1 = $dir_pipeline."/".$name."_S1_L001_I1_001.fastq.gz";
+		my $fastq2 = $dir_pipeline."/".$name."_S1_L001_I2_001.fastq.gz";
 		#if ($step eq "align"){
 			warn  "cat $cmd1 > $fastq1";
 			system "cat $cmd1 > $fastq1";# unless -e $fastq1;

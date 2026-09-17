@@ -154,7 +154,7 @@ if ($listOfGenes ne "all"){
 #$sth->execute();
 my $nb = 0;
 	foreach my $row (@$array_ref) {
-	if ($quality){
+	if ($quality && scalar(@$array_ref) > 20){
 		if ($select_best < 2){
 		next if $row->{blacklist} > 80 && $select_best == 0;
 		next if $row->{blacklist} > 65;

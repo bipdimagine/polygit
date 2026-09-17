@@ -1405,6 +1405,7 @@
 				xhr.onload = function () {
 				    document.getElementById(content_id).innerHTML = this.responseText;
 				    enable_table_search('table_genes');
+				    enable_table_search('table_he_comp');
 				    var phenotypes = data.phenotypes;
                     var list_phenos = String(phenotypes).split(',');
                     for (var i = 0; i < list_phenos.length; i++) {
@@ -1473,6 +1474,18 @@
 				document.getElementById("span_nb_" + pheno_name).innerHTML = count;
 			}
 
+			function show_he_comp_patient (panel_id, table_id, pat_name) {
+				var $input = $('input.bootstrap-table-filter-control-patient');
+				$input.val(pat_name);
+				$input.trigger('keyup');
+				document.getElementById(panel_id).classList.add('show');
+				enable_table_search(table_id);
+	            setTimeout(function() {
+	            	var $input = $('input.bootstrap-table-filter-control-3');
+					$input.val(pat_name);
+					$input.trigger('keyup');
+				}, 500);
+			}
 			
 			function show_phenotype (pheno_name) {
 				var $input = $('input.bootstrap-table-filter-control-gene');
