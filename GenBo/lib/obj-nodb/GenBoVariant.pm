@@ -3522,7 +3522,7 @@ sub dejavu_hash_projects_patients {
 	my $hres;
 	warn $self->rocksdb_id;
 	my $h_dv = $self->getChromosome->rocks_dejavu->dejavu($self->rocksdb_id);
-	warn Dumper($h_dv); 
+	#warn Dumper($h_dv); 
 	foreach my $proj_id (keys %{$h_dv}) {
 		my $proj_name = $self->buffer->getProjectNameFromId($proj_id);
 		

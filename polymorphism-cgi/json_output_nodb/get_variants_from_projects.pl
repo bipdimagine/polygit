@@ -167,10 +167,10 @@ print '.nb_proj.'.scalar(keys %{$dejavu_variants->hash_users_projects()});
 $dejavu_variants->fork($fork);
 
 $dejavu_variants->use_phenotype($use_phenotype) if $use_phenotype;
-$dejavu_variants->max_dejavu($max_dejavu) if $max_dejavu;
-$dejavu_variants->max_dejavu_ho($max_dejavu_ho) if $max_dejavu_ho;
-$dejavu_variants->max_gnomad_ac($max_gnomad_ac) if $max_gnomad_ac;
-$dejavu_variants->max_gnomad_ac_ho($max_gnomad_ac_ho) if $max_gnomad_ac_ho;
+$dejavu_variants->max_dejavu($max_dejavu) if defined($max_dejavu);
+$dejavu_variants->max_dejavu_ho($max_dejavu_ho) if defined($max_dejavu_ho);
+$dejavu_variants->max_gnomad_ac($max_gnomad_ac) if defined($max_gnomad_ac);
+$dejavu_variants->max_gnomad_ac_ho($max_gnomad_ac_ho) if defined($max_gnomad_ac_ho);
 $dejavu_variants->min_ratio($min_ratio) if $min_ratio;
 $dejavu_variants->only_ho(1) if $keep_only_ho;
 $dejavu_variants->only_ill_patients(1) if $only_ill;
@@ -294,7 +294,10 @@ if ($region or $only_genes) {
 	if (not $promoter_ai_value and not $ncboost_value) {
 		
 		my @l_regions_tmp;
-		if ($region) { push(@l_regions_tmp, $region); }
+		if ($region) {
+			$dejavu_variants->only_region(1);
+			push(@l_regions_tmp, $region);
+		}
 		if ($only_genes) {
 			foreach my $gid (keys %{$h_only_genes}) {
 				push(@l_regions_tmp, $h_only_genes->{$gid});
@@ -321,15 +324,17 @@ if ($region or $only_genes) {
 		}
 		
 		my ($fork2, $fork_sql);
-		if ($dejavu_variants->is_magic_user() or scalar(@l_regions) == 1) {
-			$fork2 = 1;
-			$fork_sql = $dejavu_variants->fork();
-		}
-		else {
-			$fork2 = scalar(@l_regions);
-			$fork2 = 10 if $fork2 >= 10;
-			$fork_sql = 1;
-		}
+		$fork2 = 2;
+		$fork_sql = $dejavu_variants->fork();
+#		if ($dejavu_variants->is_magic_user() or scalar(@l_regions) == 1) {
+#			$fork2 = 2;
+#			$fork_sql = $dejavu_variants->fork();
+#		}
+#		else {
+#			$fork2 = scalar(@l_regions);
+#			$fork2 = 10 if $fork2 >= 10;
+#			$fork_sql = 1;
+#		}
 		MCE::Loop->init(
 		    max_workers => $fork2,
 		    chunk_size  => 'auto',
@@ -344,7 +349,14 @@ if ($region or $only_genes) {
 		        			elsif ($cat eq 'ho') { $h_rocks_to_view->{$this_chr38}->{$rocksid}->{ho} += $data->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{ho}; } 
 		        			else {
 		        				my $project_id = $cat;
-		        				$h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id} = undef;
+		        				if (exists $data->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id}->{patients}) {
+		        					$h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id}->{he} = $data->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id}->{he};
+		        					$h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id}->{patients} = $data->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id}->{patients};
+		        					$h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id}->{dp_ratios} = $data->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id}->{dp_ratios};
+		        					$h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id}->{chr19} = $data->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id}->{chr19};
+		        					$h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id}->{pos19} = $data->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id}->{pos19};
+		        				}
+		        				else { $h_rocks_to_view->{$this_chr38}->{$rocksid}->{$project_id} = undef; }
 		        			}
 		        		}
 		        	}
@@ -375,43 +387,65 @@ if ($region or $only_genes) {
 				if ($found_pos) {
 					$sql_pos = join(' OR ', @list_sql_pos).' AND ';
 				}
-				
 				my $i = 0;
-				my $sql_parquets = $dejavu_variants->sql_projects_parquet();
-				
-				my $this_fork = $dejavu_variants->fork();
-				my $sql = "
-					PRAGMA threads=$fork_sql;
-					WITH base AS ( SELECT project, chr38, pos38, allele, he, ho FROM $sql_parquets WHERE $sql_pos concat(chr38)='$chr_filter'),
-					agg AS (
-					    SELECT 
-					        chr38, pos38, allele,
-					        SUM(he) AS sum_he,
-					        SUM(ho) AS sum_ho
-					    FROM base
-					    GROUP BY chr38, pos38, allele
-					    HAVING (SUM(he) + SUM(ho)) <= $max_dejavu AND SUM(ho) <= $max_dejavu_ho
-					)
-					SELECT 
-					    b.project, b.chr38, b.pos38, b.allele, b.he, b.ho
-					FROM base b
-					JOIN agg USING (chr38, pos38, allele);
-				";
-				
-				my $duckdb = $dejavu_variants->buffer->software('duckdb');
-				open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
-				while (my $line = <$fh>) {
-				    chomp $line;
-				    my ($project_id,$this_chr38,$this_pos38,$allele,$he,$ho) = split(/,/, $line);
-			    	next if $project_id eq 'project';
-			    	my $rocksid = sprintf("%010d", $this_pos38).'!'.$allele;
-			    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id} = undef;
-			    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{he} += $he;
-			    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{ho} += $ho;
-			    	$i++;
-			    	print '.' if ($i % 100000 == 0);
+				my @list_sql_parquets = @{$dejavu_variants->list_sql_projects_parquet()};
+				foreach my $sql_parquets (@list_sql_parquets) {
+					print '.';
+					my $duckdb = $dejavu_variants->buffer->software('duckdb');
+					my $this_fork = $dejavu_variants->fork();
+					my $sql = "
+						PRAGMA threads=$fork_sql;
+						WITH base AS ( SELECT project, chr38, pos38, allele, he, ho FROM $sql_parquets WHERE $sql_pos concat(chr38)='$chr_filter'),
+						agg AS (
+						    SELECT 
+						        chr38, pos38, allele,
+						        SUM(he) AS sum_he,
+						        SUM(ho) AS sum_ho
+						    FROM base
+						    GROUP BY chr38, pos38, allele
+						    HAVING (SUM(he) + SUM(ho)) <= $max_dejavu AND SUM(ho) <= $max_dejavu_ho
+						)
+						SELECT 
+						    b.project, b.chr38, b.pos38, b.allele, b.he, b.ho
+						FROM base b
+						JOIN agg USING (chr38, pos38, allele);
+					";
+					open(my $fh, "-|", "$duckdb -csv -c \"$sql\"") or die "duckdb failed";
+					while (my $line = <$fh>) {
+					    chomp $line;
+					    my ($project_id,$this_chr38,$this_pos38,$allele,$he,$ho) = split(/,/, $line);
+				    	next if $project_id eq 'project';
+				    	my $rocksid;
+				    	if ($allele eq 'A' or $allele eq 'T' or $allele eq 'C' or $allele eq 'G') {
+				    		$rocksid = sprintf("%010d", $this_pos38).'!'.$allele;
+					    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id} = undef;
+					    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{he} += $he;
+					    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{ho} += $ho;
+				    	}
+				    	else {
+#				    		warn "\n";
+#				    		warn sprintf("%010d", $this_pos38).'!'.$allele.' ???';
+				    		my $h_dv = $dejavu_variants->project->getChromosome($this_chr38)->rocks_dejavu->dejavu_interval(($this_pos38-1), ($this_pos38+1));
+				    		foreach my $rocksid (keys %$h_dv) {
+				    			next if not exists $h_dv->{$rocksid}->{$project_id};
+				    			$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{$project_id} = undef;
+						    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{he} += $he;
+						    	$hres->{h_rocks_to_view}->{$this_chr38}->{$rocksid}->{ho} += $ho;
+#						    	
+#						    	if ($this_pos38 == 19567557 or $this_pos38 == 19567556 or $this_pos38 == 19567555 or $this_pos38 == 19567558 or $this_pos38 == 19567559) {
+#					    			warn "\n";
+#					    			warn $line;
+#							    	warn "$rocksid -> $project_id -> he:$he ho:$ho \n";
+#					    			warn "\n";
+#						    	}
+				    		}
+				    	}
+				    	$i++;
+				    	print '.' if ($i % 10000 == 0);
+					}
+					close($fh);
+					$duckdb = undef;
 				}
-				close($fh);
 				
 				$i = 0;
 				my $chr = $dejavu_variants->project->getChromosome($chr_filter);
@@ -419,6 +453,14 @@ if ($region or $only_genes) {
 				
 				my @l_var_chr = keys %{$hres->{h_rocks_to_view}->{$chr_filter}};
 				foreach my $rocksid (@l_var_chr) {
+					if ($hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{ho} > $max_dejavu_ho) {
+						delete $hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid};
+						next;
+					}
+					if (($hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{he} + $hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{ho}) > $max_dejavu) {
+						delete $hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid};
+						next;
+					}
 					eval {
 						my $h_gad = $no->value($rocksid);
 						if ($h_gad and exists $h_gad->{ac} and $h_gad->{ac} > $max_gnomad_ac) {
@@ -442,34 +484,40 @@ if ($region or $only_genes) {
 				
 				#ADD CLINVAR PATHOGENIC
 				if ($keep_pathogenic) {
-					my $sql_clinvar = "
-						PRAGMA threads=$fork_sql;
-						WITH dejavu AS (
-							SELECT *, chr38 || '!' || LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'index', LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'rocksid' FROM $sql_parquets WHERE $sql_pos concat(chr38)='$chr_filter'
-						)
-						SELECT d.project, c.index, d.rocksid
-							FROM dejavu d
-							JOIN '/data-pure/public-data/repository/HG38/clinvar/20250824/parquet/clinvar.csv' c ON d.index = c.index
-							WHERE c.clinvar_class = 'pathogenic'
-							GROUP BY d.project, c.index, d.rocksid;
-					";
 					
-					open(my $fh2, "-|", "$duckdb -csv -c \"$sql_clinvar\"") or die "duckdb failed";
-					while (my $line = <$fh2>) {
-					    chomp $line;
-					    my ($project_id, $genomic_rocksid, $rocksid) = split(/,/, $line);
-				    	next if $project_id eq 'project';
-				    	my $res = $project->getChromosome($chr_filter)->rocks_dejavu->dejavu($rocksid);
-						my ($nb_pat_he, $nb_pat_ho) = get_dv_he_ho_from_request($res);
-				    	$hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{$project_id} = undef;
-				    	$hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{he} = $nb_pat_he;
-				    	$hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{ho} = $nb_pat_ho;
-				    	
-				    	$hres->{pathogenic}->{$rocksid} = undef;
-				    	$i++;
-				    	print '.' if ($i % 100000 == 0);
+					foreach my $sql_parquets (@list_sql_parquets) {
+						print '.';
+						my $duckdb = $dejavu_variants->buffer->software('duckdb');
+						my $sql_clinvar = "
+							PRAGMA threads=$fork_sql;
+							WITH dejavu AS (
+								SELECT *, chr38 || '!' || LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'index', LPAD(CAST(pos38 AS VARCHAR), 10, '0') || '!' || allele AS 'rocksid' FROM $sql_parquets WHERE $sql_pos concat(chr38)='$chr_filter'
+							)
+							SELECT d.project, c.index, d.rocksid
+								FROM dejavu d
+								JOIN '/data-pure/public-data/repository/HG38/clinvar/20250824/parquet/clinvar.csv' c ON d.index = c.index
+								WHERE c.clinvar_class = 'pathogenic'
+								GROUP BY d.project, c.index, d.rocksid;
+						";
+						
+						open(my $fh2, "-|", "$duckdb -csv -c \"$sql_clinvar\"") or die "duckdb failed";
+						while (my $line = <$fh2>) {
+						    chomp $line;
+						    my ($project_id, $genomic_rocksid, $rocksid) = split(/,/, $line);
+					    	next if $project_id eq 'project';
+					    	my $res = $project->getChromosome($chr_filter)->rocks_dejavu->dejavu($rocksid);
+							my ($nb_pat_he, $nb_pat_ho) = get_dv_he_ho_from_request($res);
+					    	$hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{$project_id} = undef;
+					    	$hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{he} = $nb_pat_he;
+					    	$hres->{h_rocks_to_view}->{$chr_filter}->{$rocksid}->{ho} = $nb_pat_ho;
+					    	
+					    	$hres->{pathogenic}->{$rocksid} = undef;
+					    	$i++;
+					    	print '.' if ($i % 100000 == 0);
+						}
+						close($fh2);
+						$duckdb = undef;
 					}
-					close($fh2);
 #					print '.with_clinvar.'.$i.'.';
 				}
 			}
