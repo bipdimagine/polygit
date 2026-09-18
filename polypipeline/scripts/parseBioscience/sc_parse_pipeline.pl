@@ -10,6 +10,7 @@ use lib "$Bin/../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../GenBo/lib/obj-nodb/packages";
 use lib "$Bin/../../packages";
 use lib "$Bin/../../../polypipeline/dragen/scripts/";
+use autodie qw(system open);
 use dragen_util;
 use GBuffer;
 
@@ -21,6 +22,7 @@ my $analysis;
 my $sample_list;
 my $sample_loading_table;
 my $run_name_option;
+my $mismatch;
 my $kit;
 my $chem;
 my $target;
@@ -37,6 +39,7 @@ GetOptions(
 	'patients=s'				=> \$patients_name,
 	'steps|mode=s{1,}'			=> \@steps,
 	'run=s'						=> \$run_name_option,
+	'mismatch=s'				=> \$mismatch,
 	'kit=s'						=> \$kit,
 	'chemistry=s'				=> \$chem,
 	'sample_list=s'				=> \$sample_list,
@@ -56,18 +59,20 @@ GetOptions(
 usage() if ($help);
 warn ("--project option is mandatory\n") && usage() unless ($projectName);
 #warn ("--analysis should be 'tcr' or 'bcr' or empty for WT analysis\n") && usage() unless ($analysis == undef or $analysis =~ /^bct|tcr$/);
-unless ($analysis) {
-	warn ("--kit option is mandatory except for TCR/BCR analysis\n") && usage() unless ($kit);
-	my @possible_kits = qw(WT_mini WT WT_mega WT_mega_384 WT_penta WT_penta_384);
-	warn ("--kit should be one of '".join("','",@possible_kits)."' , given '$chem'\n") && usage() unless ( grep($kit, @possible_kits));
-#	$chem = 'v3' if (grep(/$kit/, qw(WT_mega_384 WT_penta WT_penta_384)));
+if( grep {/sublib|com|all/} @steps) {
+	unless ($analysis) {
+		warn ("--kit option is mandatory except for TCR/BCR analysis\n") && usage() unless ($kit);
+		my @possible_kits = qw(WT_mini WT WT_mega WT_mega_384 WT_penta WT_penta_384);
+		warn ("--kit should be one of '".join("','",@possible_kits)."' , given '$chem'\n") && usage() unless ( grep($kit, @possible_kits));
+	#	$chem = 'v3' if (grep(/$kit/, qw(WT_mega_384 WT_penta WT_penta_384)));
+	}
+	warn ("--chemistry option is mandatory\n") && usage() unless ($chem and not grep {/sublib|com|all/} @steps);
+	warn ("--chemistry should be one of ('v1','v2','v3'), given '$chem'\n") && usage() unless ( grep($chem, ('v1','v2','v3')) );
+	warn ("--parent_project option is mandatory for BCR/TCR analysis\n") && usage() if ($analysis =~ /^bcr|tcr$/i and not $parent_project_name);
 }
-warn ("--chemistry option is mandatory\n") && usage() unless ($chem);
-warn ("--chemistry should be one of ('v1','v2','v3'), given '$chem'\n") && usage() unless ( grep($chem, ('v1','v2','v3')) );
 warn ("Sample list '$sample_list' doesn't exist\n") && usage() if ( $sample_list and not -e $sample_list );
 warn ("Sample loading table '$sample_loading_table' doesn't exist\n") && usage() if ( $sample_loading_table and not -e $sample_loading_table );
-warn ("--parent_project option is mandatory for BCR/TCR analysis\n") && usage() if ($analysis =~ /^bcr|tcr$/i and not $parent_project_name);
-@steps = qw{all comb} unless (scalar @steps);
+@steps = qw{sublib comb} unless (scalar @steps);
 
 
 
@@ -103,16 +108,32 @@ my $patients = $project->get_only_list_patients($patients_name);
 die("No patient $patients_name in project $projectName") unless $patients;
 
 
-my $splitpipe = $project->buffer->software("splitpipe");
 
-# ALL: process data from each sublibrary individually
-if (grep {/all/} @steps) {
+#-----------------------------
+# Dragen demultiplex
+#-----------------------------
+if (grep {/^demultiplex|^demux|^all$/} @steps) {
+	my @patient_names = map{$_->name} @$patients;
+	my $cmd_demux = "$Bin/../scripts_pipeline/cellranger/cellranger_samplesheet.pl -project $projectName -mismatch $mismatch";
+	$cmd_demux .= "-no_exec " if ($no_exec);
+	warn($cmd_demux);
+	my $exit = system($cmd_demux) unless ($no_exec);
+	confess("Error while making samplesheet or demultiplexing") if $exit;
+}
+
+
+
+my $splitpipe = $project->buffer->software("splitpipe");
+#-----------------------------
+# SUBLIB (split-pipe --mode all): process data from each sublibrary individually
+#-----------------------------
+if (grep {/^sublib(rar(y|ies))?|^all$/} @steps) {
 	mkdir("$dir/sublibraries") unless (-d "$dir/sublibraries");
-	open(my $jobs_all, ">", $dir."jobs_all.txt") or die("Can't open '$dir/jobs_all.txt': $!");
+	open(my $jobs_sublib, ">", $dir."jobs_sublib.txt") or die("Can't open '$dir/jobs_sublib.txt': $!");
 #	my $pm   = new Parallel::ForkManager(5);
 	foreach my $subl (sort {$a->name cmp $b->name} @$patients){
 #		my $pid = $pm->start and next;
-#		open(my $jobs_all, ">>", $dir."jobs_all.txt") or die("Can't open '$dir/jobs_all.txt': $!");
+#		open(my $jobs_sublib, ">>", $dir."jobs_sublib.txt") or die("Can't open '$dir/jobs_sublib.txt': $!");
 		my ($fastq1,$fastq2,$dirf);
 		my $fastq = $subl->fastqFiles;
 		my $fastq_dir = $subl->getSequencesDirectory;
@@ -189,21 +210,39 @@ if (grep {/all/} @steps) {
 		$subcmd .= " && cp -r $dir_pipeline/sublibraries/$name $dir/sublibraries/" unless ($dry_run);
 		#	warn $csv_tmp;
 		print $subcmd."\n";
-		print {$jobs_all} $subcmd."\n";
-#		close ($jobs_all);
+		print {$jobs_sublib} $subcmd."\n";
+#		close ($jobs_sublib);
 #		$pm->finish( 0, {});
 	}
 #	$pm->wait_all_children();
-	close ($jobs_all);
-	my $exit = system("cat $dir/jobs_all.txt | run_cluster.pl -cpu=$cpu") unless ($no_exec);
+	close ($jobs_sublib);
+	my $exit = system("cat $dir/jobs_sublib.txt | run_cluster.pl -cpu=$cpu") unless ($no_exec);
 	die if ($exit);
 	warn "\n";
+	
+	#sublibraries/Sublibrary_1/all-sample_analysis_summary.html
+	# Open web summary
+	my $analysis_summary = $dir.'sublibraries/all-sample_analysis_summary.html';
+	my $cmd_ws = "firefox ".$analysis_summary;
+	$cmd_ws =~ s/^firefox/google-chrome/ if (getpwuid($<) eq 'shanein');
+	warn $cmd_ws if (-f $analysis_summary);
+	system($cmd_ws.' &') if (-f $analysis_summary and not $no_exec);
+	die("Web summary not found: $analysis_summary") unless (-f $analysis_summary and not $no_exec);
+
+	unless ($no_exec) {
+		print "\t------------------------------------------\n";
+		print("\tCheck the analysis summary:\n");
+		print("\t$analysis_summary\n");
+		print "\t------------------------------------------\n\n";
+	}
 }
 
 
 
+#-----------------------------
 # COMB: combine the processed data from each sublibrary into a single dataset
-if (grep {/comb(ine)?/} @steps) {
+#-----------------------------
+if (grep {/^comb(ine)?|^all$/} @steps) {
 	my @names = map{ $dir."sublibraries/".$_->name()} @$all_patients;
 #	my $cmd2 = "singularity run --cleanenv -B  $dir -B $index ";
 #	my $cmd2 = "singularity run --cleanenv -B  $dir -B $index -B $dir_pipeline";
@@ -239,16 +278,67 @@ if (grep {/comb(ine)?/} @steps) {
 	my $exit = system("cat $dir/jobs_comb.txt | run_cluster.pl -cpu=$cpu") unless ($no_exec);
 	die if ($exit);
 	warn "\n";
+	
+	# Open web summary
+	my $analysis_summary = $dir.'comb/all-sample_analysis_summary.html';
+	my $cmd_ws = "firefox ".$analysis_summary;
+	$cmd_ws =~ s/^firefox/google-chrome/ if (getpwuid($<) eq 'shanein');
+	warn $cmd_ws if (-f $analysis_summary);
+	system($cmd_ws.' &') if (-f $analysis_summary and not $no_exec);
+	die("Web summary not found: $analysis_summary") unless (-f $analysis_summary and not $no_exec);
+
+	unless ($no_exec) {
+		print "\t------------------------------------------\n";
+		print("\tCheck the analysis summary:\n");
+		print("\t$analysis_summary\n");
+		print "\t------------------------------------------\n\n";
+	}
 }
 
 
 
-if (grep {/tar/} @steps) {
+#-----------------------------
+# TAR
+#-----------------------------
+if (grep {/^tar|^all$/} @steps) {
 	my @patient_names = map{$_->name} @$patients;
-	my $cmd_tar = "cd $dir && tar -cvzf $projectName.tar.gz comb/*";
+	my $cmd_tar = "cd $dir/comb && tar -cvzf ../$projectName.tar.gz *";
 	warn($cmd_tar);
-	system($cmd_tar) && confess("Error while creating the archive");
+	my $exit = system($cmd_tar) unless ($no_exec);
+	confess("Error while creating the archive") if $exit;
 	print('-'x20,"\nArchive to send:\n$dir$projectName.tar.gz\n",'-'x20,"\n");
+}
+
+
+
+#-----------------------------
+# CP to SingleCell shared directory
+#-----------------------------
+if (grep {/^cp$/} @steps) {
+	my @patient_names = map{$_->name} @$patients;
+	my $dirout = '/data-bipd' if ($buffer->biocluster);
+	$dirout .= "/data-pure/SingleCell/$projectName/";
+	my $cmd_cp = "rsync -a $dir/comb/* $dirout ";
+	warn($cmd_cp);
+	my $exit = system($cmd_cp) unless ($no_exec);
+	confess("Error while coping") if $exit;
+	print('-'x20,"\nAll outs copied to $dirout\n",'-'x20,"\n") unless ($no_exec);
+}
+
+
+
+#-----------------------------
+# CP analysis summaries
+#-----------------------------
+if (grep {/^cp(_analysis|_web)?_summar(y|ies)$/} @steps) {
+	my @patient_names = map{$_->name} @$patients;
+	my $dirout = '/data-bipd' if ($buffer->biocluster);
+	$dirout .= "/data-pure/SingleCell/$projectName/";
+	my $cmd_cp = "rsync -a $dir/comb/*_analysis_summary.html $dirout ";
+	warn($cmd_cp);
+	my $exit = system($cmd_cp) unless ($no_exec);
+	confess("Error while coping") if $exit;
+	print('-'x20,"\nAnalysis summaries copied to $dirout\n",'-'x20,"\n") unless ($no_exec);
 }
 
 
@@ -319,12 +409,17 @@ Obligatoires:
 	kit <s>				Version du kit. Obligatoire sauf pour l'analyse de BCR ou TCR.
 					Valeurs possibles: 'WT_mini', 'WT', 'WT_mega', 'WT_mega_384', 'WT_penta', 'WT_penta_384'
 	
-Optionels:
-	patients <s>			Noms de patients/échantillons, séparés par des virgules (utilisé seulement pour l'étape 'all'
+Optionnels:
+	patients <s>			Noms de patients/échantillons, séparés par des virgules (utilisé seulement pour l'étape 'sublib'
 	steps/mode <s>			Etapes à réaliser:
-					all -> analyse des sublibrairies individuellement,
-					comb -> combine les données traitées de chaque sublibrairie
-					par défaut: fait les deux à la suite
+					demultiplex -> écriture de la samplesheet et démultiplexage dragen,
+					sublib -> analyse des sublibrairies individuellement (split-pipe --mode all),
+					comb -> combine les données traitées de chaque sublibrairie (split-pipe --mode comb)
+					tar -> fait une archive du dossier comb
+					cp ?
+					cp_summary ?
+					all = sublib, comb, tar
+					par défaut: sublib, comb
 	run <s>				Numéro du run si le projet en contient plusieurs (utilisé pour récupérer la plan de plaque)
 	sample_list <s>			Liste des échantillons et de leurs puis correspondants, séparés par un espace.
 	sample_table <s>		Fichier excel Parse contenant le plan de plaque.
@@ -332,7 +427,7 @@ Optionels:
 	bcr/tcr				Analyse des BCR ou TCR
 	parent_project <s>		Chemin des résultats de l'analyse whole transcriptome associée. Pour l'analyse de BCR/TCR uniquement
 	target/panel <s>		Fichier csv spécifiant la liste des gènes cibles.
-					Le fichier csv dois suivre le format suivant:
+					Le fichier csv doit suivre le format suivant:
 					gene_id,gene_name
 					ENSG00000003096,KLHL13
 	cpu <i>				Nombre de cpu à utiliser, défaut: 40
