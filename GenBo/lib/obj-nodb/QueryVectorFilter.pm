@@ -76,8 +76,6 @@ sub existsGene {
 
 sub filter_vector_ratio {
 	my ($self, $chr, $limit_ratio, $filter_type_ratio) = @_;
-	
-	
 	return unless ($limit_ratio);
 	return if ($limit_ratio eq 'all');
 	my $vector_ok = $chr->getNewVector();
@@ -87,6 +85,27 @@ sub filter_vector_ratio {
 		if ($filter_type_ratio eq 'max') { $vector_ratio_name = 'lower_'.$vector_ratio_name; }
 		my $vquality = $patient->_getRocksVector($chr, $vector_ratio_name);;
 		$vector_ok += $vquality;
+	}
+	$vector_ok->Intersection($vector_ok, $chr->getVariantsVector());
+	$chr->setVariantsVector($vector_ok);
+	if ($self->verbose_debug) { warn "\nCHR ".$chr->id()." -> AFTER filter_vector_ratio_min - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
+}
+
+sub filter_vector_ratio_interval {
+	my ($self, $chr, $limit_ratio_min, $limit_ratio_max) = @_;
+	return unless ($limit_ratio_min);
+	return unless ($limit_ratio_max);
+	return if ($limit_ratio_min eq 'all');
+	return if ($limit_ratio_max eq 'all');
+	my $vector_ok = $chr->getNewVector();
+	foreach my $patient (@{$chr->project->getPatients()}) {
+		next if ($patient->in_the_attic());
+		my $vector_ratio_name_min = "ratio_".$limit_ratio_min;
+		my $vector_ratio_name_max = "lower_ratio_".$limit_ratio_max;
+		my $vquality_min = $patient->_getRocksVector($chr, $vector_ratio_name_min);
+		my $vquality_max = $patient->_getRocksVector($chr, $vector_ratio_name_max);
+		$vquality_min &= $vquality_max;
+		$vector_ok += $vquality_min;
 	}
 	$vector_ok->Intersection($vector_ok, $chr->getVariantsVector());
 	$chr->setVariantsVector($vector_ok);

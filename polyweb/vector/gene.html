@@ -2560,10 +2560,10 @@ function construct_url_filter_data (chr_id) {
     else if (dijit.byId("slider_ratio_min").get("value") == 4)  { filter_args += "&min_ratio=40"; }
     else if (dijit.byId("slider_ratio_min").get("value") == 5)  { filter_args += "&min_ratio=80"; }
     
-    if (dijit.byId("slider_ratio_max").get("value") == 1)       { filter_args += "&max_ratio=10"; }
-    else if (dijit.byId("slider_ratio_max").get("value") == 2)  { filter_args += "&max_ratio=20"; }
-    else if (dijit.byId("slider_ratio_max").get("value") == 3)  { filter_args += "&max_ratio=40"; }
-    else if (dijit.byId("slider_ratio_max").get("value") == 4)  { filter_args += "&max_ratio=80"; }
+    if (dijit.byId("slider_ratio_max").get("value") == 1)       { filter_args += "&max_ratio=60"; }
+    else if (dijit.byId("slider_ratio_max").get("value") == 2)  { filter_args += "&max_ratio=70"; }
+    else if (dijit.byId("slider_ratio_max").get("value") == 3)  { filter_args += "&max_ratio=80"; }
+    else if (dijit.byId("slider_ratio_max").get("value") == 4)  { filter_args += "&max_ratio=90"; }
     
     
 //    if (view_all_genes == 1) { filter_args += "&view_all_genes=1"; }
@@ -7147,10 +7147,10 @@ function selectFamilies_recregion(value) {
 	                <div id="slider_ratio_max" jsId="slider_ratio_max" data-dojo-type="dijit/form/HorizontalSlider" aria-label="slider 3" data-dojo-props='name:"horizontal2",minimum:1,value:5,maximum:5,discreteValues:5,showButtons:false,intermediateChanges:true,slideDuration:0,style:"width:110px; height: 25px;margin-left:4px;"' >
 	                    <div data-dojo-type="dijit/form/HorizontalRule" data-dojo-props='container:"bottomDecoration", count:5, style:{height:"5px"}'> </div>
 	                    <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props='container:"bottomDecoration", style:{height:"1em", fontSize:"100%"}'>
-							<li>10</li>
-							<li>20</li>
-							<li>40</li>
+							<li>60</li>
+							<li>70</li>
 							<li>80</li>
+							<li>90</li>
 				            <li>All</li>
 	                    </ol>
 	                    <ol data-dojo-type="dijit/form/HorizontalRuleLabels" data-dojo-props="container: 'topDecoration'" style="height: 1.3em;">

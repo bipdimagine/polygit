@@ -449,9 +449,13 @@ foreach my $chr_id (sort split(',', $filter_chromosome)) {
 	print "@" unless ($export_vcf_for or $detail_project or $xls_by_regions_ho);
 	
 	#FILTERING ON VARIANTS 
-
-	$queryFilter->filter_vector_ratio($chr, $filter_ratio_min, 'min');
-	$queryFilter->filter_vector_ratio($chr, $filter_ratio_max, 'max');
+	if ($filter_ratio_min and $filter_ratio_min ne 'all' and $filter_ratio_max and $filter_ratio_max ne 'all') {
+		$queryFilter->filter_vector_ratio_interval($chr, $filter_ratio_min, $filter_ratio_max);
+	}
+	else {
+		$queryFilter->filter_vector_ratio($chr, $filter_ratio_min, 'min');
+		$queryFilter->filter_vector_ratio($chr, $filter_ratio_max, 'max');
+	}
 	$queryFilter->filter_vector_ncboost($chr, $filter_ncboost);
 #	$queryFilter->filter_vector_global_gnomad_freq($chr, $filter_gnomad_test);
 #	if ($debug) { warn "\nCHR ".$chr->id()." -> AFTER getVectorGnomadCategory - nb Var: ".$chr->countThisVariants($chr->getVariantsVector()); }
