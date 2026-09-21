@@ -371,19 +371,30 @@ sub check_he_composite {
 		my @l_genes;
 		foreach my $gene_id (keys %{$hVariantsDetails->{$var_id}->{polyviewer_variant}->{hgenes}}) {
 			push(@l_genes, $gene_id);
+			my $h_this_cons;
 			foreach my $h_tr (@{$hVariantsDetails->{$var_id}->{polyviewer_variant}->{hgenes}->{$gene_id}->{tr}}) {
-				next if not $h_tr->{nm};
-				push(@{$h_cons->{$var_id}->{$h_tr->{consequence}}}, $h_tr->{nm});
+				$h_this_cons->{'others'}->{$h_tr->{consequence}} = undef;
+				$h_this_cons->{'nm'}->{$h_tr->{consequence}} = undef if $h_tr->{nm} and $h_tr->{nm} ne '';
+				$h_this_cons->{'mane'} = $h_tr->{consequence} if $h_tr->{mane} and $h_tr->{mane} eq '1';
+			} 
+			if (exists $h_this_cons->{'mane'}) { $h_cons->{$var_id}->{$gene_id}->{$h_this_cons->{'mane'}} = undef; }
+			elsif (exists $h_this_cons->{'nm'}) {
+				foreach my $cons (keys %{$h_this_cons->{'nm'}}) {
+					$h_cons->{$var_id}->{$gene_id}->{$cons} = undef;
+				}
+			}
+			else {
+				foreach my $cons (keys %{$h_this_cons->{'others'}}) {
+					$h_cons->{$var_id}->{$gene_id}->{$cons} = undef;
+				}
 			}
 		}
-		my $gac = $hVariantsDetails->{$var_id}->{polyviewer_variant}->{gnomad_ac};
-		my $dv_samples = $hVariantsDetails->{$var_id}->{polyviewer_variant}->{dejavu_similar_patients};
 		foreach my $h_pat_proj (@{$hVariantsDetails->{$var_id}->{polyviewer_html_details_proj_pat}}) {
 			next if lc($h_pat_proj->{heho}) ne 'he';
 			my $proj_name = $h_pat_proj->{project_name};
 			my $pat_name = $h_pat_proj->{patient_name};
 			my $model = lc($h_pat_proj->{model});
-			if ($model eq 'mother' or $model eq 'father') {
+			if ($model eq 'mother' or $model eq 'father' or $model eq 'solo') {
 				foreach my $gene_id (@l_genes) {
 					my $g_name;
 					if ($gene_id eq 'intergenic') { $g_name = 'intergenic'; }
@@ -391,22 +402,30 @@ sub check_he_composite {
 						my $g = $self->project->newGene($gene_id);
 						$g_name = $g->external_name();
 					}
-					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{dejavu_similar_patients} = $dv_samples;
-					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{gnomad_ac} = 0;
-					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{gnomad_ac} = $gac if $gac;
-					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{gene_id} = $gene_id;
+					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{gene_id} = $gene_id;
 					my @l_cons;
-					foreach my $cons (keys %{$h_cons->{$var_id}}) {
-						my $nm = join(', ', sort @{$h_cons->{$var_id}->{$cons}});
+					
+					foreach my $cons (keys %{$h_cons->{$var_id}->{$gene_id}}) {
+						my $type = 'low';
+						my $back_color = '#D0D0D0';
 						my $color = 'black';
-						if (exists $self->project->impacts_ensembl_annotations->{high}->{$cons}) { $color = 'red'; }
-						elsif (exists $self->project->impacts_ensembl_annotations->{medium}->{$cons}) { $color = 'orange'; }
-						elsif (exists $self->project->impacts_ensembl_annotations->{low}->{$cons}) { $color = 'green'; }
-						elsif (lc($cons) eq 'downstream' or lc($cons) eq 'upstream') { $color = 'green'; }
-						push(@l_cons, qq{<tr><td><center>$nm</center></td><td><center><span style='color:$color;'>$cons</span></center></td></tr>});
+						if (exists $self->project->impacts_ensembl_annotations->{high}->{$cons}) {
+							$back_color = '#e74c3c';
+							$color = 'white';
+							$type = 'high';
+						}
+						elsif (exists $self->project->impacts_ensembl_annotations->{medium}->{$cons}) {
+							$back_color = '#fdbe34';
+							$type = 'medium';
+						}
+						elsif (exists $self->project->impacts_ensembl_annotations->{low}->{$cons}) {
+							$back_color = '#D0D0D0';
+							$type = 'low';
+						}
+						my $b_html = qq{<button type="button" class= "btn btn-xs btn-primary " style="background-color:$back_color;color:$color;font-size: 8px;font-family:  Verdana;">$cons</button>};
+						$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{consequences}->{$type}->{$cons} = $b_html;
 					}
-					my $html_cons = join('', @l_cons);
-					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{$var_id}->{consequences} = qq{<table class='table table-striped' style='padding: 0 0;'>$html_cons</table>};
+					$h_he_comp->{$proj_name.'!'.$pat_name}->{$g_name}->{$model}->{var}->{$var_id} = undef if $model eq 'solo';
 				}
 			}
 		}
@@ -415,6 +434,7 @@ sub check_he_composite {
 		my $pat_ok;
 		foreach my $gene_id (keys %{$h_he_comp->{$proj_pat}}) {
 			if (exists $h_he_comp->{$proj_pat}->{$gene_id}->{father} and exists $h_he_comp->{$proj_pat}->{$gene_id}->{mother}) { $pat_ok++; }
+			elsif (exists $h_he_comp->{$proj_pat}->{$gene_id}->{solo} and keys %{$h_he_comp->{$proj_pat}->{$gene_id}->{solo}->{var}} >= 2) { $pat_ok++; }
 			else { delete $h_he_comp->{$proj_pat}->{$gene_id}; } 
 		}
 		delete $h_he_comp->{$proj_pat} if not $pat_ok;

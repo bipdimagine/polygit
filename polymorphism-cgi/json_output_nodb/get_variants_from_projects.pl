@@ -756,69 +756,8 @@ if ($h_phenos) {
 $html .= "</tr></table></div>";
 undef $h_phenos; 
 
-if (scalar keys %$he_comp > 0) {
-	$html .= "<br><br>";
-	my $color_b = 'orange';
-	my $this_b_cmd = qq{collapse("panel_hecomp")};
-	$html .= qq{<div class="btn btn-brown btn-xs" data-toggle='collapse' onClick='$this_b_cmd' data-target="#panel_hecomp" aria-expanded='false' aria-controls='panel_hecomp' style="font-size:14px;color:white;background-color:$color_b;border-right: 4px solid $color_b;border-left: 4px solid $color_b;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;"> </span> <span aria-hidden="true" style="padding-top:2px;float:left;"></span> Found Potential He Composites&nbsp;&nbsp;&nbsp;</div></div>};
-	$html .= qq{<div loading="lazy" class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="panel_hecomp" loading="lazy">};
-	$html .= "<div style='height:500px; overflow-y:auto; overflow-x:hidden;border:1px solid black;'>";
-	$html .= qq{<table id='table_he_comp' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="5" data-page-list="[5, 10, 20, 100]" data-resizable='true' class='table' style='font-size:13px;'>};
-	$html .= "<thead>";
-	$html .= $cgi->start_Tr({style=>"background-color:#E9DEFF;"});
-	$html .= qq{<th data-field="project" data-filter-control="input" data-filter-control-placeholder="NGS2020_10151"</th>};
-	$html .= qq{<th data-field="patient" data-filter-control="input" data-filter-control-placeholder=""</th>};
-	$html .= qq{<th data-field="gene" data-filter-control="input" data-filter-control-placeholder=""</th>};
-	$html .= qq{<th data-field="mother" data-filter-control="input" data-filter-control-placeholder=""</th>};
-	$html .= qq{<th data-field="father" data-filter-control="input" data-filter-control-placeholder=""</th>};
-	$html .= qq{<th data-field="link"></th>};
-	$html .= $cgi->end_Tr();
-	$html .= "</thead>";
-	$html .= "<tbody>";
-	foreach my $proj_pat (keys %{$he_comp}) {
-		my ($proj, $pat) = split('!', $proj_pat);
-		foreach my $gene_name (keys %{$he_comp->{$proj_pat}}) {
-			$html .= "<tr style='height:10px; vertical-align:top;'>";
-			$html .= "<td style='height:10px; vertical-align:top;'><center><b><u>$proj</u></b></center></td>";
-			$html .= "<td style='height:10px; vertical-align:top;'><center><b>$pat</b></center></td>";
-			my $gene_id;
-			$html .= "<td style='height:10px;'><center>$gene_name</center></td>";
-			foreach my $parent ('mother', 'father') {
-				$html .= "<td style='height:10px; vertical-align:top;'><center><table class='table table-striped' data-toggle='table' style='vertical-align:top;'>";
-				$html .= "<tr style='height:10px; vertical-align:top;'>";
-				$html .= "<td style='padding:2px 4px;'><center><b>Var</b></center></td>";
-				$html .= "<td style='padding:2px 4px;'><center><b>G.AC</b></center></td>";
-				$html .= "<td style='padding:2px 4px;'><center><b>DV Samp.</b></center></td>";
-				$html .= "<td style='padding:2px 4px;'><center><b>Cons.</b></center></td>";
-				$html .= "</tr>";
-				foreach my $var_id (keys %{$he_comp->{$proj_pat}->{$gene_name}->{$parent}}) {
-					my $gac = $he_comp->{$proj_pat}->{$gene_name}->{$parent}->{$var_id}->{gnomad_ac};
-					my $dv = $he_comp->{$proj_pat}->{$gene_name}->{$parent}->{$var_id}->{dejavu_similar_patients};
-					$gene_id = $he_comp->{$proj_pat}->{$gene_name}->{$parent}->{$var_id}->{gene_id};
-					my $consequences = $he_comp->{$proj_pat}->{$gene_name}->{$parent}->{$var_id}->{consequences};
-					$html .= "<tr style='height:10px; vertical-align:top; padding:0;'>";
-					my $color = "purple";
-					$color = "blue" if lc($parent) eq 'father';
-					$html .= "<td style='padding:2px 4px;vertical-align:top; padding:0;height:10px;'><center><span style='color:$color;'>$var_id</span></center></td>";
-					$html .= "<td style='padding:2px 4px;vertical-align:top; padding:0;'><center>$gac</center></td>";
-					$html .= "<td style='padding:2px 4px;vertical-align:top; padding:0;'><center>$dv</center></td>";
-					$html .= "<td style='padding:2px 4px;vertical-align:top; padding:0;'><center>$consequences</center></td>";
-					$html .= "</tr>";
-				}
-				$html .= "</table></center></td>";
-			}
-			my $panel_id = 'panel_'.$gene_id;
-			my $table_id = 'table_'.$panel_id;
-			my $cmd = qq{show_he_comp_patient('$panel_id', '$table_id', '$pat')};
-			$html .= "<td style='height:10px;'><button type='button' onClick=\"$cmd\" class='btn btn-secondary'>View<br>patient</button></td>";
-		}
-		$html .= "</tr>";
-	}
-	$html .= "</tbody>";
-	$html .= "</table>";
-	$html .= "</div>";
-	$html .= "</div>";
-}
+
+$html .= get_html_he_comp();
 
 my $nb_genes = scalar keys %$h_html_genes;
 my $data_search = 'false';
@@ -877,6 +816,83 @@ else {
 	exit(0);
 }
 
+
+
+sub get_html_he_comp {
+	return if not $he_comp;
+	return if (scalar keys %$he_comp == 0);
+	my $html_he_comp;
+	my @l_he_comp;
+	foreach my $proj_pat (keys %{$he_comp}) {
+		my ($proj, $pat) = split('!', $proj_pat);
+		foreach my $gene_name (keys %{$he_comp->{$proj_pat}}) {
+			my $html_2 .= "<tr style='height:10px; vertical-align:top;'>";
+			$html_2 .= "<td style='height:10px; vertical-align:top;'><center><b>$proj</b></center></td>";
+			$html_2 .= "<td style='height:10px; vertical-align:top;'><center><b>$pat</b></center></td>";
+			$html_2 .= "<td style='height:10px;'><center>$gene_name</center></td>";
+			my $panel_id;
+			if (exists $he_comp->{$proj_pat}->{$gene_name}->{'solo'}) {
+				my @l_cons;
+				foreach my $type ('high', 'medium', 'low') {
+					foreach my $cat (sort keys %{$he_comp->{$proj_pat}->{$gene_name}->{'solo'}->{consequences}->{$type}}) { push(@l_cons, $he_comp->{$proj_pat}->{$gene_name}->{'solo'}->{consequences}->{$type}->{$cat}); }
+				}
+				my $consequences = join('&nbsp;', @l_cons);
+				next if $consequences eq '';
+				$html_2 .= "<td style='height:10px; vertical-align:top;' colspan='2'><center><b>SOLO</b> $consequences</center></td>";
+				$panel_id = 'panel_'.$he_comp->{$proj_pat}->{$gene_name}->{'solo'}->{gene_id};
+			}
+			else {
+				my @l_cons_m;
+				foreach my $type ('high', 'medium', 'low') {
+					foreach my $cat (sort keys %{$he_comp->{$proj_pat}->{$gene_name}->{'mother'}->{consequences}->{$type}}) { push(@l_cons_m, $he_comp->{$proj_pat}->{$gene_name}->{'mother'}->{consequences}->{$type}->{$cat}); }
+				}
+				my $consequences_m = join('&nbsp;', @l_cons_m);
+				next if $consequences_m eq '';
+				$html_2 .= "<td style='height:10px; vertical-align:top;'><center><img src='https://img.icons8.com/offices/24/000000/guest-female.png'> $consequences_m</center></td>";
+				my @l_cons_f;
+				foreach my $type ('high', 'medium', 'low') {
+					foreach my $cat (sort keys %{$he_comp->{$proj_pat}->{$gene_name}->{'father'}->{consequences}->{$type}}) { push(@l_cons_f, $he_comp->{$proj_pat}->{$gene_name}->{'father'}->{consequences}->{$type}->{$cat}); }
+				}
+				my $consequences_f = join('&nbsp;', @l_cons_f);
+				next if $consequences_f eq '';
+				$html_2 .= "<td style='height:10px; vertical-align:top;'><center><img src='https://img.icons8.com/offices/24/000000/person-male.png'> $consequences_f</center></td>";
+				$panel_id = 'panel_'.$he_comp->{$proj_pat}->{$gene_name}->{'mother'}->{gene_id};
+			}
+			my $table_id = 'table_'.$panel_id;
+			$html_2 .= "<td style='height:8px;'><center><button type='button' onClick='show_he_comp_patient(\"$panel_id\", \"$table_id\", \"$pat\");' class='btn btn-xs btn-primary' style='background-color:white;color:black;font-size: 8px;font-family:  Verdana;'><b>VIEW PATIENT</b></button></center></td>";
+			$html_2 .= "</tr>";
+			push(@l_he_comp, $html_2);
+			
+#			print "\n\n";
+#			print$html_2;
+		}
+	}	
+	
+	$html_he_comp .= "<br><br>";
+	my $color_b = 'orange';
+	my $this_b_cmd = qq{collapse("panel_hecomp")};
+	$html_he_comp .= qq{<div class="btn btn-brown btn-xs" data-toggle='collapse' onClick='$this_b_cmd' data-target="#panel_hecomp" aria-expanded='false' aria-controls='panel_hecomp' style="font-size:14px;color:white;background-color:$color_b;border-right: 4px solid $color_b;border-left: 4px solid $color_b;font-family: Verdana,Arial,sans-serif; text-shadow:1px 1px 2px black;position:relative;bottom:0px;min-width:150px;"> </span> <span aria-hidden="true" style="padding-top:2px;float:left;"></span> Found Potential He Composites&nbsp;&nbsp;&nbsp;</div> <div id='b_he_comp_init' onClick='init_he_comp_selection();' class="btn btn-brown btn-xs" data-toggle='collapse' style="display:none;font-size:14px;color:white;background-color:#27C2F5;border: 2px solid #27C2F5;font-family: Verdana,Arial,sans-serif;position:relative;bottom:0px;min-width:150px;"> </span> <span aria-hidden="true" style="padding-top:2px;float:left;"></span>----- INIT FILTER Patient Name -----</div></div>};
+	$html_he_comp .= qq{<div loading="lazy" class="panel-body panel-collapse collapse" style="font-size: 09px;font-family:Verdana;" id="panel_hecomp" loading="lazy">};
+	$html_he_comp .= "<div style='height:300px; overflow-y:auto; overflow-x:hidden;border:1px solid black;'>";
+	$html_he_comp .= qq{<table id='table_he_comp' data-filter-control='true' data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-virtual-scroll="true" data-pagination-v-align="both" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="50" data-resizable='true' class='table' style='font-size:11px;'>};
+	$html_he_comp .= "<thead>";
+	$html_he_comp .= $cgi->start_Tr({style=>"background-color:#E9DEFF;"});
+	$html_he_comp .= qq{<th data-field="project" data-sortable="true" data-filter-control="input" data-filter-control-placeholder="NGS2020_10151"</th>};
+	$html_he_comp .= qq{<th data-field="patient" data-sortable="true" data-filter-control="input" data-filter-control-placeholder=""</th>};
+	$html_he_comp .= qq{<th data-field="gene" data-sortable="true" data-filter-control="input" data-filter-control-placeholder=""</th>};
+	$html_he_comp .= qq{<th data-field="mother" data-filter-control="input" data-filter-control-placeholder=""</th>};
+	$html_he_comp .= qq{<th data-field="father" data-filter-control="input" data-filter-control-placeholder=""</th>};
+	$html_he_comp .= qq{<th data-field="link"></th>};
+	$html_he_comp .= $cgi->end_Tr();
+	$html_he_comp .= "</thead>";
+	$html_he_comp .= "<tbody>";
+	foreach my $html_2 (@l_he_comp) { $html_he_comp .= $html_2; }
+	$html_he_comp .= "</tbody>";
+	$html_he_comp .= "</table>";
+	$html_he_comp .= "</div>";
+	$html_he_comp .= "</div>";
+	return $html_he_comp;
+}
 
 #TODO: erreur certains VAR IDS ne passent pas les filtres (ex: 19_35739335_G_A dans KMT2B et filtres par defaut)
 sub export_xls {
