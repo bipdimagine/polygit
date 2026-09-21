@@ -496,8 +496,7 @@ while ( $checkComplete == 1 ) {
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
 my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp ";    # --temp-dir=/data-pure/testfs-bipd/tmpDemul
-  $rsync_cmd = "rclone copy --local-no-set-modtime $bcl_dir/ $dir_bcl_tmp/ --progress --transfers 16 --checkers 32";
-#  rclone copy /data-dragen/bcl/20260807_LH00788_0292_A23LWYWLT3 /data-beegfs/tmp/run_7579.NGS2026_108031787216034.69438/  --progress --transfers 16 --checkers 32
+$rsync_cmd = "rclone copy --local-no-set-modtime $bcl_dir/ $dir_bcl_tmp/ --progress --transfers 16 --checkers 32";
 warn $rsync_cmd;
 my $exit_rsync = system($rsync_cmd);
 warn $exit_rsync;
@@ -520,21 +519,17 @@ warn $cmd;
 
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
-#die;
 $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
 die() if $exit ne 0;
-#exit(0);
 warn "END DEMULTIPEX \n let's copy ";
 my $fork = 6;
 my $pm   = new Parallel::ForkManager($fork);
 my $dir_stats;
-	my $buffer  = GBuffer->new();
+my $buffer  = GBuffer->new();
 foreach my $p (values %$obj_patient){
 	
 	my $project = $p->project;
 	$project->{buffer} = $buffer;
-	warn $project;
-	warn $project->buffer;
 	$p->{buffer} = $buffer;
 	my $runs    = $project->getRuns;
 	my $run;
@@ -546,6 +541,7 @@ foreach my $p (values %$obj_patient){
 	}
 	$dir_stats = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
 	my $out_fastq = $run->fastq_dir();
+	system("mkdir $out_fastq ; chmod g+rwx $out_fastq ") unless ( -d $out_fastq );
 	my $pid = $pm->start and next;
 	my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out,"delete" );
 	warn $fastq1 . " " . $fastq2;
