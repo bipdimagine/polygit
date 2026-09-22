@@ -397,7 +397,7 @@ sub check_he_composite {
 			foreach my $pname (keys %{$self->hash_users_projects->{$proj_name}->{patients}}) {
 				$is_parent = 1 if exists $self->hash_users_projects->{$proj_name}->{patients}->{$pname}->{mother} and $self->hash_users_projects->{$proj_name}->{patients}->{$pname}->{mother} eq $pat_name;
 				$is_parent = 1 if exists $self->hash_users_projects->{$proj_name}->{patients}->{$pname}->{father} and $self->hash_users_projects->{$proj_name}->{patients}->{$pname}->{father} eq $pat_name;
-				last if $is_parent == 1;
+				last if $is_parent;
 			}
 			next if $is_parent;
 			my $model = lc($h_pat_proj->{model});
