@@ -393,6 +393,13 @@ sub check_he_composite {
 			next if lc($h_pat_proj->{heho}) ne 'he';
 			my $proj_name = $h_pat_proj->{project_name};
 			my $pat_name = $h_pat_proj->{patient_name};
+			my $is_parent;
+			foreach my $pname (keys %{$self->hash_users_projects->{$proj_name}->{patients}}) {
+				$is_parent = 1 if exists $self->hash_users_projects->{$proj_name}->{patients}->{$pname}->{mother} and $self->hash_users_projects->{$proj_name}->{patients}->{$pname}->{mother} eq $pat_name;
+				$is_parent = 1 if exists $self->hash_users_projects->{$proj_name}->{patients}->{$pname}->{father} and $self->hash_users_projects->{$proj_name}->{patients}->{$pname}->{father} eq $pat_name;
+				last if $is_parent == 1;
+			}
+			next if $is_parent;
 			my $model = lc($h_pat_proj->{model});
 			if ($model eq 'mother' or $model eq 'father' or $model eq 'solo') {
 				foreach my $gene_id (@l_genes) {
@@ -597,10 +604,6 @@ sub check_variants_from_gene {
 							$found_projects_patients_infos++;
 						}
 						else {
-							
-							#TODO: je ne trouve pas lui 7-92607208-TG-T  dans CDK6
-							#warn $rocks_id;
-							
 							$h_found_patients_infos = $chr->rocks_dejavu->dejavu($rocks_id);
 						}
 					}
@@ -879,8 +882,6 @@ sub get_from_duckdb_project_patients_infos_global {
 			CREATE TEMP TABLE positions( pos38 INT );
 			INSERT INTO positions VALUES
 		};
-		
-		#TODO: revoir le view_all_projects qui ne fonctionn epas la
 		
 #		my $sql_parquets = $self->get_sql_local_projects_parquets($h_var_pos->{$chr_id});
 		my $sql_parquets;
