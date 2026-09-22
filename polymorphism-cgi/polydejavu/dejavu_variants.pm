@@ -628,8 +628,8 @@ sub check_variants_from_gene {
 						foreach my $pid (keys %{$h_dv_rocks_ids->{$chr_id}->{$rocks_id}}) {
 							my $chr19 = $h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{$pid}->{chr19};
 							my $pos19 = $h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{$pid}->{pos19};
-							$hres->{lift}->{$var_id}->{chr19} = $chr19;
-							$hres->{lift}->{$var_id}->{pos19} = $pos19;
+							$hres->{lift}->{$var->start()}->{chr19} = $chr19;
+							$hres->{lift}->{$var->start()}->{pos19} = $pos19;
 							last if $pos19;
 						}
 					}
@@ -683,7 +683,9 @@ sub check_variants_from_gene {
 						}
 					}
 					foreach my $gid (keys %$h_gnomadid) {
+						my @ltmp = split('-', $gid);
 						$hres->{lift}->{$gid} = $h_gnomadid->{$gid};
+						$hres->{lift}->{$ltmp[1]} = $h_gnomadid->{$gid};
 					}
 					
 					if ($can_construct) {
@@ -1248,6 +1250,9 @@ sub print_line_variant_all_patients {
 	}
 	elsif (exists $self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}) {
 		$locus = $self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{chr19}.':'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19}.'-'.$self->{hash_lift_variants}->{$polyviewer_variant->gnomad_id()}->{pos19};
+	}
+	elsif (exists $self->{hash_lift_variants}->{$polyviewer_variant->start()}->{pos19}) {
+		$locus = $self->{hash_lift_variants}->{$polyviewer_variant->start()}->{chr19}.':'.$self->{hash_lift_variants}->{$polyviewer_variant->start()}->{pos19}.'-'.$self->{hash_lift_variants}->{$polyviewer_variant->start()}->{pos19};
 	}
 	$var_text .= "<br><i><b>HG19   ".$locus.'</b></i>' if $locus;
 	$out .= $cgi->td($style, $var_text);
