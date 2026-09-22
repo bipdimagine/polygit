@@ -750,6 +750,7 @@
         			document.getElementById('ncboost').checked = false;
         			//document.getElementById('phylop').checked = false;
         			document.getElementById('b_keep_pathogenic').checked = true;
+        			document.getElementById('b_keep_only_he').checked = false;
         			document.getElementById('b_keep_only_ho').checked = false;
         			document.getElementById('b_view_all_var').checked = false;
 					var cookie_user = dojo.cookie("username");
@@ -1247,6 +1248,8 @@
 				
 				if (document.getElementById('b_keep_pathogenic').checked == true) { options['keep_pathogenic'] = 1; }
 				
+				if (document.getElementById('b_keep_only_he').checked == true) { options['keep_only_he'] = 1; }
+				
 				if (document.getElementById('b_keep_only_ho').checked == true) { options['keep_only_ho'] = 1; }
 				
 				var found_included = false;
@@ -1721,7 +1724,16 @@
 		                        <tr>
 		                        	<td colspan='2'>
 					                	<div>
-						                	<input type="checkbox" id="b_keep_only_ho" checked>
+						                	<input type="checkbox" id="b_keep_only_he">
+											<label style='font-size:9px;' for="b_keep_only_he">Only HE</label>
+				                		</div>
+			                		</td>
+		                		</tr>
+		                        
+		                        <tr>
+		                        	<td colspan='2'>
+					                	<div>
+						                	<input type="checkbox" id="b_keep_only_ho">
 											<label style='font-size:9px;' for="b_keep_only_ho">Only HO</label>
 				                		</div>
 			                		</td>
