@@ -43,7 +43,6 @@ use autodie qw(system open);
 my $projectNames;
 my $patients_name;
 my $mismatch = 1;
-my $multi;
 my $no_exec;
 my $rc;
 my $help;
@@ -51,7 +50,6 @@ my $help;
 GetOptions(
 	'projects=s'				=> \$projectNames,
 	'mismatches=i'				=> \$mismatch,
-	'multi|flex'				=> \$multi,
 	'no_exec'					=> \$no_exec,
 	'rc!'						=> \$rc,
 	'help'						=> \$help,
@@ -61,7 +59,6 @@ usage() if $help;
 die("-project argument is mandatory") unless ($projectNames);
 die("-mismatches can be 0, 1, 2.") unless ($mismatch =~ /^[012]$/);
 warn "mismatch(es)=$mismatch";
-warn '-multi' if ($multi);
 
 my $run;
 my $projects;
@@ -125,12 +122,13 @@ foreach my $project (@$projects){
 	# pour multiplexage
 	my $hpool;
 	my $patpool = [];
+	my $multi = 0;
 	foreach my $patient (@$patients) {
-		$multi = 1 if ($patient->barcode2 =~ /^BC00\d$|^OB[1-4]$|^CMO\d{3}$|^TotalSeq/ or $patient->somatic_group =~ /^pool/i);
+		$multi = 1 if ($patient->barcode2 =~ /^BC00\d$|^OB[1-4]$|^CMO\d{3}$|^TotalSeq/ or $patient->family =~ /^pool/i or $patient->getSampleProfile =~ /flex$/);
 		push(@$patpool,$patient) unless (exists $hpool->{$patient->barcode});
 		$hpool->{$patient->barcode} ++;
 	}
-	warn '-multi' if ($multi);
+	warn '$project_name -> multiplexed' if ($multi);
 	$patients = $patpool if ($multi);
 	
 	foreach my $pat (@$patients) {
@@ -171,14 +169,15 @@ foreach my $project (@$projects){
 				die("Single and dual indexes mixed, run separately") if ($nb_index and $nb_index != 2);
 				$nb_index = 2;
 				$file_index .= "Dual_Index_Kit_$kit\_Set_A.csv";
-				my $indexes = csv (in => $file_index, sep => ",", headers => "auto", comment_str => "#");
+				my $indexes = csv (in => $file_index, sep => ",");
 				while($indexes->[0]->[0] =~ /^#|^index_name$/) {shift @$indexes};
 				my @barcodes = grep {$_->[0] eq $bc_name} @{$indexes};
 				die("ERROR ".scalar @barcodes." barcodes '$bc_name' found in $file_index") unless (scalar @barcodes == 1);
 				my $bc1 = $barcodes[0][1];
 				my $bc2 = $barcodes[0][2];
-				my $bc2 = $barcodes[0][3] if ($rc);
-			 	push(@$outcsv, [$_,$pname,$pname,$bc_name,$bc1,$bc_name,$bc2,$desc]) for (1 .. $lane_count);
+				$bc2 = $barcodes[0][3] if ($rc);
+			 	push(@$outcsv, [$pname,$pname,$bc_name,$bc1,$bc_name,$bc2,$desc]);
+			 	#push(@$outcsv, [$_,$pname,$pname,$bc_name,$bc1,$bc_name,$bc2,$desc]) for (1 .. $lane_count);
 #				my $bc2_rc = $barcodes[0][3];
 #				my $bc2_rc = $barcodes[0][2] if ($rc);
 #				for my $lane (1 .. $lane_count) {

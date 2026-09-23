@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use FindBin qw($Bin);
@@ -6,9 +6,6 @@ use lib "$Bin/../../../../GenBo/lib/";
 use lib "$Bin/../../../../GenBo/lib/GenBoDB";
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../packages";
-use Logfile::Rotate;
-use Cwd;
-use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
 use IO::Prompt;
@@ -16,27 +13,14 @@ use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
 use Moose;
-use MooseX::Method::Signatures;
-#use bds_steps;   
 use file_util;
-use Class::Inspector;
-use Digest::MD5::File ;
 use GBuffer;
 use GenBoProject;
-use colored; 
-use Config::Std;
-use Text::Table;
-use Text::CSV qw( csv );
-use Time::Local 'timelocal';
-use File::Temp qw/ tempfile tempdir /;
 use Term::Menus;
-use Proc::Simple;
-use Storable;
-use JSON::XS;
-use XML::Simple qw(:strict);
 use Cwd 'abs_path';
 use File::Path qw(make_path);
 use Carp;
+use autodie qw(system open);
 
 
 my $projectName;
@@ -51,7 +35,7 @@ my $aggr_name;
 my $choose_exec;
 my $choose_transcriptome;
 my $chemistry;
-my $all_vdj;
+my $all_vdj = 1;
 my $archive_name;
 my $create_bam;
 my $slide_infos_csv;
@@ -59,8 +43,9 @@ my $probe_set;
 my $add_image;
 my $loupe_alignment;
 my $cpu = 20;
+$cpu = 64 if (`hostname` =~ /^master/);
 my $force;
-my $version;
+my $project_version;
 my $help;
 
 GetOptions(
@@ -69,14 +54,14 @@ GetOptions(
 	'steps=s{1,}'									=> \@steps,
 #	'lane|nb_lane=i'								=> \$lane,
 	'mismatches=i'									=> \$mismatch,
-	'create_bam!'									=> \$create_bam,
+	'create_bam|bam!'								=> \$create_bam,
 	'feature_ref|feature_csv=s'						=> \$feature_ref,
 	'cmo_ref|cmo_csv=s'								=> \$cmo_ref,
 	'aggr_name=s'									=> \$aggr_name,
-	'choose_exec'									=> \$choose_exec,
-	'choose_transcriptome|select_transcriptome'		=> \$choose_transcriptome,
+	'choose_exec|choose_version|choose_cellranger'					=> \$choose_exec,
+	'choose_transcriptome|select_transcriptome|choose_reference'		=> \$choose_transcriptome,
 	'chemistry=s'									=> \$chemistry,
-	'all_vdj'										=> \$all_vdj,
+	'all_vdj!'										=> \$all_vdj,
 	'out|archive_name=s'							=> \$archive_name,
 	'slide_infos=s'									=> \$slide_infos_csv,
 	'probe_set=s'									=> \$probe_set,
@@ -85,19 +70,25 @@ GetOptions(
 	'cpu=i'											=> \$cpu,
 	'no_exec'										=> \$no_exec,
 	'force'											=> \$force,
-	'version=s'										=> \$version,
+	'version=s'										=> \$project_version,
 	'help'											=> \$help,
 ) || confess("Error in command line arguments\n");
 
 usage() if $help;
 die("-project argument is mandatory") unless ($projectName);
-die("cpu must be in [1;40], given $cpu") unless ($cpu > 0 and $cpu <= 40);
-
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName , -version => $version);
+my $max_cpu = 40;
+$max_cpu = 256 if ($buffer->biocluster);
+die("cpu must be in [1;$max_cpu], given $cpu") unless ($cpu > 0 and $cpu <= $max_cpu);
+
+my $project = $buffer->newProject( -name => $projectName , -version => $project_version);
 my $all_patients = $project->getPatients;
 my $patients = $project->get_only_list_patients($patients_name);
 die("No patient in project $projectName") unless ($patients);
+@$patients = sort {$a->name cmp $b->name} @$patients;
+
+my $multi = 1 if (grep {$_->getSampleProfile =~ /flex$/} @$patients);
+die("For flex, use $Bin/cellranger_multi.pl") if $multi;
 
 # Vérifie les caractères non acceptés
 my @patient_names = map {$_->name} @$patients;
@@ -141,7 +132,7 @@ $create_bam = 1 if (grep(/velocyto/i, @steps) or grep (/velocyto/, map($_->getCa
 my $run = $project->getRun();
 my $run_name = $run->plateform_run_name;
 my $type = $run->infosRun->{method};
-my $machine = $run->infosRun->{machine};
+#my $machine = $run->infosRun->{machine};
 
 # Executable 
 my $exec = "cellranger";
@@ -151,6 +142,7 @@ $exec = 'spaceranger' if  ($type eq 'spatial');
 my $exec_type = $exec;
 if ($choose_exec) {
 	my $path_exec = "/software/distrib/$exec_type/";
+	$path_exec = "/data-bipd/data-pure/software/distrib/$exec_type/" if ($buffer->biocluster);
 	opendir(my $dh, $path_exec) || die "Can't opendir '$path_exec': $!";
 	my @exec = reverse grep {-x "$path_exec$_/$exec_type" && ! /^\./} readdir($dh);
 	closedir ($dh);
@@ -174,49 +166,45 @@ warn $dir;
 #-----
 # https://www.10xgenomics.com/support/software/cell-ranger/latest/release-notes/cr-reference-release-notes
 my $htranscriptome;
-if (grep(/count|velocyto/, @steps)) {
-	if (grep(/count|^all$|velocyto/i, @steps) and $choose_transcriptome){
-		my $transcriptome_dir = '/data-isilon/public-data/10X/'.$project->genome_version.'/';
-		opendir(my $dh, $transcriptome_dir) || die "Can't opendir '$transcriptome_dir': $!";
-		# gex/spatial
-		my @transcriptomes = sort { -M $transcriptome_dir.$a <=> -M $transcriptome_dir.$b } grep {-d $transcriptome_dir.$_} readdir($dh);
-		closedir ($dh);
-		if (grep {/exp|adt/i} @groups) {
-			my @transcriptomes_gex = grep {/^refdata-(cellranger-|gex-)GRC/} @transcriptomes;
-			confess("No transcriptome reference found in '$transcriptome_dir'") unless (scalar @transcriptomes_gex);
-			warn Dumper \@transcriptomes_gex;
-			$htranscriptome->{gex} = $transcriptome_dir.$transcriptomes_gex[0] if (scalar @transcriptomes_gex == 1);
-			if (scalar @transcriptomes_gex > 1) {
-				my $selected = prompt("Choose a transcritome reference for project ".$projectName.':', -menu=>\@transcriptomes_gex);
-				die unless ($selected and -d $transcriptome_dir.$selected);
-				$htranscriptome->{gex} = $transcriptome_dir.$selected;
-			}
+if (grep(/count|^all$|velocyto/i, @steps) and $choose_transcriptome){
+	my $transcriptome_dir = '/data-bipd/data-pure/public-data/10X/'.$project->genome_version.'/';
+	opendir(my $dh, $transcriptome_dir) || die "Can't opendir '$transcriptome_dir': $!";
+	# gex/spatial
+	my @transcriptomes = sort { -M $transcriptome_dir.$a <=> -M $transcriptome_dir.$b } grep {-d $transcriptome_dir.$_} readdir($dh);
+	closedir ($dh);
+	if (grep {/exp|adt/i} @groups) {
+		my @transcriptomes_gex = grep {/^refdata-(cellranger-|gex-)GRC/} @transcriptomes;
+		confess("No transcriptome reference found in '$transcriptome_dir'") unless (scalar @transcriptomes_gex);
+		$htranscriptome->{gex} = $transcriptome_dir.$transcriptomes_gex[0] if (scalar @transcriptomes_gex == 1);
+		if (scalar @transcriptomes_gex > 1) {
+			my $selected = prompt("Choose a transcritome reference for project ".$projectName.':', -menu=>\@transcriptomes_gex);
+			die unless ($selected and -d $transcriptome_dir.$selected);
+			$htranscriptome->{gex} = $transcriptome_dir.$selected;
 		}
-		
-		# vdj
-		if (grep {/vdj/i} @groups) {
-			my @transcriptomes_vdj = grep {/^refdata-cellranger-vdj-GRC/} @transcriptomes;
-			confess("No V(D)J reference found in '$transcriptome_dir'") unless (scalar @transcriptomes_vdj);
-			$htranscriptome->{vdj} = $transcriptome_dir.$transcriptomes_vdj[0] if (scalar @transcriptomes_vdj == 1);
-			if (scalar @transcriptomes_vdj > 1) {
-				my $selected = prompt("Choose a V(D)J reference for project ".$projectName.':', -menu=>\@transcriptomes_vdj);
-				die unless ($selected and -d $transcriptome_dir.$selected);
-				$htranscriptome->{vdj} = $transcriptome_dir.$selected;
-			}
+	}
+	
+	# vdj
+	if (grep {/vdj/i} @groups) {
+		my @transcriptomes_vdj = grep {/^refdata-cellranger-vdj-GRC/} @transcriptomes;
+		confess("No V(D)J reference found in '$transcriptome_dir'") unless (scalar @transcriptomes_vdj);
+		$htranscriptome->{vdj} = $transcriptome_dir.$transcriptomes_vdj[0] if (scalar @transcriptomes_vdj == 1);
+		if (scalar @transcriptomes_vdj > 1) {
+			my $selected = prompt("Choose a V(D)J reference for project ".$projectName.':', -menu=>\@transcriptomes_vdj);
+			die unless ($selected and -d $transcriptome_dir.$selected);
+			$htranscriptome->{vdj} = $transcriptome_dir.$selected;
 		}
-		
-		# atac
-		if (grep {/atac/i} @groups) {
-			my @transcriptomes_atac = grep {/^refdata-cellranger-(arc|atac)-GRC/} @transcriptomes;
-			confess("No ATAC reference found in '$transcriptome_dir'") unless (scalar @transcriptomes_atac);
-			$htranscriptome->{atac} = $transcriptome_dir.$transcriptomes_atac[0] if (scalar @transcriptomes_atac == 1);
-			if (scalar @transcriptomes_atac > 1) {
-				my $selected = prompt("Choose a ATAC reference for project ".$projectName.':', -menu=>\@transcriptomes_atac);
-				die unless ($selected and -d $transcriptome_dir.$selected);
-				$htranscriptome->{atac} = $transcriptome_dir.$selected;
-			}
+	}
+	
+	# atac
+	if (grep {/atac/i} @groups) {
+		my @transcriptomes_atac = grep {/^refdata-cellranger-(arc|atac)-GRC/} @transcriptomes;
+		confess("No ATAC reference found in '$transcriptome_dir'") unless (scalar @transcriptomes_atac);
+		$htranscriptome->{atac} = $transcriptome_dir.$transcriptomes_atac[0] if (scalar @transcriptomes_atac == 1);
+		if (scalar @transcriptomes_atac > 1) {
+			my $selected = prompt("Choose a ATAC reference for project ".$projectName.':', -menu=>\@transcriptomes_atac);
+			die unless ($selected and -d $transcriptome_dir.$selected);
+			$htranscriptome->{atac} = $transcriptome_dir.$selected;
 		}
-		warn Dumper $htranscriptome;
 	}
 }
 
@@ -225,7 +213,7 @@ if (grep(/count|velocyto/, @steps)) {
 #------------------------------
 # DRAGEN DEMULIPLEXAGE
 #------------------------------
-if (grep(/dragen_demultiplex|^all$/i, @steps)){
+if (grep(/dragen_demultiplex|^all$|demultiplex$/i, @steps)){
 	my $cmd_demultiplex = "$Bin/cellranger_samplesheet.pl -project=$projectName -mismatch=$mismatch ";
 	$cmd_demultiplex .= "-no_exec " if ($no_exec);
 	system($cmd_demultiplex);
@@ -414,8 +402,7 @@ if (grep(/count|^all$/i, @steps)){
 		my $seq_dir = $pat->getSequencesDirectory;
 		my $cmd1 = "cp $seq_dir$name*.fastq.gz $tmp_fastq && ";
 		my $adt = 'ADT_'.$name;
-		$cmd1 = "cp $seq_dir$name*.fastq.gz $seq_dir/ADT_$name*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
-#		my $cmd2 = " --localcores=$cpu ";
+		$cmd1 = "cp $seq_dir$name\_*.fastq.gz $seq_dir/ADT_$name\_*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
 		my $cmd2;
 		$cmd2 = "&& mkdir $dir$name --mode=775 " unless (-d $dir.$name);
 		$cmd2 .= "&& cp -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
@@ -443,7 +430,7 @@ if (grep(/count|^all$/i, @steps)){
 			chomp $transcriptome;
 			$transcriptome = '/data-isilon/public-data/10X/HG38/refdata-gex-GRCh38-2020-A' if ($project->description =~ /at?traction/i);
 			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
-			my $cmd = "cd $tmp && $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam=$create_bam --transcriptome=$transcriptome ";
+			my $cmd = "cd $tmp && $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam=$create_bam --transcriptome=$transcriptome --jobmode slurm ";
 			$cmd .= " --include-introns true " if ($type eq "nuclei" or lc($group) eq "nuclei"); # true par défaut
 			$cmd .= " --chemistry $chemistry " if ($chemistry);
 			$cmd .= "\n";
@@ -481,7 +468,7 @@ if (grep(/count|^all$/i, @steps)){
 			$transcriptome = qx/realpath $index/ if (-l $index);
 			chomp $transcriptome;
 			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
-			my $cmd = "cd $tmp && $exec count --id=$name --feature-ref=$feature_ref --transcriptome=$transcriptome  --libraries=$lib_file --create-bam=$create_bam ";
+			my $cmd = "cd $tmp && $exec count --id=$name --feature-ref=$feature_ref --transcriptome=$transcriptome  --libraries=$lib_file --create-bam=$create_bam --jobmode slurm ";
 			$cmd .= " --chemistry $chemistry " if ($chemistry);
 			$cmd .= "\n";
 			$cmd = full_cmd($e, $cmd);
@@ -508,7 +495,7 @@ if (grep(/count|^all$/i, @steps)){
 			$transcriptome = qx/realpath $index"_vdj"/ if (-l $index);
 			chomp $transcriptome;
 			$transcriptome = $htranscriptome->{vdj} if ($choose_transcriptome);
-			my $cmd = "cd $tmp && cellranger vdj --sample=$name --id=$name --fastqs=$fastq --reference=$transcriptome ";
+			my $cmd = "cd $tmp && cellranger vdj --sample=$name --id=$name --fastqs=$fastq --reference=$transcriptome --jobmode slurm ";
 			$cmd = full_cmd($v, $cmd);
 			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
 			warn $cmd_cellranger[0];
@@ -525,13 +512,16 @@ if (grep(/count|^all$/i, @steps)){
 		open (JOBS_SPATIAL, ">$dir/jobs_spatial.txt");
 		my @spatial = grep { uc($_->somatic_group()) eq "SPATIAL"} @{$patients};
 		warn "SPATIAL: ".join(',',map($_->name,@spatial));
+		
+		# Image(s) type
  		my $choice_image_type = {
  			'Brightfield image generated by the CytAssist instrument (the CytAssist image)' => 'cytaimage',
  			'Brightfield microscope image' => 'image',
  			'Dark background fluorescence microscope image' => 'darkimage',
  			'Composite colored fluorescence microscope image' => 'colorizedimage',
 		};
-		my $imagetype = prompt('Choose the type of image you have: ', -m=>$choice_image_type);
+		print "To add a second image, use --add_image option in command line\n" && sleep(3) unless ($add_image);
+		my $imagetype = prompt('Choose the (first) type of image you have: ', -m=>$choice_image_type);
 		die ("No image type selected") unless ($imagetype);
 		my $imagetype2;
 		if ($add_image) {
@@ -544,16 +534,18 @@ if (grep(/count|^all$/i, @steps)){
 			die ("No image type selected") unless ($imagetype2);
 		}
 		
+		# csv with slide id and area
 		my $slide_infos;
 		if ($slide_infos_csv and -f $slide_infos_csv) {
 			my $a_slide_infos = csv (in => $slide_infos_csv, headers => "auto", filter => "not_empty") or confess("Can't open '$slide_infos_csv': $!") unless ($imagetype ne 'cytaimage');
 	 		foreach my $line (@$a_slide_infos) {
 				$slide_infos->{$line->{'sample'}}->{'slide'} = $line->{'slide id'};
-				$slide_infos->{$line->{'sample'}}->{'area'} = $line->{'aera'};
+				$slide_infos->{$line->{'sample'}}->{'area'} = $line->{'area'};
 			}
 		}
 		foreach my $s (@spatial){
 			my $sname = $s->name();
+			warn "$sname:";
 			
 			# Slide id and area
 			my ($slide_id, $area);
@@ -571,48 +563,57 @@ if (grep(/count|^all$/i, @steps)){
 				confess("slide id and area are required") if (not $area or not $slide_id);
 			}
 		
-			# Image
-			opendir(my $dh, $dir_project) or confess ("Can't opendir '$dir_project': $!");
-			my @all_images = grep {/$sname.*\.(tif{1,2}|jpe?g)$/} readdir($dh);
+			# Select image(s)
+			my $dir_images = $dir_project;
+			$dir_images .= 'images/' if (-d $dir_project.'images');
+			opendir(my $dh, $dir_images) or confess ("Can't opendir '$dir_images': $!");
+			my @all_images = grep {/$sname/ && /\.(tif{1,2}|jpe?g)$/} readdir($dh);
 			close($dh);
-			if (scalar @all_images < 1) {confess("No tiff/jpg image found in '$dir_project'")}
+			if (scalar @all_images < 1) {confess("No tiff/jpg image found in '$dir_images'")}
 			
-			my @images = @all_images;
-			@images = grep {/$sname.*\.tif{1,2}$/} @all_images if ($imagetype eq 'cytaimage');
-			if (scalar @images < 1) {confess("No tiff image found in '$dir_project'")}
+			my @images;
+#			my @images = @all_images;
+			if ($imagetype eq 'cytaimage') {
+				@images = grep {/$sname/ && /cyta/ && /\.tiff?$/} @all_images;
+				@images = grep { /$sname/ && /\.tiff?$/ } @all_images unless scalar @images;
+			}
+			if (scalar @images < 1) {confess("No tiff image found in '$dir_images'")}
 			
 			my $image1;
 			if (scalar @images == 1) {$image1 = $images[0]}
-			elsif (scalar @images > 1) {$image1 = prompt("Choose an image file:", -menu=>\@images)}
-#			warn "$imagetype = $image1";
+			elsif (scalar @images > 1) {$image1 = prompt("Choose the $imagetype image file:", -menu=>\@images)}
+			warn "$imagetype = $image1";
 			confess("No image") unless($image1);
-			$image1 = $dir_project.$image1;
 			
 			my $image2;
 			if ($add_image) {
-				@images = grep {$image1 !~ /$_$/} @all_images;
-				if (scalar @images < 1) {confess("No other tiff/jpg image found in '$dir_project'")}
-				@images = grep {$_ =~ /$sname.*\.tif{1,2}$/} @images if ($imagetype2 eq 'cytaimage');
-				if (scalar @images < 1) {confess("No other tiff image found in '$dir_project'")}
+				@images = grep {$_ ne $image1} @all_images;
+				if (scalar @images < 1) {confess("No other tiff/jpg image found in '$dir_images'")}
+				if ($imagetype2 eq 'cytaimage') {
+					@images = grep {/$sname/ && /cyta/ && /\.tiff?$/} @images;
+					@images = grep { /$sname/ && /\.tiff?$/ } @images unless @images;
+				}
+				if (scalar @images < 1) {confess("No other tiff image found in '$dir_images'")}
 				elsif (scalar @images == 1) {$image2 = $images[0]}
-				elsif (scalar @images > 1) {$image2 = prompt("Choose an image file:", -menu=>\@images)}
-	#			warn "$imagetype2 = $image2";
+				elsif (scalar @images > 1) {$image2 = prompt("Choose the $imagetype2 image file:", -menu=>\@images)}
+				warn "$imagetype2 = $image2";
 				confess("No image") unless($image2);
-				$image2 = $dir_project.$image2;
+				$image2 = $dir_images.$image2;
 			}
+			$image1 = $dir_images.$image1;
 			
 			# Image alignment
 			my $json;
 			if ($loupe_alignment) {
-				opendir(my $dh, $dir_project) or confess ("Can't opendir '$dir_project': $!");
+				opendir(my $dh, $dir_images) or confess ("Can't opendir '$dir_images': $!");
 				my @json = grep {/$sname.*\.json$/} readdir($dh);
 				close($dh);
-				if (scalar @json < 1) {confess("No json loupe alignment file found in '$dir_project'")}
+				if (scalar @json < 1) {confess("No json loupe alignment file found in '$dir_images'")}
 				elsif (scalar @json == 1) {$json = $json[0]}
 				elsif (scalar @json > 1) {$json = prompt("Choose an image file:", -menu=>\@json)}
 	#			warn "loupe-alignment = $json";
 				confess("No json") unless($json);
-				$json = $dir_project.$json;
+				$json = $dir_images.$json;
 				
 			}
 			
@@ -624,14 +625,17 @@ if (grep(/count|^all$/i, @steps)){
 			
 			unless($probe_set and -f $probe_set) {
 				$probe_set = "/software/distrib/$exec/$exec-$version_nb/probe_sets/";
+				$probe_set = "/data-bipd/data-pure/software/distrib/$exec/$exec-$version_nb/probe_sets/" if ($buffer->biocluster);;
 				opendir(my $dh, $probe_set) || die "Can't opendir '$probe_set': $!";
 				my @probe_sets;
 				@probe_sets = sort grep {-f $probe_set.$_ && /^Visium_\w+_Transcriptome_Probe_Set_v.+\.csv$/} readdir($dh);
 				close($dh);
-				@probe_sets = grep {/^Visium_Human_Transcriptome_Probe_Set_v[0-9.]+_GRCh38-20\d{2}-A\.csv$/} @probe_sets if ($project->getVersion() =~ /^HG/);
-				@probe_sets = grep {/^Visium_Mouse_Transcriptome_Probe_Set_v[0-9.]+_mm10-20\d{2}-A\.csv$/} @probe_sets if ($project->getVersion() =~ /^MM38/);
-				@probe_sets = grep {/^Visium_Mouse_Transcriptome_Probe_Set_v[0-9.]+_GRCm39-20\d{2}-A\.csv$/} @probe_sets if ($project->getVersion() =~ /^MM39/);
-				#Visium_Mouse_Transcriptome_Probe_Set_v2.1.0_GRCm39-2024-A.csv
+				warn $project->getVersion();
+				@probe_sets = grep {/Human|GRCh38|HG38/i} @probe_sets if ($project->getVersion() =~ /^HG/);
+				@probe_sets = grep {/mm10|MM38/i} @probe_sets if ($project->getVersion() =~ /^MM10/);
+				@probe_sets = grep {/GRCm39|MM39/i} @probe_sets if ($project->getVersion() =~ /^MM39/);
+				@probe_sets = grep {/Mouse|GRCm39|MM39/i && /AGarneau/} @probe_sets if ($project->getVersion() eq 'MM39-AGarneau');
+				@probe_sets = grep {/Mouse|GRCm39|MM39/i && /AThomas/} @probe_sets if ($project->getVersion() eq 'MM39-AThomas');
 				my $probe_set_compatibility = "";
 				if ($slide_id) {
 					@probe_sets = grep {/^Visium_Human_Transcriptome_Probe_Set_v1[0-9.]+_GRCh38-20\d{2}-A.*\.csv$/} @probe_sets if ($project->getVersion() =~ /^HG/ && $slide_id =~ /^(V1)/);
@@ -646,7 +650,7 @@ if (grep(/count|^all$/i, @steps)){
 	                 	Visium CytAssist Spatial Gene and Protein Expression
 	                  	Visium CytAssist Spatial Gene Expression (FFPE, Fresh Frozen)
 	Human Probe Set v1	Visium Spatial Gene Expression for FFPE\n} if ($project->getVersion() =~ /^HG/);
-					$probe_set_compatibility = qq{Mouse Probe Set v2	Visium HD Spatial Gene Expression
+					$probe_set_compatibility = qq{	Mouse Probe Set v2	Visium HD Spatial Gene Expression
 	Mouse Probe Set v1	Visium CytAssist Spatial Gene Expression (FFPE, Fresh Frozen, Fixed Frozen)
 	                  	Visium Spatial Gene Expression for FFPE\n} if ($project->getVersion() =~ /^MM/);
 				}
@@ -659,7 +663,7 @@ if (grep(/count|^all$/i, @steps)){
 				confess("'$probe_set' does not exist") unless (-f $probe_set);
 			}
 			
-			my $cmd = "cd $tmp && $exec count --id=$sname --sample=$sname --fastqs=$fastq --transcriptome=$transcriptome --create-bam=$create_bam ";
+			my $cmd = "cd $tmp && $exec count --id=$sname --sample=$sname --fastqs=$fastq --transcriptome=$transcriptome --create-bam=$create_bam --jobmode slurm ";
 			$cmd .= " --probe-set=$probe_set ";
 			$cmd .= "--$imagetype=$image1 ";
 			$cmd .= "--$imagetype2=$image2 " if ($add_image);
@@ -704,7 +708,7 @@ if (grep(/count|^all$/i, @steps)){
 			$transcriptome = $htranscriptome->{atac} if ($choose_transcriptome);
 			$transcriptome = '/data-isilon/public-data/10X/HG38/refdata-cellranger-arc-GRCh38-2020-A-2.0.0' if ($project->description =~ /at?traction/i);
 			die("No transcriptome") unless ($transcriptome);
-			my $cmd = "cd $tmp && $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$transcriptome ";
+			my $cmd = "cd $tmp && $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$transcriptome --jobmode slurm ";
 			$cmd = full_cmd($a, $cmd);
 			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
 			warn $cmd_cellranger[0];
@@ -743,7 +747,7 @@ if (grep(/count|^all$/i, @steps)){
 			print LIB $ename."_B252,B252\n";
 			print LIB $ename."_B253,B253\n";
 			close(LIB);
-			my $cmd = "cd $tmp && $exec multi --id=$ename --csv=$lib_file ";
+			my $cmd = "cd $tmp && $exec multi --id=$ename --csv=$lib_file --jobmode slurm ";
 			$cmd = full_cmd($e, $cmd);
 			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
 			warn $cmd_cellranger[0];
@@ -777,7 +781,7 @@ if (grep(/count|^all$/i, @steps)){
 			$lib .= $tmp.'fastq/'.",".$atac_name.",Chromatin Accessibility\n";
 			print LIB $lib;
 			close(LIB);
-			my $cmd = "cd $tmp && $exec count --id=$ename --transcriptome=$transcriptome  --libraries=$lib_file ";
+			my $cmd = "cd $tmp && $exec count --id=$ename --reference=$transcriptome  --libraries=$lib_file --create-bam=$create_bam --jobmode slurm ";
 			$cmd = full_cmd($e, $cmd);
 			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
 			warn $cmd_cellranger[0];
@@ -794,7 +798,7 @@ if (grep(/count|^all$/i, @steps)){
 	close(JOBS_ARC);
 
 
-	my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=$cpu";
+	my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=1 ";
 	warn $cmd2;
 	sleep(5) unless ($no_exec);
 	my $exit = system ($cmd2) unless ($no_exec);
@@ -933,7 +937,7 @@ if (grep(/aggr_vdj/, @steps)) {
 if (grep(/info/i, @steps)){
 	my $cmd_infos = "$Bin/cellranger_infos.pl -project=$projectName -out_dir=$dir";
 	$cmd_infos .= "-patients=$patients_name " if ($patients_name);
-	$cmd_infos .= "-version $version " if ($version);
+	$cmd_infos .= "-version $project_version " if ($project_version);
 	system($cmd_infos);
 }
 
@@ -947,7 +951,7 @@ if (grep(/^cp(_web_summar(y|ies))?$|^all$/i, @steps)){
 	$cmd_cp .= "-patients=$patients_name " if ($patients_name);
 	$cmd_cp .= "-all_outs " if (grep(/^cp$/i, @steps));
 	$cmd_cp .= "-no_exec " if ($no_exec);
-	$cmd_cp .= "-version $version " if ($version);
+	$cmd_cp .= "-version $project_version " if ($project_version);
 	system($cmd_cp);
 }
 
@@ -963,7 +967,7 @@ if (grep(/tar|archive|^all$/i, @steps)){
 	$cmd_tar .= "-all_vdj " if ($all_vdj);
 	$cmd_tar .= "-archive_name $archive_name " if ($archive_name);
 	$cmd_tar .= "-no_exec " if ($no_exec);
-	$cmd_tar .= "-version $version " if ($version);
+	$cmd_tar .= "-version $project_version " if ($project_version);
 	system($cmd_tar);
 }
 
@@ -979,7 +983,7 @@ if (grep(/velocyto/, @steps)) {
 	$cmd_velocyto .= '-transcriptome='.$htranscriptome->{gex}.' '  if ($choose_transcriptome);
 	$cmd_velocyto .= "-cpu=$cpu ";
 	$cmd_velocyto .= "-no_exec " if ($no_exec);
-	$cmd_velocyto .= "-version $version " if ($version);
+	$cmd_velocyto .= "-version $project_version " if ($project_version);
 	system($cmd_velocyto);
 }
 
@@ -997,20 +1001,24 @@ Optionels:
 	steps <s>                  étape(s) à réaliser: demultiplex, teleport, count, tar, aggr, aggr_vdj, cp, 
 	                           cp_web_summary, velocyto, infos ou all (= demultiplex, count, cp_web_summary, tar)
 	patients <s>               noms de patients/échantillons, séparés par des virgules
+	no_exec                    ne pas exécuter les commandes
+	force                      relance le pipeline même s'il a déjà tourné
+	cpu <i>                    nombre de cpu à utiliser, défaut: 20
+	help                       affiche ce message
+	
 	mismatches <i>             nombre de mismatches autorisés lors du démultiplexage, défaut: 0
 	create-bam/nocreate-bam    générer ou non les bams lors du count, défaut: nocreate-bam
-	aggr_name <s>              nom de l'aggrégation, lors de step=aggr ou aggr_vdj
 	choose_version|version     choisir la version de cellranger/spaceranger à executer
 	choose_transcriptome       choisir le transcriptome à utiliser pour les comptages
 	chemistry                  chemistry , défaut: auto (pour librairies exp et adt)
+	aggr_name <s>              nom de l'aggrégation, lors de step=aggr ou aggr_vdj
+	
 	slide_infos <s>            pour spaceranger, ficher csv avec header, contenant 3 colonnes séparées par des virgules: sample, area and slide id
 	probe_set <s>              pour spaceranger, probe set à utiliser pour les comptages
-	add_image                  pour spaceranger, ajouter une seconde image
+	add_image                  pour spaceranger, ajouter une seconde image.
+	                           Les images doivent être placées dans un dossier images dans le répertoire de projet ou directement dans le répertoire du projet
 	loupe_alignment            pour spaceranger, fichier json d'alignement loupe
-	no_exec                    ne pas exécuter les commandes
-	force                      relance le pipeline même s'il a déjà tourné
-	help                       affiche ce message
-	cpu <i>                    nombre de cpu à utiliser, défaut: 20
+	
 
 ";
 	exit(1);
