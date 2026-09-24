@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use FindBin qw($Bin);
 use lib "$Bin/../../../GenBo/lib/";
@@ -52,7 +52,7 @@ die('Enter a project name') unless ($project_name);
 my $project = $buffer->newProject( -name => $project_name );
 warn $project_name;
 my $project_desc = $project->description;
-confess ('Project $project_name is not glucogen project. Check capture and description.') unless ($project_desc =~ /glucogen/i and $project->isGenome);
+confess ("Project $project_name is not glucogen project. Check capture and description.\n$project_desc\nIs genome? ".$project->isGenome) unless ($project_desc =~ /glucogen/i and $project->isGenome);
 my $patients = $project->get_only_list_patients($patient_names);
 die("No patient in project ".$project_name."\n") unless ($patients);
 @$patients = sort {$a->name cmp $b->name} @$patients;
@@ -69,12 +69,12 @@ if ($diabetome_project_name) {
 		unless ($project_desc =~ /glucogen/i and $project_desc =~ /diabetome/i and grep {$_->name eq 'DIABETomeV1_hg38'} @{$diabetome_project->getCaptures});
 	$project_desc =~ /(pitie|lyon|toul)/i;
 	$site = lc($1) unless ($site);
-	confess("Sites not matching between project $project_name ($site) and diabetome project $diabetome_project_name ($1)") unless ($1 and $site eq lc($1));
+	confess("Sites not matching between genome project $project_name ($site) and diabetome project $diabetome_project_name ($1)") unless ($1 and $site eq lc($1));
 	my $patients_diabetome = $diabetome_project->get_only_list_patients($patient_names);
-	die("No patient in diabetome project ".$project_name."\n") unless ($patients);
+	die("No patient in diabetome project ".$diabetome_project_name."\n") unless ($patients);
 	my $patients_both;
-	foreach my $pat (@$patients) {
-		my @pat_grep = grep {$pat->name eq $_->name} @$patients_diabetome;
+	foreach my $pat (@$patients_diabetome) {
+		my @pat_grep = grep {$pat->name eq $_->name} @$patients;
 		push (@$patients_both, $pat_grep[0]) if (scalar @pat_grep);
 	}
 	$patients = $patients_both;
@@ -88,7 +88,7 @@ $site = uc(@site[0]);
 die("Choose a site in '".join(', ',@sites)."'.") unless (scalar @site == 1);
 warn $site;
 # set
-$project_desc =~ /set-?(\d+)/i;
+$project_desc =~ /set[- ]?(\d+)/i;
 $set = $1 unless ($set);
 die('Enter a set number > 0') unless ($set > 0);
 warn 'Set '.$set;
@@ -109,7 +109,18 @@ unless ($project->validation_db eq 'glucogen') {
 	confess ("ERROR: Can't update validation_db to 'glucogen' for projet $project_name (id: ".$pid."):\n"
 		. 'Statement: '.$sql =~ s/`project_id`=\?/`project_id`=$pid/r ."\nDB Error: ".$dbh->errstr) if ($dbh->errstr or not $sth);
 }
-
+if ($diabetome_project_name) {
+	my $diabetome_project = $buffer->newProject( -name => $diabetome_project_name );
+	unless ($diabetome_project->validation_db eq 'glucogen') {
+		my $pid = $diabetome_project->id;
+		my $dbh = $buffer->dbh();
+		my $sql = "UPDATE `PolyprojectNGS`.`projects` SET `validation_db`='glucogen' WHERE `project_id`=?;";
+		my $sth = $dbh->do($sql, undef, $pid);
+		confess ("ERROR: Can't update validation_db to 'glucogen' for diabetome projet $diabetome_project_name (id: ".$pid."):\n"
+			. 'Statement: '.$sql =~ s/`project_id`=\?/`project_id`=$pid/r ."\nDB Error: ".$dbh->errstr) if ($dbh->errstr or not $sth);
+	}
+	
+}
 
 my $dir_download = "/data-pure/workspace/download/glucogen/" . uc($site) . '/set' . $set . '/';
 warn $dir_download;
@@ -145,6 +156,15 @@ $pm->run_on_finish(sub {
 		warn "OK: Patient '$ident' completed successfully\n";
 	}
 });
+## Optionnel : Reconnecter dans chaque enfant si absolument nécessaire
+#$pm->run_on_start(sub {
+#	my ($pid, $ident) = @_;
+#	$buffer->dbh_reconnect
+#	# ou ?
+#	$buffer = new GBuffer;
+#	# Si vos objets ont besoin de DB, recréez-les ici
+#	# Mais la solution des hashes ci-dessus est préférable
+#});
 
 $buffer->disconnect;
 foreach my $pat (@$patients) {
@@ -267,24 +287,28 @@ if ($erreur_fork) {
 
 unless ($no_exec) {
 	print("----------DONE----------\n");
-	my $cmd_pipeline = "$Bin/../../bds_pipeline.pl -project $project_name -steps coverage,binary_depth,canvas,wisecondor,calling_wisecondor ";
+	my $cmd_pipeline = "$Bin/../../bds_pipeline.pl -project $project_name -steps coverage,binary_depth,canvas,wisecondor,calling_wisecondor,cnvnator ";
 	$cmd_pipeline .= "-patients=$patient_names " if ($patient_names);
 	$cmd_pipeline .= "-force 1 " if ($force);
 	my $cmd_cache = "$Bin/../../bds_cache.pl -project $project_name";
 	$cmd_cache .= "-force 1 " if ($force);
+	my $cmd_dude;
 	my $cmd_diabetome;
 	if ($diabetome_project_name) {
 		print("Now, run glucogen_diabetome.pl:\n");
-		print($cmd_diabetome."\n");
 		$cmd_diabetome = "$Bin/glucogen_diabetome.pl -diabetome_project $diabetome_project_name -genome_project $project_name -fork $fork ";
 		$cmd_diabetome .= "-patients $patient_names " if ($patient_names);
 		$cmd_diabetome .= "-force 1 " if ($force);
+		print($cmd_diabetome."\n");
+		$cmd_dude = "$Bin/../../bds_calling.pl -project $diabetome_project_name -patient all -steps dude" ;
+		$cmd_dude .= " -force 1" if ($force);
 		$cmd_pipeline = "$Bin/../../bds_pipeline.pl -project $project_name -steps coverage,binary_depth ";
 		$cmd_pipeline .= "-force 1 " if ($force);
 		$cmd_cache =~ s/$project_name/$diabetome_project_name/;
 	}
 	print("Then, run coverage (and cnv for genome), then cache:\n");
 	print($cmd_pipeline."\n");
+#	print($cmd_dude."\n") if ($diabetome_project_name);
 	print($cmd_cache."\n");
 }
 print "\n";

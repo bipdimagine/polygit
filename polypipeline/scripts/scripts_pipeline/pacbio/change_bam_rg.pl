@@ -42,7 +42,7 @@ my $pname = $patient->name;
 warn "Patient: $pname" . "\n";
 warn "Output BAM: $ubam" . "\n";
 warn "Temp directory: $dir_tmp" . "\n";
-warn "Input BAMs: " . join(", ", @{$patient->uBams_revio()}) . "\n\n";
+warn "Input BAMs:\n\t" . join("\n\t", @{$patient->uBams_revio()}) . "\n\n";
 
 
 # Vérifications préliminaires
@@ -85,7 +85,7 @@ if (-e $ubam && !$force) {
 	
 	# Vérifier le nombre de reads dans le BAM existant
 	my ($nb_reads_merged) = `samtools idxstats -@ $threads $ubam` =~ /^\*\t\d+\t\d+\t(\d+)/m;
-#	warn "Nombre de reads ubam mergé : $nb_reads_merged \n";	
+	#warn "Nombre de reads ubam mergé : $nb_reads_merged \n";	
 	
 	if (defined $existing_sm && $existing_sm eq $pname) {
 		warn colored("  Existing SM: '$existing_sm' (matches patient name)", 'green'), "\n";
@@ -231,10 +231,10 @@ foreach my $bam (@{$patient->uBams_revio()}) {
 
 # Phase 4: Merge des BAMs
 warn "=== Phase 4: Merging ===" . "\n\n";
-warn "Merging " . scalar(@final_bams) . " BAM files...";
+warn "Merging " . scalar(@final_bams) . " BAM files...\n";
 my $cmd = "$samtools merge --write-index -f -o $ubam -@ $threads " . join(" ", @final_bams);
 warn "$cmd";
-system($cmd) unless (-e $ubam or $no_exec);
+system($cmd) unless ($no_exec);
 
 # Indexer le BAM final
 #warn "Indexing final BAM...";
@@ -242,16 +242,17 @@ system($cmd) unless (-e $ubam or $no_exec);
 
 # Nettoyer tous les fichiers temporaires
 warn "\n=== Phase 5: Cleanup ===" . "\n\n";
-warn "Cleaning temporary files...";
+warn "Cleaning temporary files...\n";
 foreach my $tmp_file (@temp_files_to_clean) {
 	if (-e $tmp_file) {
 #		warn "  Removing: $tmp_file";
 		unlink($tmp_file) unless $no_exec;
 	}
 }
+warn "\n";
 
 # Phase 4: Vérification du nombre de reads
-warn "=== Phase 4: Final check ===" . "\n\n";
+warn "=== Phase 6: Final check ===" . "\n\n";
 unless ($no_exec and ! -e $ubam) {
 	my ($nb_reads_merged) = `samtools idxstats $ubam` =~ /^\*\t\d+\t\d+\t(\d+)/m;
 	warn "Nombre de reads ubam mergé : $nb_reads_merged \n";	

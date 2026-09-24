@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use FindBin qw($Bin);
@@ -6,31 +6,14 @@ use lib "$Bin/../../../../GenBo/lib/";
 use lib "$Bin/../../../../GenBo/lib/GenBoDB";
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../packages";
-use Logfile::Rotate;
-use Cwd;
-use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
-use IO::Prompt;
-use Sys::Hostname;
 use Parallel::ForkManager;
-use Term::ANSIColor;
-use Moo;
-use file_util;
-use Class::Inspector;
-use Digest::MD5::File ;
 use GBuffer;
 use GenBoProject;
-use colored; 
-use Config::Std;
-use Text::Table;
-use File::Temp qw/ tempfile tempdir /;
-use Term::Menus;
-use Proc::Simple;
-use Storable;
-use JSON::XS;
 use File::Path qw(make_path);
 use Carp;
+use autodie qw(system open);
 
 
 my $projectName;
@@ -54,6 +37,7 @@ die("--project argument is mandatory") unless ($projectName);
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName , -version => $version);
 my $patients = $project->get_only_list_patients($patients_name);
+@$patients = sort {$a->name cmp $b->name} @$patients;
 my $run = $project->getRun();
 my $type = $run->infosRun->{method};
 
@@ -61,7 +45,8 @@ my $dir = $project->getCountingDir('cellranger');
 $dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
 #warn $dir;
 
-my $dirout = "/data-pure/SingleCell/$projectName/";
+my $dirout = '/data-bipd' if ($buffer->biocluster);
+$dirout .= "/data-pure/SingleCell/$projectName/";
 make_path($dirout, { mode => 0775 }) unless (-d $dirout);
 my $error;
 foreach my $patient (@{$patients}) {

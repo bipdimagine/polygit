@@ -148,17 +148,17 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
 	if ( $project->getCaptures->[0]->name =~ /^transcriptome_10X/ and not $sc ) {
-		$sc = 1 if ( prompt( "Is this project SC 10X ? Use SampleSheet10X.csv instead of the document in database ? ", -yes) );
+		$sc = 1 if ( prompt( "Is this project SC 10X or Parse ? Use SampleSheetSC.csv instead of the document in database ? ", -yes) );
 	}
 	if ($sc) {
-		die(    "No SampleSheet10X.csv: '$bcl_dir/SampleSheet10X.csv'."
+		die(    "No SampleSheetSC.csv: '$bcl_dir/SampleSheetSC.csv'."
 			  . "Have you run '$Bin/../../../scripts/scripts_pipeline/cellranger/cellranger_samplesheet.pl' -project=$project_names ?"
-		) unless ( -f $bcl_dir . 'SampleSheet10X.csv' );
-		$aoa = csv( in => $bcl_dir . 'SampleSheet10X.csv' );
+		) unless ( -f $bcl_dir . 'SampleSheetSC.csv' );
+		$aoa = csv( in => $bcl_dir . 'SampleSheetSC.csv' );
 	}
 	next if $aoa;
 	my $csv_tmp = $bcl_dir . "/SP." . time . ".csv";
-	die("no sample sheet in database ") unless ( $run->sample_sheet or -e $bcl_dir . 'SampleSheet10X.csv' );
+	die("no sample sheet in database ") unless ( $run->sample_sheet or -e $bcl_dir . 'SampleSheetSC.csv' );
 	my $toto = $run->sample_sheet;
 
 	#v2
@@ -220,33 +220,31 @@ my $len_cb;
 $len_cb->[0] = length( $lines->{$data_title}->[0]->[$pos_cb1] );
 $len_cb->[1] = length( $lines->{$data_title}->[0]->[$pos_cb2] ) unless ( $pos_cb2 eq '-1' );
 
-#<<<<<<< HEAD
-#foreach my $line ( @{ $lines->{$data_title} } ) {
-#	my $name = $line->[$pos_sample];
-#	next unless exists $hbc->{$name};
-#
-#	my $bc1 = $line->[$pos_cb1];
-#	my $bc2 = "";
-#	unless ( $pos_cb2 eq '-1' ) {
-#		$bc2 = $line->[$pos_cb2];
-#		die("CB de taille differente $name $bc1 - $bc2")
-#		  if ( ( $pos_cb2 ne '-1' ) and ( length($bc1) ne length($bc2) ) );
-#	}
-#
-#	unless ($len_cb) {
-#		warn $name;
-#		$len_cb->[0] = length($bc1);
-#		$len_cb->[1] = length($bc2);
-#	}
-#	die( $len_cb->[0] . " $name ::  $bc1 " . length($bc1) )
-#	  if $len_cb->[0] ne length($bc1);
-#=======
+foreach my $line ( @{ $lines->{$data_title} } ) {
+	my $name = $line->[$pos_sample];
+	next unless exists $hbc->{$name};
 
-foreach my $data ( @{ $lines->{$data_title} } ) {
-	next unless $data->[$pos_cb1];
-	#v2
-	die( $len_cb->[0] . " ::  " . $data->[$pos_cb1] ) if $len_cb->[0] ne length( $data->[$pos_cb1] );
-	die("CB de taille differente") if ( ( $pos_cb2 ne '-1' ) and ( $len_cb->[1] ne length( $data->[$pos_cb2] ) ) );
+	my $bc1 = $line->[$pos_cb1];
+	my $bc2 = "";
+	unless ( $pos_cb2 eq '-1' ) {
+		$bc2 = $line->[$pos_cb2];
+		die("CB de taille differente $name $bc1 - $bc2")
+		  if ( ( $pos_cb2 ne '-1' ) and ( length($bc1) ne length($bc2) ) );
+	}
+
+	unless ($len_cb) {
+		warn $name;
+		$len_cb->[0] = length($bc1);
+		$len_cb->[1] = length($bc2);
+	}
+	die( $len_cb->[0] . " $name ::  $bc1 " . length($bc1) )
+	  if $len_cb->[0] ne length($bc1);
+
+#foreach my $data ( @{ $lines->{$data_title} } ) {
+#	next unless $data->[$pos_cb1];
+#	#v2
+#	die( $len_cb->[0] . " ::  " . $data->[$pos_cb1] ) if $len_cb->[0] ne length( $data->[$pos_cb1] );
+#	die("CB de taille differente") if ( ( $pos_cb2 ne '-1' ) and ( $len_cb->[1] ne length( $data->[$pos_cb2] ) ) );
 }
 
 my $guess_mask;
@@ -498,8 +496,7 @@ while ( $checkComplete == 1 ) {
 }
 system("mkdir $dir_bcl_tmp") unless -e $dir_bcl_tmp;
 my $rsync_cmd = "rsync -rav --no-times --size-only $bcl_dir $dir_bcl_tmp ";    # --temp-dir=/data-pure/testfs-bipd/tmpDemul
-  $rsync_cmd = "rclone copy --local-no-set-modtime $bcl_dir/ $dir_bcl_tmp/ --progress --transfers 16 --checkers 32";
-#  rclone copy /data-dragen/bcl/20260807_LH00788_0292_A23LWYWLT3 /data-beegfs/tmp/run_7579.NGS2026_108031787216034.69438/  --progress --transfers 16 --checkers 32
+$rsync_cmd = "rclone copy --local-no-set-modtime $bcl_dir/ $dir_bcl_tmp/ --progress --transfers 16 --checkers 32";
 warn $rsync_cmd;
 my $exit_rsync = system($rsync_cmd);
 warn $exit_rsync;
@@ -522,21 +519,17 @@ warn $cmd;
 
 my $exit = 0;
 warn qq{$Bin/../run_dragen.pl -cmd="$cmd"};
-#die;
 $exit = system(qq{$Bin/../run_dragen.pl -cmd="$cmd"});
 die() if $exit ne 0;
-#exit(0);
 warn "END DEMULTIPEX \n let's copy ";
 my $fork = 6;
 my $pm   = new Parallel::ForkManager($fork);
 my $dir_stats;
-	my $buffer  = GBuffer->new();
+my $buffer  = GBuffer->new();
 foreach my $p (values %$obj_patient){
 	
 	my $project = $p->project;
 	$project->{buffer} = $buffer;
-	warn $project;
-	warn $project->buffer;
 	$p->{buffer} = $buffer;
 	my $runs    = $project->getRuns;
 	my $run;
@@ -548,6 +541,7 @@ foreach my $p (values %$obj_patient){
 	}
 	$dir_stats = $buffer->config_path("root","project_data")."/ngs/demultiplex/";
 	my $out_fastq = $run->fastq_dir();
+	system("mkdir $out_fastq ; chmod g+rwx $out_fastq ") unless ( -d $out_fastq );
 	my $pid = $pm->start and next;
 	my ( $fastq1, $fastq2 ) = dragen_util::get_fastq_file( $p, $out_fastq, $dir_out,"delete" );
 	warn $fastq1 . " " . $fastq2;

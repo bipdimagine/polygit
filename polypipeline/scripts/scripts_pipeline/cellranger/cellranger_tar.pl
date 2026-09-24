@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use FindBin qw($Bin);
@@ -6,30 +6,13 @@ use lib "$Bin/../../../../GenBo/lib/";
 use lib "$Bin/../../../../GenBo/lib/GenBoDB";
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../packages";
-use Logfile::Rotate;
-use Cwd;
-use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
 use IO::Prompt;
-use Sys::Hostname;
-use Parallel::ForkManager;
-use Term::ANSIColor;
-use Moo;
-use file_util;
-use Class::Inspector;
-use Digest::MD5::File ;
 use GBuffer;
 use GenBoProject;
-use colored; 
-use Config::Std;
-use Text::Table;
-use File::Temp qw/ tempfile tempdir /;
-use Term::Menus;
-use Proc::Simple;
-use Storable;
-use JSON::XS;
 use Carp;
+use autodie qw(system open);
 
 
 my $projectName;
@@ -57,9 +40,10 @@ die("--project argument is mandatory") unless ($projectName);
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName , -version => $version);
 my $patients = $project->getPatients($patients_name);
+@$patients = sort {$a->name cmp $b->name} @$patients;
 my $run = $project->getRun();
 my $type = $run->infosRun->{method};
-
+$multi = 1 if (grep {$_->getSampleProfile =~ /flex$/} @$patients);
 my $dir = $project->getCountingDir('cellranger');
 $dir = $project->getCountingDir('spaceranger') if ($type eq 'spatial');
 warn $dir;
@@ -72,7 +56,7 @@ if ($archive_name) {
 	$archive_name .= '.tar.gz' unless ($archive_name =~ /\.tar\.gz$/);
 }
 else {
-	$archive_name = '$projectName.tar.gz';
+	$archive_name = "$projectName.tar.gz";
 }
 
 my $tar_cmd = "cd $dir && tar -cvzf $archive_name ";
@@ -88,8 +72,8 @@ elsif ($multi) {
 }
 else {
 	$tar_cmd .= "*/web_summary.html ";
-	$tar_cmd .= "*/cloupe.cloupe */*_bc_matrix.h5 " if (grep (! /vdj/i, @groups));
-	$tar_cmd .= "VDJ_*/* " if ($all_vdj and grep (/vdj/i, @groups));
+	$tar_cmd .= "*/cloupe.cloupe */*_bc_matrix.h5 " if (grep (! /vdj|atac/i, @groups));
+	$tar_cmd .= "*VDJ*/* " if ($all_vdj and grep (/vdj/i, @groups));
 	$tar_cmd .= "*/vloupe.vloupe " if (grep (/vdj/i, @groups) and not $all_vdj);
 	$tar_cmd .= "*/possorted_bam.bam* " if ($create_bam and $create_bam ne 'false');
 	$tar_cmd .= "*/fragments.tsv.gz* */peak_annotation.tsv */singlecell.csv " if (grep {/ATAC/i} @groups);
@@ -105,12 +89,12 @@ if (-e $dir.$archive_name and !$no_exec) {
 }
 unless ($no_exec){
 	my $exit = system ($tar_cmd);
-	die("Error while making the archive") if ($exit);
+	die("Error while making the archive") if ($exit or ! -e $dir.$archive_name);
 	print "\t------------------------------------------\n";
 #	print "\tlink to send to the users : \n";
 #	print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
 	print "\tArchive to send to the users : \n";
-	print "\t$dir$archive_name\n" if (-e "$dir$archive_name");
+	print "\t$dir$archive_name\n";
 	print "\t------------------------------------------\n\n";
 }
 
