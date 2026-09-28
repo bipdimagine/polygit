@@ -94,7 +94,31 @@ unless ($no_exec){
 #	print "\tlink to send to the users : \n";
 #	print "\twww.polyweb.fr/NGS/$projectName/$projectName.tar.gz \n";
 	print "\tArchive to send to the users : \n";
-	print "\t$dir$archive_name\n";
+	print "\t$dir$archive_name\t(".format_size(-s $dir.$archive_name).")\n";
 	print "\t------------------------------------------\n\n";
+}
+
+
+
+sub format_size {
+    my ($bits) = @_;
+    
+    return "0 B" if $bits == 0;
+    
+    my @units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB');
+    my $unit_index = 0;
+    my $size = $bits;
+    
+    while ($size >= 1024 && $unit_index < $#units) {
+        $size /= 1024;
+        $unit_index++;
+    }
+    
+    # Formater avec une précision adaptée
+    if ($size == int($size)) {
+        return sprintf("%d%s", $size, $units[$unit_index]);
+    } else {
+        return sprintf("%.1f%s", $size, $units[$unit_index]);
+    }
 }
 

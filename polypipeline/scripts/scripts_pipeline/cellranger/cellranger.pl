@@ -129,8 +129,10 @@ warn 'steps='.join(',',@steps);
 $create_bam = 1 if (grep(/velocyto/i, @steps) or grep (/velocyto/, map($_->getCallingMethods, @$patients)));
 
 
-my $run = $project->getRun();
+my $runs = $project->getRuns();
+my $run = $runs->[0];
 my $run_name = $run->plateform_run_name;
+warn $run_name;
 my $type = $run->infosRun->{method};
 #my $machine = $run->infosRun->{machine};
 
