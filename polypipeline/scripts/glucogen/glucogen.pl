@@ -52,7 +52,10 @@ die('Enter a project name') unless ($project_name);
 my $project = $buffer->newProject( -name => $project_name );
 warn $project_name;
 my $project_desc = $project->description;
-confess ("Project $project_name is not glucogen project. Check capture and description.\n$project_desc\nIs genome? ".$project->isGenome) unless ($project_desc =~ /glucogen/i and $project->isGenome);
+confess ("Project $project_name \"$project_desc\" seems to be a diabetome project. Use -diabetome_project=$project_name and complete -genome_project with the WGS back-up project:
+	WGS backup project for Pitié -> NGS2025_09501,\n\tWGS backup project for Lyon -> NGS2025_09502,\n\tWGS backup project for Toulouse -> NGS2025_09317\n")
+	if ($project_desc =~ /diabetome/i and grep {$_->name eq 'DIABETomeV1_hg38'} @{$project->getCaptures} and $project_name !~ /NGS2025_09(501|502|317)/);
+confess ("Project $project_name is not glucogen project. Check capture and description.\n\tDesc: $project_desc\n\tIs genome?: ".$project->isGenome) unless ($project_desc =~ /glucogen/i and $project->isGenome);
 my $patients = $project->get_only_list_patients($patient_names);
 die("No patient in project ".$project_name."\n") unless ($patients);
 @$patients = sort {$a->name cmp $b->name} @$patients;
@@ -65,8 +68,10 @@ die('Enter a site: pitie, lyon or toul') unless ($site);
 if ($diabetome_project_name) {
 	my $diabetome_project = $buffer->newProject( -name => $diabetome_project_name );
 	$project_desc = $diabetome_project->description;
-	confess ('Diabetome project $diabetome_project_name is not diabetome. Check capture and description.') 
+	confess ("Diabetome project $diabetome_project_name is not diabetome. Check capture and description.") 
 		unless ($project_desc =~ /glucogen/i and $project_desc =~ /diabetome/i and grep {$_->name eq 'DIABETomeV1_hg38'} @{$diabetome_project->getCaptures});
+	confess ("-genome_project expexted to be one of the 3 WGS backup project for diabetome patients:
+		WGS backup project for Pitié -> NGS2025_09501,\n\tWGS backup project for Lyon -> NGS2025_09502,\n\tWGS backup project for Toulouse -> NGS2025_09317\n") unless ($project_name =~ /NGS2025_09(501|502|317)/);
 	$project_desc =~ /(pitie|lyon|toul)/i;
 	$site = lc($1) unless ($site);
 	confess("Sites not matching between genome project $project_name ($site) and diabetome project $diabetome_project_name ($1)") unless ($1 and $site eq lc($1));
@@ -93,9 +98,16 @@ $set = $1 unless ($set);
 die('Enter a set number > 0') unless ($set > 0);
 warn 'Set '.$set;
 
+# Ajoute calling MT
+my @calling_methods = map{values @{$_->callingMethods}} @$patients;
+if (grep {/mutect_my/} @calling_methods != scalar @$patients) {
+	warn("Adding calling MT");
+	system("add_calling_method.sh -project=$project_name -methods=mutect_mt");
+}
+
 # Vérifie qu'il y a bien les 3 méthodes de calling SV
 my @SVmethods = map{values @{$_->callingSVMethods}} @$patients;
-if (grep {/canvas|manta|wisecondor/} @SVmethods == 3*scalar @SVmethods and $project->isGenome) {
+if (grep {/canvas|manta|wisecondor/} @SVmethods != 3*scalar @$patients and $project->isGenome) {
 	warn("Adding SV methods for genomes");
 	system("add_calling_method.sh -project=$project_name -methods=canvas,manta,wisecondor");
 }

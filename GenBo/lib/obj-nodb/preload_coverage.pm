@@ -103,8 +103,7 @@ foreach my $patient (@$patients){
 
 sub load_coverage_regions_dup{
 	my ($project,$patients,$transcripts,$print) = @_;
-	my $no =  $project->noSqlCoverage();
-	
+	my $no =  $project->noSqlCoverage("w");
 	my $hash_dup={};
 	#$hash_dup->{$transcript->getChromosome->ucsc_name} = Set::IntSpan::Fast::XS->new();
 	my $buffer1 = GBuffer->new();
