@@ -13,6 +13,8 @@ use lib "$Bin/../../../polypipeline/dragen/scripts/";
 use autodie qw(system open);
 use dragen_util;
 use GBuffer;
+use Term::Menus;
+use Carp;
 
 my $projectName;
 my $parent_project_name;
@@ -40,8 +42,8 @@ GetOptions(
 	'steps|mode=s{1,}'			=> \@steps,
 	'run=s'						=> \$run_name_option,
 	'mismatch=s'				=> \$mismatch,
-	'kit=s'						=> \$kit,
-	'chemistry=s'				=> \$chem,
+#	'kit=s'						=> \$kit,
+#	'chemistry=s'				=> \$chem,
 	'sample_list=s'				=> \$sample_list,
 	'sample_table=s'			=> \$sample_loading_table,
 	'bcr'						=> sub{ $analysis = 'bcr' },
@@ -59,20 +61,31 @@ GetOptions(
 usage() if ($help);
 warn ("--project option is mandatory\n") && usage() unless ($projectName);
 #warn ("--analysis should be 'tcr' or 'bcr' or empty for WT analysis\n") && usage() unless ($analysis == undef or $analysis =~ /^bct|tcr$/);
-if( grep {/sublib|com|all/} @steps) {
-	unless ($analysis) {
-		warn ("--kit option is mandatory except for TCR/BCR analysis\n") && usage() unless ($kit);
-		my @possible_kits = qw(WT_mini WT WT_mega WT_mega_384 WT_penta WT_penta_384);
-		warn ("--kit should be one of '".join("','",@possible_kits)."' , given '$chem'\n") && usage() unless ( grep($kit, @possible_kits));
-	#	$chem = 'v3' if (grep(/$kit/, qw(WT_mega_384 WT_penta WT_penta_384)));
-	}
-	warn ("--chemistry option is mandatory\n") && usage() unless ($chem and not grep {/sublib|com|all/} @steps);
-	warn ("--chemistry should be one of ('v1','v2','v3'), given '$chem'\n") && usage() unless ( grep($chem, ('v1','v2','v3')) );
-	warn ("--parent_project option is mandatory for BCR/TCR analysis\n") && usage() if ($analysis =~ /^bcr|tcr$/i and not $parent_project_name);
+
+# Steps
+@steps = split(/,/, join(',',@steps));
+my @list_steps = qw(demultiplex sublib comb tar cp cp_summaries all);
+my @correct_steps = grep{/@steps/} @list_steps;
+my @incorrect_steps = grep{!/@steps/} @correct_steps;
+if (scalar @incorrect_steps) {
+	warn "One or more step(s) is incorrect: ".join(', ', @incorrect_steps);
+	sleep(3);
+	undef @steps;
 }
-warn ("Sample list '$sample_list' doesn't exist\n") && usage() if ( $sample_list and not -e $sample_list );
-warn ("Sample loading table '$sample_loading_table' doesn't exist\n") && usage() if ( $sample_loading_table and not -e $sample_loading_table );
-@steps = qw{sublib comb} unless (scalar @steps);
+unless (@steps) {
+	my %Menu_1 = (
+		Item_1 => {
+			Text   => "]Convey[",
+			Convey => \@list_steps,
+		},
+		Select => 'Many',
+		Banner => "   Select steps:"
+	);
+	@steps = &Menu( \%Menu_1 );
+	die if ( @steps eq ']quit[' );
+}
+warn 'steps='.join(',',@steps);
+#@steps = qw{sublib comb} unless (scalar @steps);
 
 
 
@@ -80,39 +93,60 @@ my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $projectName );
 my $parent_project = $buffer->newProject( -name => $parent_project_name ) if ($analysis =~ /^bcr|tcr$/i);
 my $dir_pipeline = $project->getAlignmentPipelineDir("split-pipe");
-#my $dir = $project->getProjectRootPath;
 my $dir = $project->getCountingDir("split-pipe");
 my $index = $project->getGenomeIndex("split-pipe");
-my %sublib;
 my $release = $project->annotation_genome_version;
-
-#my $sample_list = get_plate_des($project);
-
-my $runs = $project->getRuns;
-my $run;
-if (scalar(@$runs) > 1){
-	unless ($run_name_option){
-		die ("You have ".scalar(@$runs)." runs in the project $projectName. You have to choose one and add --run on the command line\n"
-		. map {$_->plateform_run_name." ".$run->date."\n"} @$runs);
-	}
-	($run) = grep{$_->plateform_run_name eq "$run_name_option"} @$runs;
-	die("Unable to find $run_name_option ".$projectName) unless ($run);
-}
-else {
-	$run = $runs->[0];
-}
 
 my $all_patients = $project->getPatients;
 die("Project $projectName is empty: no patient in project $projectName") unless (scalar @$all_patients);
 my $patients = $project->get_only_list_patients($patients_name);
 die("No patient $patients_name in project $projectName") unless $patients;
 
+# Vérification des options
+my ($kit, $chem);
+my $run;
+if( grep {/sublib|com|all/} @steps) {
+	my %chemistries;
+	map {$chemistries{$_->getChemistry} ++ } @$patients;
+	confess ("All patients don't have the same chemistry") if (scalar keys %chemistries > 1);
+	my ($chemistry) = keys %chemistries;
+	confess("No chemistry. Please fill the chemistry column in PolyProject") unless ($chemistry);
+	($kit, $chem) = split /-/, $chemistry;
+	warn 'kit='.$kit;
+	confess("No kit.") unless ($kit);
+	warn ("--kit option is mandatory except for TCR/BCR analysis\n") && usage() unless ($kit);
+	my @possible_kits = qw(WT_mini WT WT_mega WT_mega_384 WT_penta WT_penta_384);
+	warn ("--kit should be one of '".join("','",@possible_kits)."' , given '$chem'\n") && usage() unless ( grep($kit, @possible_kits));
+	#	$chem = 'v3' if (grep(/$kit/, qw(WT_mega_384 WT_penta WT_penta_384)));
+	warn 'chemistry='.$chem;
+	warn ("--chemistry option is mandatory\n") && usage() unless ($chem);
+	warn ("--chemistry should be one of ('v1','v2','v3'), given '$chem'\n") && usage() unless ( grep($chem, ('v1','v2','v3')) );
+	warn ("--parent_project option is mandatory for BCR/TCR analysis\n") && usage() if ($analysis =~ /^bcr|tcr$/i and not $parent_project_name);
+	warn ("Sample list '$sample_list' doesn't exist\n") && usage() if ( $sample_list and not -e $sample_list );
+	warn ("Sample loading table '$sample_loading_table' doesn't exist\n") && usage() if ( $sample_loading_table and not -e $sample_loading_table );
+
+	unless ($sample_loading_table or $sample_list) {
+		#my $sample_list = get_plate_des($project);
+		my $runs = $project->getRuns;
+		if (scalar(@$runs) > 1){
+			unless ($run_name_option){
+				die ("You have ".scalar(@$runs)." runs in the project $projectName. You have to choose one and add --run on the command line\n"
+				. map {$_->plateform_run_name." ".$run->date."\n"} @$runs);
+			}
+			($run) = grep{$_->plateform_run_name eq "$run_name_option"} @$runs;
+			die("Unable to find $run_name_option ".$projectName) unless ($run);
+		}
+		else {
+			$run = $runs->[0];
+		}
+	}
+}
 
 
 #-----------------------------
 # Dragen demultiplex
 #-----------------------------
-if (grep {/^demultiplex|^demux|^all$/} @steps) {
+if (grep {/^demultiplex|^demux/} @steps) {
 	my @patient_names = map{$_->name} @$patients;
 	my $cmd_demux = "$Bin/../scripts_pipeline/cellranger/cellranger_samplesheet.pl -project $projectName -mismatch $mismatch";
 	$cmd_demux .= "-no_exec " if ($no_exec);
@@ -227,7 +261,7 @@ if (grep {/^sublib(rar(y|ies))?|^all$/} @steps) {
 	$cmd_ws =~ s/^firefox/google-chrome/ if (getpwuid($<) eq 'shanein');
 	warn $cmd_ws if (-f $analysis_summary);
 	system($cmd_ws.' &') if (-f $analysis_summary and not $no_exec);
-	die("Web summary not found: $analysis_summary") unless (-f $analysis_summary and not $no_exec);
+	die("Web summary not found: $analysis_summary") unless (-f $analysis_summary or $no_exec);
 
 	unless ($no_exec) {
 		print "\t------------------------------------------\n";
@@ -285,7 +319,7 @@ if (grep {/^comb(ine)?|^all$/} @steps) {
 	$cmd_ws =~ s/^firefox/google-chrome/ if (getpwuid($<) eq 'shanein');
 	warn $cmd_ws if (-f $analysis_summary);
 	system($cmd_ws.' &') if (-f $analysis_summary and not $no_exec);
-	die("Web summary not found: $analysis_summary") unless (-f $analysis_summary and not $no_exec);
+	die("Web summary not found: $analysis_summary") unless (-f $analysis_summary or $no_exec);
 
 	unless ($no_exec) {
 		print "\t------------------------------------------\n";
@@ -300,7 +334,7 @@ if (grep {/^comb(ine)?|^all$/} @steps) {
 #-----------------------------
 # TAR
 #-----------------------------
-if (grep {/^tar|^all$/} @steps) {
+if (grep {/^tar$|^all$/} @steps) {
 	my @patient_names = map{$_->name} @$patients;
 	my $cmd_tar = "cd $dir/comb && tar -cvzf ../$projectName.tar.gz *";
 	warn($cmd_tar);
@@ -330,7 +364,7 @@ if (grep {/^cp$/} @steps) {
 #-----------------------------
 # CP analysis summaries
 #-----------------------------
-if (grep {/^cp(_analysis|_web)?_summar(y|ies)$/} @steps) {
+if (grep {/^cp(_analysis|_web)?_summar(y|ies)$|^all$/} @steps) {
 	my @patient_names = map{$_->name} @$patients;
 	my $dirout = '/data-bipd' if ($buffer->biocluster);
 	$dirout .= "/data-pure/SingleCell/$projectName/";
@@ -404,10 +438,6 @@ $0
 -------------------
 Obligatoires:
 	project <s>			Nom du projet
-	chemistry <s>			Version de la chimie
-					Valeurs possibles: 'v1', 'v2', 'v3'
-	kit <s>				Version du kit. Obligatoire sauf pour l'analyse de BCR ou TCR.
-					Valeurs possibles: 'WT_mini', 'WT', 'WT_mega', 'WT_mega_384', 'WT_penta', 'WT_penta_384'
 	
 Optionnels:
 	patients <s>			Noms de patients/échantillons, séparés par des virgules (utilisé seulement pour l'étape 'sublib'
@@ -416,9 +446,9 @@ Optionnels:
 					sublib -> analyse des sublibrairies individuellement (split-pipe --mode all),
 					comb -> combine les données traitées de chaque sublibrairie (split-pipe --mode comb)
 					tar -> fait une archive du dossier comb
-					cp ?
-					cp_summary ?
-					all = sublib, comb, tar
+					cp -> copie le dossier comb dans le répertoire partagé de la SingleCell
+					cp_summaries -> copie les analysis_summary.html (de l'étape comb) dans le répertoire partagé de la SingleCell
+					all = sublib, comb, tar, cp_summaries
 					par défaut: sublib, comb
 	run <s>				Numéro du run si le projet en contient plusieurs (utilisé pour récupérer la plan de plaque)
 	sample_list <s>			Liste des échantillons et de leurs puis correspondants, séparés par un espace.
@@ -439,6 +469,10 @@ Optionnels:
 
 ";
 	exit(1);
+#	chemistry <s>			Version de la chimie
+#					Valeurs possibles: 'v1', 'v2', 'v3'
+#	kit <s>				Version du kit. Obligatoire sauf pour l'analyse de BCR ou TCR.
+#					Valeurs possibles: 'WT_mini', 'WT', 'WT_mega', 'WT_mega_384', 'WT_penta', 'WT_penta_384'
 
 }
 

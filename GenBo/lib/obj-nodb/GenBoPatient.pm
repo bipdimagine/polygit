@@ -833,6 +833,12 @@ sub getLane {
 	return $query->getPatientLane($self->id);
 }
 
+sub getChemistry {
+	my ($self) = shift;
+	my $query = $self->getProject()->buffer->getQuery();
+	return $query->getPatientChemistry($self->id);
+}
+
 has 'uBams_revio' => (
 	is => 'ro',
 
@@ -849,7 +855,7 @@ has 'uBams_revio' => (
 		$run =~ s/\,/_/g;
 		warn $smartcells;
 		foreach my $sc (split(",",$smartcells)){
-			$hash->{$run}->{$sc} = lc($codebare);
+			$hash->{$run}->{$sc} = $codebare =~ s/^BC/bc/r;
 		}
 		
 	}
