@@ -51,6 +51,7 @@ my $htr = {
  'spliceAI' => "INTEGER",
  'ncboost_score' => "VARCHAR",
  'promoterAI_score' => "VARCHAR",
+ 'alphagenome' => "INTEGER",
  'codons_AA' => 'VARCHAR',
  'nm' => 'VARCHAR',
  'genome_version_predicted_link' => 'VARCHAR'
@@ -152,7 +153,8 @@ has columns_global  =>(
                  'start' => 10147,
                  'dejavu_similar_patients_ho' => 0,
                  'global_vector_id' => '1!0',
-                 'gnomad_ac' => 10095
+                 'gnomad_ac' => 10095,
+                 'alphagenome' => -99
 	};
 	my @column_global;
 	push(@column_global,sort{$a cmp $b} keys %$hglobal); 
@@ -319,6 +321,7 @@ sub get_polyviewer_variant {
 	my $v = $self->rocksdb($chr,$self->patient->getFamily->id)->get($id);
 	die($id) unless $v;
 	my $vp = PolyviewerVariant->new() ;
+	my $alphagenome = $vp->{alphagenome};
      	foreach my $c (@{$self->columns("variants")}){
      		$vp->{$c} = shift @{$v->[0]};
      	}
