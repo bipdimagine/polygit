@@ -61,6 +61,10 @@ my @steps = ("pbmm2","deepvariant","binary_depth","sawfish","wisecondor","spectr
 			my $cmd_deepvariant = qq{$dir_pipeline_script/deepvariant.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
 			 $slurm->add_job({cmd=>$cmd_deepvariant,name=>"deep!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
 	}
+	unless (-e $patient->getFileName("deepvariant")){
+			my $cmd_deepvariant = qq{$dir_pipeline_script/deepvariant.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
+			 $slurm->add_job({cmd=>$cmd_deepvariant,name=>"deep!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
+	}
 	unless (-e $patient->getFileName("binary_depth")){
 			my $cmd_coverage = qq{perl $dir_pipeline_script/../coverage_genome.pl -project=$project_name -patient=$patient_name -fork=$fork -$stforce};
 			$slurm->add_job({cmd=>$cmd_coverage,name=>"binary-depth!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
@@ -95,5 +99,4 @@ my @steps = ("pbmm2","deepvariant","binary_depth","sawfish","wisecondor","spectr
 }
 
 $slurm->print_jobs();
-die();
 $slurm->run_slurm;
