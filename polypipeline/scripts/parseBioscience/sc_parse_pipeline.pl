@@ -202,7 +202,7 @@ if (grep {/^sublib(rar(y|ies))?|^all$/} @steps) {
 #			$subcmd .= " -B $parent_dir";
 		}
 #		$subcmd .= " -B $dir_pipeline /data-bipd/data-pure/software/SINGULARITY/splitpipe.1.5.1.sif split-pipe --mode all";
-		$subcmd = " $splitpipe --mode all" ;
+		$subcmd .= " $splitpipe --mode all" ;
 		$subcmd .= " --chemistry $chem ";
 		if ($analysis =~ /^bcr|tcr$/) {
 			$subcmd .= " --$analysis\_analysis";
@@ -250,19 +250,27 @@ if (grep {/^sublib(rar(y|ies))?|^all$/} @steps) {
 	}
 #	$pm->wait_all_children();
 	close ($jobs_sublib);
+	sleep(5);
 	my $exit = system("cat $dir/jobs_sublib.txt | run_cluster.pl -cpu=$cpu") unless ($no_exec);
 	die if ($exit);
 	warn "\n";
 	
-	#sublibraries/Sublibrary_1/all-sample_analysis_summary.html
-	# Open web summary
-	my $analysis_summary = $dir.'sublibraries/all-sample_analysis_summary.html';
+	# Open analysis summary
+	my @error;
+	my $analysis_summary = '';
+	#my $analysis_summary = join(' ', map{$dir.'sublibraries/'.$_->name.'/all-sample_analysis_summary.html'} sort {$a->name cmp $b->name} @$patients);
+	foreach my $sublib (sort {$a->name cmp $b->name} @$patients) {
+		#sublibraries/Sublibrary_1/all-sample_analysis_summary.html
+		my $file = $dir.'sublibraries/'.$sublib.'/all-sample_analysis_summary.html';
+		$analysis_summary .= $file.' ' if (-e $file);
+		push(@error, $file) unless (-e $file or $no_exec);
+	}
 	my $cmd_ws = "firefox ".$analysis_summary;
 	$cmd_ws =~ s/^firefox/google-chrome/ if (getpwuid($<) eq 'shanein');
-	warn $cmd_ws if (-f $analysis_summary);
-	system($cmd_ws.' &') if (-f $analysis_summary and not $no_exec);
-	die("Web summary not found: $analysis_summary") unless (-f $analysis_summary or $no_exec);
-
+	warn $cmd_ws if ($analysis_summary);
+	system($cmd_ws.' &') if ($analysis_summary and not $no_exec);
+	die('Analysis summaries not found: '.join(',', @error)) if (@error and not $no_exec);
+	
 	unless ($no_exec) {
 		print "\t------------------------------------------\n";
 		print("\tCheck the analysis summary:\n");
@@ -313,13 +321,13 @@ if (grep {/^comb(ine)?|^all$/} @steps) {
 	die if ($exit);
 	warn "\n";
 	
-	# Open web summary
+	# Open analysis summary
 	my $analysis_summary = $dir.'comb/all-sample_analysis_summary.html';
 	my $cmd_ws = "firefox ".$analysis_summary;
 	$cmd_ws =~ s/^firefox/google-chrome/ if (getpwuid($<) eq 'shanein');
 	warn $cmd_ws if (-f $analysis_summary);
 	system($cmd_ws.' &') if (-f $analysis_summary and not $no_exec);
-	die("Web summary not found: $analysis_summary") unless (-f $analysis_summary or $no_exec);
+	die("Analysis summary not found: $analysis_summary") unless (-f $analysis_summary or $no_exec);
 
 	unless ($no_exec) {
 		print "\t------------------------------------------\n";
