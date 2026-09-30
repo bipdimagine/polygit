@@ -89,7 +89,7 @@ my $buffer  = new GBuffer;
 $buffer->vmtouch(1);
 my $project = $buffer->newProjectCache( -name => $project_name );
 my $dir_tmp_cvs =  $project->getCallingPipelineDir($project->name.".parquet.".time);
-
+#die($dir_tmp_cvs);
 
 ##################
 #construct_sql 
