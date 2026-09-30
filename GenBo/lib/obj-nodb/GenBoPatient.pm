@@ -772,6 +772,18 @@ has callingSVMethods => (
 	},
 );
 
+sub getCallingCNVMethodsType {
+	my ($self,$type) = @_;
+	my @res;
+	foreach my $m (@{$self->callingSVMethods}) {
+		warn $m;
+		warn $self->buffer->type_by_caller_sv_name($m);
+		warn "++++";
+		next if $self->buffer->type_by_caller_sv_name($m) ne $type;
+		push(@res,$m);
+	}
+	return \@res;
+}
 
 has callingCNVMethods => (
 	is      => 'rw',
@@ -906,6 +918,7 @@ has 'uBam' => (
 
 	},
 );
+
 sub setRuns {
 	my $self = shift;
 	$self->getProject->getRuns();
@@ -1694,6 +1707,7 @@ sub fastqFiles{
 	require "$pm";
 	my $files = fastq::find_file_pe($self);
 	$self->{fastq} = $files;
+	
 	return $self->{fastq};
 }
 
@@ -2193,8 +2207,11 @@ sub getFileName {
 		elsif ($step eq "calling_wisecondor") {
 			return $self->project->getCallingPipelineDir("wiseCondor")."/".$self->name."_aberrations.bed";
 		}
-		elsif ($step eq "deepvariant" or $step eq "melt" or $step eq "duplicate_region_calling" or $step =~ /freebayes/i) {
+		elsif ($step eq "deepvariant" or $step eq "melt" or $step eq "duplicate_region_calling" or $step =~ /freebayes/i or $step eq "sawfish" or $step eq "spectre" or $step eq "hificnv") {
 			return $self->vcfFileName($step);
+		}
+		elsif ($step eq "pbmm2" or $step eq "dragen-align" or $step eq "bwa") {
+			return $self->getCramFileName();
 		}
 		elsif ($step eq "coverage"){
 			return $self->getCoverageFileName();
@@ -2473,8 +2490,10 @@ sub getTranscriptsDude {
 sub depth {
 	my ( $self, $chr_name, $start, $end ) = @_;
 	return -1 if $self->isNoAlign();
+	
 	my $chr   = $self->project->getChromosome($chr_name);
 	my $array = $self->getNoSqlDepth->getDepth( $chr->name, $start, $end );
+	
 	return $array;
 }
 
@@ -2505,7 +2524,6 @@ sub normalize_depth {
 	my $chr   = $self->project->getChromosome($chr_name);
 	my $array = $self->getNoSqlDepth->getDepth( $chr->name, $start, $end );
 	my $res;
-	
 	foreach my $s1 (@$array){
 		push(@$res, int($s1/$self->normalized_reads));# *100)/100);
 	}
@@ -2514,8 +2532,9 @@ sub normalize_depth {
 sub meanDepth {
 	my ( $self, $chr, $start, $end ) = @_;
 	return -1 if $self->isNoAlign();
+	return -1 if $start <0;
 	my $a = $self->depth($chr,$start,$end);
-	warn $self->getBamFile." ".$chr.":".$start."-".$end unless @$a;
+	#confess($start." ".$end) if $start <0 ;
 	return -1 unless @$a;
 	my $t = sum(@$a);
 	return $t/scalar(@$a);
@@ -3468,8 +3487,12 @@ has nb_reads => (
 				my $chr = $self->project->getChromosome($a,1);
 				if ($chr){
 					
-				#next unless $chr;
+				#next unless $chr
 					$h->{ $chr->name } = $b if $chr;
+				
+					#if ($self->isMale && $chr->name eq 'X'){
+					#	$h->{ $chr->name } = $b * 2;
+					#}
 				}
 			};
 
