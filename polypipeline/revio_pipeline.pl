@@ -76,6 +76,8 @@ my @steps = ("pbmm2","deepvariant","binary_depth","sawfish","wisecondor","spectr
 			my $cmd_wsiecondor = qq{$dir_pipeline_script/wisecondor.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
 			$wise_id = $slurm->add_job({cmd=>$cmd_wsiecondor,name=>"wise1!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
 	}
+	#warn  $patient->getFileName("spectre");
+	#die();
 	unless (-e $patient->getFileName("spectre")){
 			my $cmd_wsiecondor = qq{$dir_pipeline_script/spectre.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
 			$wise_id = $slurm->add_job({cmd=>$cmd_wsiecondor,name=>"spectre!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});

@@ -2211,7 +2211,7 @@ sub getFileName {
 			return $self->fileWiseCondor();
 		}
 		elsif ($step eq "calling_wisecondor") {
-			return $self->project->getCallingPipelineDir("wiseCondor")."/".$self->name."_aberrations.bed";
+			return $self->project->getVariationsDir("wisecondor")."/".$self->name."_aberrations.bed.gz";
 		}
 		elsif ($step eq "deepvariant" or $step eq "melt" or $step eq "duplicate_region_calling" or $step =~ /freebayes/i or $step eq "sawfish" or $step eq "spectre" or $step eq "hificnv") {
 			return $self->vcfFileName($step);
