@@ -970,6 +970,8 @@ sub return_hashes_variants_in_session_export {
 			$h->{'gnomad ho'} = $var->getGnomadHO();
 			$h->{'ncboost_score'} = '-';
 			$h->{'ncboost_score'} = $var->ncboost_score() if defined $var->ncboost_score();
+			$h->{'alphagenome'} = '-';
+			$h->{'alphagenome'} = $var->alphagenome() if defined $var->alphagenome();
 			$h->{'cosmic'} = '-';
 			$h->{'cosmic'} = $var->cosmic() if $var->cosmic();
 			$h->{'hgmd_class'} = undef;

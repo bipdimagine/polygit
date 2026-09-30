@@ -285,6 +285,11 @@ has other_genes  => (
 has rocksdb_id => (
 	is		=> 'rw',
 );
+
+has alphagenome => (
+	is		=> 'rw',
+);
+
 #GNOMAD 
 
 
@@ -725,6 +730,7 @@ sub set_intergenic {
 	$htr->{spliceAI} = -99;
 	$htr->{spliceAI_cat} = -99;
 	$htr->{promoterAI_score} = -99;
+	$htr->{alphagenome} = $v->alphagenome();
 	
 	$htr->{ncboost_score} = 0;
 	$htr->{ncboost_score} = $v->ncboost_score();
@@ -770,7 +776,7 @@ sub set_gene {
 		my $spliceAI    = $self->return_specific_value($v->max_spliceAI_score($gene));
 		my $spliceAIcat = $v->max_spliceAI_categorie($gene);
 		my $ncboost     = $v->ncboost_score();
-		
+		my $alphagenome = $v->alphagenome();
 		my $all_transcripts = [];
 		foreach my $item (@trs) {
 			    my $tr1 = $item->{tr};
@@ -816,6 +822,7 @@ sub set_gene {
 				if ($v->promoterAI_score($tr1)) {
 					$htr->{promoterAI_score} = $v->promoterAI_score($tr1);
 				}
+				$htr->{alphagenome} = $alphagenome;
 				$htr->{genome_version_predicted_link} = '38';
 				$htr->{genome_version_predicted_link} = '37' if $project_version =~ /HG19/;
 				$htr->{sift} = -99;
@@ -861,6 +868,7 @@ sub set_gene {
 						$htr->{polyphen} =  $self->return_specific_value($v->polyphenScore($tr1));
 						
 						$htr->{alphamissense} = $self->return_specific_value($v->alphamissense($tr1));
+						$htr->{alphagenome} = $self->return_specific_value($htr->{alphagenome});
 						
 						
 					}
@@ -1129,6 +1137,7 @@ sub setLmdbVariant {
 		$self->{reference} = ref($vh);
 		$self->gnomad_id($vh->gnomad_id);
 		$self->rocksdb_id($vh->rocksdb_id);
+		$self->alphagenome($vh->alphagenome());
 		#######################
 		#hgmd et clinvar
 		#######################

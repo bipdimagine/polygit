@@ -1728,4 +1728,30 @@ sub getPatientLane {
 	return $res->[0]->{'lane'};
 }
 
+#sub getPatientChemistry {
+#	my ($self, $patient_id) = @_;
+#	my $dbh = $self->getDbh();
+#	qq{SELECT name FROM PolyprojectNGS.chemistry};
+#	my $sql = qq{ SELECT chemistry_id FROM PolyprojectNGS.patient where patient_id=?; };
+#	my $sth = $dbh->prepare($sql);
+#	$sth->execute($patient_id);
+#	my $res = $sth->fetchall_arrayref({});
+#	return $res->[0]->{'chemistry'};
+#}
+sub getPatientChemistry {
+	my ($self, $patient_id) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT c.name 
+		FROM PolyprojectNGS.patient p
+		JOIN PolyprojectNGS.chemistry c ON p.chemistry_id = c.chemistry_id
+		WHERE p.patient_id = ?;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($patient_id);
+	my $res = $sth->fetchall_arrayref({});
+	return $res->[0]->{'name'} if @$res;
+	return undef;
+}
+
 1;

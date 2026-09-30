@@ -811,16 +811,18 @@ has cadd_score => (
 	 	},
 );
 
-has phyloP_score => (
+has alphagenome => (
 	is		=> 'ro',
 	lazy =>1,
 	default => sub {
 		my $self = shift;
+		return -99 if $self->getChromosome->id() eq 'MT';
+		return -99 if $self->project->annotation_genome_version() ne 'HG38';
 		my $chr_id = $self->getChromosome->id();
-		my $id = $chr_id.'!'.$self->start();
-	 	my $score = $self->getChromosome->rocksdb("phylop")->get_raw($id);
-	 	return $score if $score;
-	 	return "-";
+		my $rocksid = $self->rocksdb_id;
+	 	my $score = $self->getChromosome->rocksdb("alphagenome")->get_raw($rocksid);
+	 	return -99 if not defined $score; 
+		return sprintf("%.2f", $score);
 	 },
 );
 
@@ -2166,6 +2168,11 @@ sub score_prediction_refined {
 		elsif ($scoreAI>0.5  && !($self->isEssentialSplicing($gene))){
 			$score += 0.1;
 		}
+		
+		my $alphagenome = $self->alphagenome();
+		if ($alphagenome >= 40) { $score += 0.5; }
+		elsif ($alphagenome >= 30) { $score += 0.3; }
+		elsif ($alphagenome >= 20) { $score += 0.2; }
 		
 		my $score_promoter_ai = 0;
 		foreach my $tr (@{$gene->getTranscripts()}) {

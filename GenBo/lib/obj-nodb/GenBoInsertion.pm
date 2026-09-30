@@ -82,6 +82,16 @@ has rocksdb_id => (
 );
 
 
+
+has alphagenome => (
+	is		=> 'ro',
+	lazy =>1,
+	default => sub {
+		my $self = shift;
+	 	return -99;
+	 },
+);
+
 has kyoto_id => (
 	is		=> 'rw',
 	#isa		=> 'Str',

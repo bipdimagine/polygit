@@ -284,7 +284,7 @@ cellranger:/data-bipd/data-pure/software/bin.biocluster//cellranger
 velocyto:exec_singularity.sh velocyto.sif velocyto
 
 #splitpipe
-splitpipe:exec_singularity /data-bipd/data-pure/software/SINGULARITY/splitpipe.1.5.1.sif split-pipe
+splitpipe:exec_singularity.sh splitpipe.1.5.1.sif split-pipe
 
 #breakdancer
 bam2cfg:/software/distrib/breakdancer/bam2cfg.pl

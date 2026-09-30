@@ -396,12 +396,19 @@ sub control_patients {
 				change_sex($error);
 			} 
 			else {
-				exit;
+				my $second_choice = prompt("\nDo you want to continue anyway  (y/n) ? ", -yes) unless $yes;
+				exit unless ($second_choice);
 			}
 	}
-	colored::stabilo("green"," PERFECT   !!!! " );
-	#print "Press <Enter> or <Return> to continue: ";
-	sleep(5);
+	else {
+		colored::stabilo("green"," PERFECT   !!!! " );
+		#sleep(5);
+		unless ($yes){
+			print "Press <Enter> or <Return> to continue: ";
+			my $resp = <STDIN>;
+			print "\033[H\033[J";
+		}
+	}
 }
 
 sub change_sex {

@@ -48,6 +48,7 @@ my $htr = {
                       'start' => '-',
                       'codons' => '-',
                       'alphamissense' => -99,
+                      'alphagenome' => -99,
                       'sift' => -99,
                       'prot' => '-',
                       'nomenclature' => 'c.-1--07dupT',

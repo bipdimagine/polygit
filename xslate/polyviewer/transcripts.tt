@@ -18,6 +18,9 @@
 		: if $mane == 1 {
 		   	 	<th style="text-align: center;">&alpha;missense</th> 
 		: }
+		: if defined $items[0].alphagenome {
+			<th style="text-align: center;">&alpha;genome</th>
+		: }
 		<th style="text-align: center;">dbscsnv</th>
 		<th style="text-align: center;">spliceAI</th>
 		<th style="text-align: center;">promoterAI</th>
@@ -201,6 +204,26 @@
 			: }
 			: else  {
 				<button type="button" class= "btn btn-xs btn-primary " style="border-color:blue;background-color:white;color:blue;font-size: 8px;font-family:  Verdana">ambigous</button>
+			: }
+		</td>
+		
+		
+		
+		<td>
+			: if $item.alphagenome == -99 {
+   	 			<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+			: }
+			: else if $item.alphagenome >= 30 { 
+				<button type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
+			: }
+			: else if $item.alphagenome >= 20 { 
+				<button type="button" class= "btn btn-xs btn-primary " style="border-color:#ff9800;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
+			: }
+			: else if $item.alphagenome >= 10 {
+				<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#188c52;background-color:white;color:green;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
+			: }
+			: else  {
+				<button type="button" class= "btn btn-xs btn-primary " style="border-color:black;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
 			: }
 		</td>
 
