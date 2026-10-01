@@ -175,34 +175,61 @@ sub getProjectListsDefidiag {
 		$out .= "<td><center>".$pro->{'gencode'}.'.'.$pro->{'annotation'}."</center></td>";
 		$out .= "<td><center>".$pro->{'creation_date'}."</center></td>";
 		$out .= "<td>".$pro->{'cache'}."</td>";
-		my ($url_query, $url_diag, $url_viewer);
+		my ($url_query, $url_diag, $url_viewer, $url_resume);
+		
+		
+		#dialog_resume_project
+		#$url_resume = 'https://defidiag.polyweb.fr/cgi-bin/polymorphism-cgi//validation_variation/summary_panel.pl?project='.$pro->{'name'}.'&user_name=masson';
+		my $disabled;
 		if ($pro->{'cache'} eq 'rocks') {
 			$url_query = 'vector/gene.html?project='.$pro->{'name'};
 			$url_diag = 'coverage.html?project='.$pro->{'name'};
 			$url_viewer = 'polyviewer.html?project='.$pro->{'name'};
+			$url_resume = 'launch_resume_project(\''.$pro->{'name'}.'\')';
+		}
+		elsif ($pro->{'cache'} eq 'resume') {
+			$url_resume = 'launch_resume_project_no_cache(\''.$pro->{'name'}.'\')';
+			$disabled = 'disabled';
 		}
 		else {
+			$url_resume = 'launch_resume_project_archive(\''.$pro->{'name'}.'\')';
 			$url_query = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/vector/gene.html?project='.$pro->{'name'};
 			$url_diag = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/coverage.html?project='.$pro->{'name'};
 			$url_viewer = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/polyviewer.html?project='.$pro->{'name'};
 		}
-		$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
 		if ($type_projects eq 'polyviewer') {
-			$out .= qq{<td><center><button onclick="window.open('$url_viewer', '_blank')" class='btn btn-primary btn-sm'>PolyViewer</button></center></td>};
-		}
-		if ($type_projects eq 'polydiag') {
-			if ($pro->{'type_analyse'} eq 'target') {
-				$out .= qq{<td><center><button onclick="window.open('$url_diag', '_blank')" class='btn btn-warning btn-sm'>PolyDiag</button></center></td>};
+			$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-warning btn-sm'>Resume</button></center></td>};
+			if ($disabled) {
+				$out .= qq{<td></td>};
+				$out .= qq{<td></td>};
 			}
 			else {
-				next;
+				$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
+				$out .= qq{<td><center><button onclick="window.open('$url_viewer', '_blank')" class='btn btn-primary btn-sm'>PolyViewer</button></center></td>};
+			}
+		}
+		if ($type_projects eq 'polydiag') {
+			$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-primary btn-sm'>Resume</button></center></td>};
+			if ($disabled) {
+				$out .= qq{<td></td>};
+				$out .= qq{<td></td>};
+			}
+			else {
+				$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
+				if ($pro->{'type_analyse'} eq 'target') {
+					$out .= qq{<td><center><button onclick="window.open('$url_diag', '_blank')" class='btn btn-warning btn-sm'>PolyDiag</button></center></td>};
+				}
+				else {
+					next;
+				
+				}
 			}
 		}
 		push(@lHTML, $out);
 	}
 	
 	my $out2 = $cgi->start_div();
-	$out2 .= qq{<table data-filter-control='true' data-sort-name="creation_date" data-sort-order="desc" data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="top" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100]" data-resizable='true' id='table_projects' class='table table-striped' style='font-size:13px;'>};
+	$out2 .= qq{<table data-filter-control='true' data-sort-name="creation_date" data-sort-order="desc" data-toggle="table" data-show-extended-pagination="true" data-cache="false" data-pagination-loop="false" data-total-not-filtered-field="totalNotFiltered" data-virtual-scroll="true" data-pagination-v-align="top" data-pagination-pre-text="Previous" data-pagination-next-text="Next" data-pagination="true" data-page-size="20" data-page-list="[10, 20, 50, 100]" data-resizable='true' id='table_projects' class='table table-striped' style='font-size:11px;'>};
 	$out2 .= "<thead>";
 	$out2 .= $cgi->start_Tr({style=>"background-color:#E9DEFF;font-size:10px"});
 	$out2 .= qq{<th data-field="name" data-sortable="true" data-filter-control="input" data-filter-control-placeholder="NGS2022_4000">Name</th>};
@@ -215,6 +242,7 @@ sub getProjectListsDefidiag {
 	$out2 .= qq{<th data-field="annotation" data-sortable="true" data-filter-control="input">Annotation</th>};
 	$out2 .= qq{<th data-field="creation_date" data-sortable="true" data-filter-control="input">Creation Date</th>};
 	$out2 .= qq{<th data-field="db_cache_type" data-sortable="true" data-filter-control="select">DB Cache Type</th>};
+	$out2 .= qq{<th data-field="resume">Resume</th>};
 	$out2 .= qq{<th data-field="polyquery">PolyQuery</th>};
 	$out2 .= qq{<th data-field="polyviewer">PolyViewer</th>} if ($type_projects eq 'polyviewer');
 	$out2 .= qq{<th data-field="polydiag">PolyDiag</th>} if ($type_projects eq 'polydiag');

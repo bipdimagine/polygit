@@ -122,14 +122,19 @@ footer{
 		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
 		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
 		
+	<link rel="stylesheet" type="text/css" href="js/igv/igv-1.0.9.css">
+    <script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+	<script type="text/javascript" src="js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+    <script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+    <script type="text/javascript" src="js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
+		
 	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
 	<script type="text/javascript" src="js/polyjs/include_polyviewer.js" djConfig="parseOnLoad: true"></script>
     <script type="text/javascript" src="js/polyjs/Utility/my_formatter.js" djConfig="parseOnLoad: true"></script>
 	<script type="text/javascript" src="js/polyjs/Utility/viewVar.js" djConfig="parseOnLoad: true"></script>
 	<script type="text/javascript" src="js/polyjs/Utility/utilGrid2.js" djConfig="parseOnLoad: true"></script>
 	<script type="text/javascript" src="js/polyjs/project_login.js" djConfig="parseOnLoad: true"></script>
-    <script type="text/javascript" src="js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
-    <script type="text/javascript" src="js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
     <script type="text/javascript" src="js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
 	<script type="text/javascript" src="js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
   	<script type="text/javascript" src="js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
@@ -267,7 +272,41 @@ footer{
             var downloadPdfIframeName = "downloadPdfIframe"; 
             var iframe = dojo.io.iframe.create(downloadPdfIframeName);
             dojo.io.iframe.setSrc(iframe, url, true);
-        } 
+        }
+        
+        function launch_resume (url) {
+        	dijit.byId('waiting').show();
+        	fetch(url)
+			    .then(response => response.text())
+			    .then(html => {
+			        document.getElementById("span_resume_project").innerHTML = html;
+        			dijit.byId('waiting').hide();
+        			dijit.byId('dialog_resume_project').show();
+			        setTimeout(function() {
+					    dialog_resume_project.resize();
+					    dialog_resume_project._position();
+					}, 50);
+			    }
+		    );
+        }
+        
+        function launch_resume_project_no_cache(project_name) {
+        	document.getElementById("span_resume_project").innerHTML = "<img src='images/polyicons/wait18trans.gif' align='absmiddle'> Loading... Please Wait...";
+        	var url = 'https://'+window.location.hostname + '/cgi-bin/mbras/polymorphism-cgi//validation_variation/summary_project.pl?no_cache=1&project=' + project_name + '&user_name=masson';
+        	launch_resume (url);
+        }
+        
+        function launch_resume_project_archive(project_name) {
+        	document.getElementById("span_resume_project").innerHTML = "<img src='images/polyicons/wait18trans.gif' align='absmiddle'> Loading... Please Wait...";
+        	var url = 'https://'+window.location.hostname + '/cgi-bin/archive/polymorphism-cgi//validation_variation/summary_project.pl?project=' + project_name + '&user_name=masson';
+        	launch_resume (url);
+        }
+        
+        function launch_resume_project(project_name) {
+        	document.getElementById("span_resume_project").innerHTML = "<img src='images/polyicons/wait18trans.gif' align='absmiddle'> Loading... Please Wait...";
+        	var url = 'https://'+window.location.hostname + '/cgi-bin/mbras/polymorphism-cgi/validation_variation/summary_project.pl?project=' + project_name + '&user_name=masson';
+        	launch_resume (url);
+        }
         
         function showVersion(a, color){
         	var url = url_version_annotation+"?version="+a;//+"?project="+project_name+"&patient_dude="+patient+"&quality="+level;
@@ -442,6 +481,10 @@ footer{
             <div class="container-fluid" id="content_res_only_project" style="height:99%;width:99%;"></div>
 			<br>
 		</div>
+		
+		<div dojoType="dijit.Dialog" jsId="dialog_resume_project" id="dialog_resume_project" style='height:95%;width:95%;overflow:auto;' title="">
+	        <center><div style='height:100%;width:100%;overflow:auto;'><span id='span_resume_project' style='height:100%;width:100%;overflow:auto;'><img id="wait1" src="images/polyicons/wait18trans.gif" align="absmiddle"> Loading... Please Wait...</span></div></center>
+	    </div>
        
         <div id="dialog_var_from_proj_gene_pat" dojoType="dijit.Dialog" title="Variants from PROJECT / GENE / PATIENT">
 			<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
