@@ -138,8 +138,8 @@ my $type = $run->infosRun->{method};
 
 # Executable 
 my $exec = "cellranger";
-$exec .= '-atac' if ($type eq 'atac');
-$exec .= '-arc' if ($type eq 'arc');
+$exec .= '-atac' if ($type eq 'atac' or grep {/atac/i} @groups);
+$exec .= '-arc' if ($type eq 'arc' or grep {/arc/i} @groups);
 $exec = 'spaceranger' if  ($type eq 'spatial');
 my $exec_type = $exec;
 if ($choose_exec) {
@@ -277,7 +277,7 @@ if (grep(/^demultiplex_old$/i, @steps)){
 #------------------------------
 # TELEPORT
 #------------------------------
-if (grep(/teleport/, @steps)) {
+if (grep(/teleport/i, @steps)) {
 	my $cmd = "$Bin/../../../teleport_patients.pl -project=$projectName -force=1";
 	system($cmd) unless $no_exec;
 }
@@ -416,8 +416,8 @@ if (grep(/count|^all$/i, @steps)){
 	}
 	
 	# EXP
-	my $type_exp = 1 if map {uc($_) =~ /(EXP|NUCLEI)/ } @groups;
-	system("rm $dir/jobs_count.txt") if (-f "$dir/jobs_count.txt");
+	my $type_exp = 1 if (grep {$_ =~ /(exp|nuclei)/i} @groups and not grep {$_ =~ /arc/i} @groups);
+	unlink $dir.'jobs_count.txt' if (-f "$dir/jobs_count.txt");
 	if($type_exp){
 		open (JOBS_EXP, ">$dir/jobs_count.txt");
 		my @exp = grep { uc($_->somatic_group()) eq "EXP" || uc($_->somatic_group()) eq "NUCLEI" } @{$patients};
@@ -442,11 +442,12 @@ if (grep(/count|^all$/i, @steps)){
 	#		warn $cmd;
 			print JOBS_EXP $cmd;
 		}
+		close(JOBS_EXP);
 	}
 	
 	
 	# ADT
-	my $type_adt = 1 if map {uc($_) =~ /ADT/ } @groups;
+	my $type_adt = 1 if (grep {uc($_) =~ /ADT/ } @groups);
 	if ($type_adt){
 		open (JOBS_ADT, ">$dir/jobs_count.txt");
 		my @exp = grep { uc($_->somatic_group()) eq "EXP"} @{$patients};
@@ -478,11 +479,12 @@ if (grep(/count|^all$/i, @steps)){
 			warn $cmd_cellranger[0];
 			print JOBS_ADT $cmd;
 		}
+		close(JOBS_ADT);
 	}
 
 	
 	# VDJ
-	my $type_vdj = 1 if map {uc($_) =~ /VDJ/ } @groups;
+	my $type_vdj = 1 if (grep {uc($_) =~ /VDJ/ } @groups);
 	system("rm $dir/jobs_vdj.txt") if (-f "$dir/jobs_vdj.txt");
 	if($type_vdj){
 		open (JOBS_VDJ, ">$dir/jobs_vdj.txt");
@@ -503,11 +505,12 @@ if (grep(/count|^all$/i, @steps)){
 			warn $cmd_cellranger[0];
 			print JOBS_VDJ $cmd;
 		}
+		close(JOBS_VDJ);
 	}
 
 
 	# SPATIAL
-	my $type_spatial = 1 if map {uc($_) =~ /SPATIAL/ } @groups;
+	my $type_spatial = 1 if (grep {uc($_) =~ /SPATIAL/ } @groups);
 	system("rm $dir/jobs_spatial.txt") if (-f "$dir/jobs_spatial.txt");
  	if($type_spatial){
  		confess("Error: Project release must be HG38") if ($project->getVersion() =~ /^HG19/);
@@ -522,7 +525,7 @@ if (grep(/count|^all$/i, @steps)){
  			'Dark background fluorescence microscope image' => 'darkimage',
  			'Composite colored fluorescence microscope image' => 'colorizedimage',
 		};
-		print "To add a second image, use --add_image option in command line\n" && sleep(3) unless ($add_image);
+		print "To add a second image, use --add_image option in command line\n" unless ($add_image);
 		my $imagetype = prompt('Choose the (first) type of image you have: ', -m=>$choice_image_type);
 		die ("No image type selected") unless ($imagetype);
 		my $imagetype2;
@@ -626,6 +629,7 @@ if (grep(/count|^all$/i, @steps)){
 			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
 			
 			unless($probe_set and -f $probe_set) {
+				#todo adapter pour biocluster
 				$probe_set = "/software/distrib/$exec/$exec-$version_nb/probe_sets/";
 				$probe_set = "/data-bipd/data-pure/software/distrib/$exec/$exec-$version_nb/probe_sets/" if ($buffer->biocluster);;
 				opendir(my $dh, $probe_set) || die "Can't opendir '$probe_set': $!";
@@ -687,12 +691,13 @@ if (grep(/count|^all$/i, @steps)){
 # A, B for Visium CytAssist Spatial Gene Expression slide, v2, 11 mm (V5)
 # A1, D1 for Visium CytAssist Spatial Gene Expression slides, v2, 6.5 mm, and Visium HD slides, 6.5 mm (V4 and H1)
 		}
+		close(JOBS_SPATIAL);
 	}
 
 	
 	# ATAC
-	my $type_atac = 1 if map {uc($_) =~ /ATAC/ } @groups;
-	system("rm $dir/jobs_atac.txt") if (-f "$dir/jobs_atac.txt");
+	my $type_atac = 1 if (grep {uc($_) =~ /ATAC/ } @groups);
+	unlink $dir.'jobs_atac.txt' if (-f "$dir/jobs_atac.txt");
 	if($type_atac ){
 		warn 'ATAC';
 		open (JOBS_ATAC, ">$dir/jobs_atac.txt");
@@ -716,6 +721,7 @@ if (grep(/count|^all$/i, @steps)){
 			warn $cmd_cellranger[0];
 			print JOBS_ATAC $cmd;
 		}
+		close(JOBS_ATAC);
 	}
 
 	
@@ -755,49 +761,47 @@ if (grep(/count|^all$/i, @steps)){
 			warn $cmd_cellranger[0];
 			print JOBS_CMO $cmd;
 		}
+		close(JOBS_CMO);
 	}
 
 	
 	# ARC
-	my $type_arc = 1 if map {uc($_) =~ /ARC/ } @groups;
+	my $type_arc = 1 if map {$_ =~ /arc/i } @groups;
 	system("rm $dir/jobs_arc.txt") if (-f "$dir/jobs_arc.txt");
 	if ($type_arc ){
 		open (JOBS_ARC, ">$dir/jobs_arc.txt");
 		$exec = "cellranger-arc";
 		my @arc = grep { uc($_->somatic_group()) eq "ARC"} @{$patients};
 		warn "ARC: ".join(',',map($_->name,@arc));
-		foreach my $e (@arc){
-			my $ename = $e->name(); 
-			my $efam = $e->family();
-			my $egroup = uc($e->somatic_group());
-			my $lib_file = $dir."/".$ename."_library.csv";
-			open(LIB,">$lib_file") or die "impossible $lib_file";
-			my @atac = grep {$_->family() eq $efam && $_->name() =~ $ename && uc($_->somatic_group()) eq "ARC"} @{$patients};
-			next() if scalar(@atac == 0);
-			my $atac_name = $atac[0]->name() ;
+		foreach my $a (@arc){
+			my $aname = $a->name();
+			my $afam = $a->family();
+			my $agroup = uc($a->somatic_group());
+			my @exp = grep {$_->family() eq $afam && $_->somatic_group() =~ /exp/i} @{$patients};
+			next() unless scalar(@exp);
+			confess("More than 1 GEX found for $afam: ".join(', ',map{$_->name} @exp)) unless scalar(@exp);
+			my $ename = $exp[0]->name();
 			my $transcriptome = $index.'_arc';
 			$transcriptome = qx/realpath $index"_arc"/ if (-l $index);
 			chomp $transcriptome;
 			$transcriptome = $htranscriptome->{atac} if ($choose_transcriptome);
-			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/'.",".$ename.",Gene Expression\n";
-			$lib .= $tmp.'fastq/'.",".$atac_name.",Chromatin Accessibility\n";
+			
+			my $lib_file = $dir."/".$aname."_library.csv";
+			open(LIB,">$lib_file") or die "impossible $lib_file";
+			my $lib = "fastqs,sample,library_type\n";
+			$lib .= $tmp.'fastq/'.",".$ename.",Gene Expression\n";
+			$lib .= $tmp.'fastq/'.",".$aname.",Chromatin Accessibility\n";
 			print LIB $lib;
 			close(LIB);
-			my $cmd = "cd $tmp && $exec count --id=$ename --reference=$transcriptome  --libraries=$lib_file --create-bam=$create_bam --jobmode slurm ";
-			$cmd = full_cmd($e, $cmd);
+			my $cmd_cp_fastq = "cp ".$exp[0]->getSequencesDirectory."$ename*.fastq.gz $tmp/fastq/ && ";
+			my $cmd = $cmd_cp_fastq."cd $tmp && $exec count --id=$aname --reference=$transcriptome  --libraries=$lib_file --create-bam=$create_bam --jobmode slurm ";
+			$cmd = full_cmd($a, $cmd);
 			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
 			warn $cmd_cellranger[0];
 			print JOBS_ARC $cmd;
 		}
+		close(JOBS_ARC);
 	}
-		
-	close(JOBS_EXP);
-	close(JOBS_ADT);
-	close(JOBS_VDJ);
-	close(JOBS_SPATIAL);
-	close(JOBS_ATAC);
-	close(JOBS_CMO);
-	close(JOBS_ARC);
 
 
 	my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=1 ";
