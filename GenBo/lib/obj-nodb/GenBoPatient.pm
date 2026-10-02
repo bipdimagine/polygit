@@ -776,9 +776,6 @@ sub getCallingCNVMethodsType {
 	my ($self,$type) = @_;
 	my @res;
 	foreach my $m (@{$self->callingSVMethods}) {
-		warn $m;
-		warn $self->buffer->type_by_caller_sv_name($m);
-		warn "++++";
 		next if $self->buffer->type_by_caller_sv_name($m) ne $type;
 		push(@res,$m);
 	}
@@ -1872,7 +1869,7 @@ sub getBamFile {
 		my $files = $self->getBamFiles();
 		return $files->[0] if scalar(@$files) == 1;
 		if ($nodie) {
-			confess();
+			confess($self->name." ".$method_name);
 			warn "NO BAM FILES " . $self->name." methods :".Dumper  $self->alignmentMethods();
 			return;
 		}

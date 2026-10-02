@@ -63,11 +63,16 @@ sub parse_cnv {
 		$h->{"CALLER"} = $caller;
 		$h->{'END'} = $row->get_info($header, "END")->[0];
 		$h->{'START'} = $row->position() + 1 ;
+		my $debug;
+		$debug = 1 if $row->position() == 29782911;
 		$h->{'SVLEN'} =  abs($h->{'END'} - $h->{'START'});
 		next if abs($h->{'SVLEN'}) < 1000;
+		warn $h->{'CHROM'}." ".$h->{'START'} if  $debug;
 		
 		my $res1 = $chr->genesIntervalTree->fetch( $h->{'START'},$h->{'END'} );
-		next if scalar(@$res1) < 3;
+		#next if scalar(@$res1) < 2;
+		next if scalar(@$res1) < 3 && abs($h->{'START'}-$h->{'END'})< 5_000;
+		#die($h->{'START'}-$h->{'END'}) if $debug;
 		$h->{'KARYOTYPE_ID'}= $chr->karyotypeId;
 		
 		$h->{'GT_a'} = $row->get_format($header, "GT");

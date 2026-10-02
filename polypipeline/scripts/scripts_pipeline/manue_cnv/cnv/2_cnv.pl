@@ -201,7 +201,6 @@ MCE::Loop::init {
     max_workers => 'auto',
     gather => sub {
         my ($mce,$data) = @_;
-        warn "end ".$mce;
        push(@after_mce,@$data);
      
 
@@ -219,13 +218,10 @@ MCE::Loop::init {
 	mce_loop {
   	  my ($mce, $cnvs) = @_;
   	  my $x;
-  	  warn "2 ".scalar(@$cnvs);
   	  my $nb =0;
   	  foreach my $cnv (@$cnvs){
   	  	$nb ++;
-  	  	warn $mce."-".$nb."/".scalar(@$cnvs) if $nb % 50 ==0;
 		dejavu($cnv,$duck3);
-		warn "end";
 
 		}
  	   
@@ -235,12 +231,12 @@ MCE::Loop::init {
 		
  		MCE::Loop->finish;	
 	
-
-	my $final = gatherSV_by_Interval_2(\@after_mce);
-	
+#	die();
+	#my $final = gatherSV_by_Interval_2(\@after_mce);
+#die();	
 		print "\n#end gather \n start save \n";
 	
-	save_parquet_rocksdb($final);
+	save_parquet_rocksdb(\@after_mce);
 	warn "====";
 	warn "$Bin/filter_cnv.pl -project=$projectname -fork=1";
 	system("$Bin/filter_cnv.pl -project=$projectname -fork=1");
@@ -275,12 +271,12 @@ sub gatherSV_by_Interval_2
 				}
 				
 				foreach my $type (keys %$interval){
-					warn $type;
 					foreach my $chr_name (keys %{$interval->{$type}}){
 						my $chr = $project->getChromosome($chr_name);
-						my $merged = merge_intervals($interval->{$type}->{$chr_name},0.6);
-						
-						my $complete_merge = merge_hash_2($type,$chr,$merged,$hCNV);
+						my $merged = merge_intervals($interval->{$type}->{$chr_name},80);
+						warn scalar(@{$interval->{$type}->{$chr_name}});
+						my $complete_merge = m2($interval->{$type}->{$chr_name},$hCNV,80);
+						#my $complete_merge = merge_hash_2($type,$chr,$merged,$hCNV);
 						foreach my $cnv (@$complete_merge){
 							push(@{$all},$cnv);
 						
@@ -290,11 +286,49 @@ sub gatherSV_by_Interval_2
 				}
 				return $all;
 }
-
+sub m2 {
+	my ($merged,$hcnv,$limit) = @_;
+	my $res;
+	foreach my $a (@$merged){
+		my $id = $a->[2];
+		foreach my $b (@$merged){
+			next if $b->[2] eq $id;
+			my $value = getIdentityBetweenCNV($a->[0], $a->[1], $b->[0], $b->[1]);
+			if ($value >= $limit){
+				my ($pid,$idc) = split("!",$b->[2]);
+				push(@{$hcnv->{$id}->{patients}->{$pid}},$b->[2]);
+			}
+		}
+		 #warn Dumper $hcnv->{$id}->{patients}  if  $id =~  /DEL_1_127840/;
+		# die()  if  $id =~  /DEL_1_127840/;
+		push(@$res,$hcnv->{$id});
+		
+	}
+	
+	return $res;
+}
 sub merge_hash_2 {
 	my ($type,$chr,$merged,$hcnv) = @_;
 	 my $total;
-	 print "merge\n";
+	 warn scalar keys %$hcnv;
+	 my %seen;
+
+foreach my $interval (@$merged) {
+
+    foreach my $id (split(";", $interval->[2])) {
+		
+        $seen{$id}++;
+
+    }
+
+}
+
+warn "hcnv  = ".scalar(keys %$hcnv)."\n";
+
+warn "merged = ".scalar(keys %seen)."\n";
+die();
+
+
 	foreach my  $interval (@$merged){
 			my @cnvs;
 			my $hpatients;
@@ -306,14 +340,28 @@ sub merge_hash_2 {
 			}
 			
 			foreach my $cnv (@cnvs){
+				
+				#die() if  $cnv->{id} =~  /DEL_1_127840/;
 				foreach my $ll (@$ids){
 					my ($pid,$id) = split("!",$ll);
 					push(@{$cnv->{patients}->{$pid}},$ll);
 				}
+				
+				 if  ($cnv->{id} =~  /DEL_1_127840/){
+				 	foreach my $v (values %{$cnv->{patients}}){
+				 		my (@z) =split("_",$v->[0]);
+				 		warn $z[2]."-".$z[3]."\n";
+				 	}
+				 	 warn Dumper values %{$cnv->{patients}}  if  $cnv->{id} =~  /DEL_1_127840/;
+				 	  warn Dumper values %{$cnv->{patients}}  if  $cnv->{id} =~  /DEL_1_127840/;
+				 }
+				 
+				
 				push(@$total,$cnv);
 			}
 	}
-	
+	warn scalar @$total;
+	die();
 return $total;	
 }
 
@@ -389,9 +437,8 @@ sub gatherSV_by_Interval
   	  my $duck = GenBoDuckDejaVuCNV->new( project => $project );
   	  foreach my $l (@$lists){
   		my ($type,$chr_name) = split(":",$l);
-  		warn $patient->name.":".$type." ".$chr_name." ".scalar @{$interval->{$type}->{$chr_name}};
   		my $chr = $project->getChromosome($chr_name);
-		my $merged = merge_intervals($interval->{$type}->{$chr_name},0.7);
+		my $merged = merge_intervals($interval->{$type}->{$chr_name},80);
 		my $complete_merge = merge_hash($patient,$type,$chr,$merged,$hCNV,$duck);
 		#$duck->close();
 		#delete $hGenes_dude->{$g_name_id};
@@ -513,19 +560,23 @@ sub merge_hash {
 					$hfinal->{score}->{$name_flag} =  $cnv->{$name_flag} if $cnv->{$name_flag} > $hfinal->{score}->{$name_flag} ;
 					$hfinal->{score_caller} += $hfinal->{score}->{$name_flag};
 					$hfinal->{cn}->{$fn}  = $cnv->{coverage_ratio} if $fn =~ /coverage/;
-					
 					if( $fn =~ /depth/){
 						if ($cnv->{depth_CN} == 0){
 							$hfinal->{cn}->{$fn} = 0;
 						}
 						else {
-						 $hfinal->{cn}->{$fn} = log($cnv->{depth_CN}/2) / log(2) ;
+						 $hfinal->{cn}->{$fn} = int($cnv->{depth_CN});
+						 #/2 log($cnv->{depth_CN}/2) / log(2) ;
+						 
+						# warn  $cnv->{depth_CN}." ::  ".$hfinal->{cn}->{$fn};
+						 
 						}
 					}
 					if ($fn =~ /sr/){
 						 $hfinal->{gt} = $cnv->{gt};
 						 if ($type eq "DEL"){
 						 	$hfinal->{cn}->{$fn} = 0;
+						 	$hfinal->{cn}->{$fn} = 0.5 if $hfinal->{gt}  eq "0/1";
 						 	$hfinal->{cn}->{$fn} = 0.5 if $hfinal->{gt}  eq "0/1";
 						 }
 					}
@@ -539,7 +590,7 @@ sub merge_hash {
 				
 				push(@$total,$hfinal);
 	}
-	warn "end ".$patient->name." ".$chr->name;;
+#	warn "end ".$patient->name." ".$chr->name;;
 return $total;	
 }
 
@@ -556,7 +607,14 @@ sub dejavu {
 	#my $duck = GenBoDuckDejaVuCNV->new( project => $project );
 	my $scorecaller_evt=0;
 	my $list_of_other_patient;
-	$cnv->{dejavu} = $duck->dejavu($cnv->{type},$cnv->{chromosome},$cnv->{start},$cnv->{end},80);
+	my $debug;
+	$debug = 1 if  $cnv->{id} =~  /DEL_1_127840/; ;
+	$cnv->{dejavu} = $duck->dejavu($cnv->{type},$cnv->{chromosome},$cnv->{start},$cnv->{end},80,$debug);
+	warn Dumper $cnv->{dejavu} if $cnv->{id} =~  /DEL_1_127840/;
+	$cnv->{patients} = delete  $cnv->{dejavu}->{itp};
+	
+	warn $cnv->{id} if  $cnv->{id} =~  /DEL_1_127840/; ;
+	
 	#warn $cnv->{dejavu};
 }
 
@@ -686,6 +744,7 @@ sub getIdentityBetweenCNV {
 	#retourne le recouvrement en % de la longueur du plus long des deux evenements 
 	
 	my $overlap = min( $end1, $end2 ) - max( $start1, $start2 );
+	return 0 if $overlap <= 0;
 	confess if abs( $start1 - $end1 ) ==0;
 	my $overlap1 = $overlap / abs( $start1 - $end1 );
 	my $overlap2 = $overlap / abs( $start2 - $end2 );
@@ -708,7 +767,7 @@ sub merge_intervals {
     foreach my $interval (@sorted_intervals) {
         # Vérifier le chevauchement de 70% ou plus
         my $xc = getIdentityBetweenCNV($current->[0], $current->[1], $interval->[0], $interval->[1]);
-        
+        #warn $xc;
         if ($xc >= $limit ) {
             # Fusionner les intervalles
             $current->[1] = $interval->[1] if $interval->[1] > $current->[1];

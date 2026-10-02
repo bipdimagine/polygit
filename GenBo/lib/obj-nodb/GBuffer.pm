@@ -374,7 +374,6 @@ has gencode => (
 		confess($filename2) unless -e $filename2;
 		my $public_data;
 		my $previous;
-
 		foreach my $v ( keys %config1){
 			$config1{$v}->{directory} = $config1{$v}->{name}."/".$config1{$v}->{version}."/".$config1{$v}->{dir};
 		}
@@ -390,6 +389,58 @@ has dejavu_parquet_dir => (
 		return $self->config_path("root","dejavu_parquet");
 	}
 );
+
+has hash_type_by_caller_sv_name => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return  {
+	"wisecondor" => "caller_coverage",
+	"manta" => "caller_sr",
+	"pbsv" => "caller_sr",
+	"dragen-sv" =>"caller_sr",
+	"sniffles2" =>"caller_sr",
+	"spectre" =>"caller_depth",
+	"hificnv" =>"caller_depth",
+	"canvas" =>"caller_depth",
+	"dragen-cnv" =>"caller_depth",
+	"cnvnator" =>"caller_depth",
+	"sawfish" =>"caller_sr",
+	};
+	}
+);
+
+has bitmask_caller_sv => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return  {
+    "wisecondor"          => 1 << 0,  # 2^0 = 1
+    "canvas"        => 1 << 1,  # 2^1 = 2
+    "manta"        => 1 << 2,  # 2^2 = 4
+    "pbsv"        => 1 << 3,  
+    "dragen-sv"        => 1 << 4,  
+    "hificnv"        => 1 << 5,  
+    "dragen-cnv"        => 1 << 6, 
+    "cnvnator"        => 1 << 7, 
+    "sniffles2"        => 1 << 8, 
+    "spectre"        => 1 << 9, 
+    "sawfish"=> 1 << 10, 
+	};
+	}
+);
+
+
+
+sub type_by_caller_sv_name{
+	my ($self,$name) = @_;
+	die() unless exists $self->hash_type_by_caller_sv_name->{lc($name)};
+	return  $self->hash_type_by_caller_sv_name->{lc($name)}
+}
+
+
 
 sub deja_vu_public_dir {
 	my ($self,$version,$type)= @_;

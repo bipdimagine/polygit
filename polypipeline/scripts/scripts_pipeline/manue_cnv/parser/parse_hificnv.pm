@@ -35,6 +35,7 @@ sub parse_cnv {
 		$h->{'END'} = $row->get_info($header, "END")->[0];
 		$h->{'START'} = $row->position();
 		$h->{'SVLEN'} =  abs($h->{'END'} - $h->{'START'});
+		
 		$h->{'KARYOTYPE_ID'}= $chr->karyotypeId;
 		next if $h->{'SVLEN'} < 2000;
 		my $res1 = $chr->genesIntervalTree->fetch( $h->{'START'},$h->{'START'}+$h->{'SVLEN'} );
@@ -44,18 +45,19 @@ sub parse_cnv {
 		
 		$h->{'CN'} ="-" ;
 		$h->{'RATIO'} ="-" ;
-		
+		$h->{'CN'} =get_value($row->get_info($header, "CN"));
+		$h->{'RATIO'} = get_value($row->get_info($header, "CN"));
 		my $id = $h->{'SVTYPE'}."_".$chr->name."_".$h->{'START'}."_".$h->{'END'};
 		$h->{'ELEMENTARY'}= [$id];
 		$h->{'INFOS'} = $row->get_format($header);
 		$h->{'INFOS'}->{GT} = $h->{'GT'};
-		$h->{'CN'} = $h->{'INFOS'}->{GT}->[0];
+		#$h->{'CN'} = $h->{'INFOS'}->{GT}->[0];
 		$h->{'GT'} = "0/1";
 		$h->{'GT'} = "1/1" if ($h->{'INFOS'}->{GT}->[0] == {'INFOS'}->{GT}->[1]);  
 		$h->{id}=$id;
 		$h->{'REAL_CALLER'} = $caller;
 		my $type = $h->{'SVTYPE'};
-		$h->{'QUAL'} = $row->quality;
+		$h->{'QUAL'} = $h->{'CN'};#$row->quality;
 		my $num = $chr->name();
 		$res->{$id} = $h;
 		control_object($h);

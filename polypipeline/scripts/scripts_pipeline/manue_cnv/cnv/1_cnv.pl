@@ -79,7 +79,7 @@ my $type_by_caller_name = {
 	"pbsv" => "caller_sr",
 	"dragen-sv" =>"caller_sr",
 	"Sniffles2" =>"caller_sr",
-	"Spectre" =>"caller_sr",
+	"Spectre" =>"caller_depth",
 	"hificnv" =>"caller_depth",
 	"canvas" =>"caller_depth",
 	"dragen-cnv" =>"caller_depth",
@@ -200,8 +200,8 @@ my $type_by_caller = {
 	"manta" => 1,
 	"pbsv" => 1,
 	"dragen-sv" =>1,
-	"Sniffles2" =>1,
-	"Spectre" =>1,
+	"sniffles2" =>1,
+	"spectre" =>2,
 	"hificnv" =>2,
 	"canvas" =>2,
 	"dragen-cnv" =>2,
@@ -217,10 +217,10 @@ my $cnv_callers = {
     "dragen-sv"        => 1 << 4,  
     "hificnv"        => 1 << 5,  
     "dragen-cnv"        => 1 << 6, 
-     "cnvnator"        => 1 << 7, 
-      "Sniffles2"        => 1 << 8, 
-      "Spectre"        => 1 << 9, 
-      "sawfish"=> 1 << 10, 
+    "cnvnator"        => 1 << 7, 
+    "sniffles2"        => 1 << 8, 
+    "spectre"        => 1 << 9, 
+    "sawfish"=> 1 << 10, 
 };
 
 
@@ -252,6 +252,7 @@ foreach my $patobj (@$listPatients)
 #	warn "------------";
 #	warn $patobj->name;
 #	warn "---------------";
+	#next unless $patobj->name eq "CHAL";
 	my $listCallers = $patobj->callingSVMethods();
 	#or $patobj->name ne "dl-2-E-sg-A";
 	#next unless $patobj->name =~ /short/;
@@ -274,6 +275,7 @@ foreach my $patobj (@$listPatients)
 	my $hPat_elementaryCNV;  # tous les CNV du vcf  (élémentaires = avant regroupement)
 #	warn Dumper @$listCallers;
 	$hPat_CNV ={};
+	my $hash_cnv;
 	foreach my $caller (@$listCallers)
 	{
 		confess() unless exists $type_by_caller->{$caller};
@@ -290,10 +292,12 @@ foreach my $patobj (@$listPatients)
 		{
 	
 				my $hash = parse_wisecondor::parse_cnv($patient);
-#				warn "wisecondor".$patient->name;
-#				warn Dumper $hash;
-				$hPat_CNV->{'caller_coverage'} = SVParser::gatherCNV_from_samecaller($patname,$hash);
+				my @a = values %$hash;
+				$hPat_CNV->{'caller_coverage'} = SVParser::gatherCNV_from_samecaller($patname,\@a);
 		}
+	}
+	foreach my $caller (@$listCallers)
+	{
 		if ($type_by_caller->{$caller} == $type_caller->{caller_sr}){
 			if ($caller eq "pbsv"){
 				$hPat_CNV->{'caller_sr'}  = parse_pbsv::parse_cnv($patient,$caller);
@@ -304,25 +308,38 @@ foreach my $patobj (@$listPatients)
 			elsif (lc($caller) eq "sniffles2"){
 				$hPat_CNV->{'caller_sr'}  = parse_sniffles2::parse_cnv($patient,$caller);
 			}
-			elsif (lc($caller) eq "spectre"){
-				$hPat_CNV->{'caller_sr'}  = parse_sniffles2::parse_cnv($patient,$caller);
-			}
+			
 			else {
 				
 				$hPat_CNV->{'caller_sr'}  = SVParser::parse_vcf($patient,$caller);
 			}
 		}
-		elsif ($type_by_caller->{$caller}== $type_caller->{caller_depth}) {
-			my $hash;
+	}
+	my $hash_cnv;
+	my $array_cnv = [];
+	foreach my $caller (@$listCallers){
+		if ($type_by_caller->{$caller}== $type_caller->{caller_depth}) {
+
 			if ($caller eq "hificnv"){
-				$hash  = parse_hificnv::parse_cnv($patient,$caller);
+				$hash_cnv  = parse_hificnv::parse_cnv($patient,$caller);
+				
+			}
+			elsif (lc($caller) eq "spectre"){
+				$hash_cnv  = parse_hificnv::parse_cnv($patient,$caller);
 			}
 			else {
-				 $hash  = SVParser::parse_vcf($patient,$caller);
+				 $hash_cnv  = SVParser::parse_vcf($patient,$caller);
 			}
-			$hPat_CNV->{'caller_depth'} = SVParser::gatherCNV_from_samecaller($patname,$hash);
+			push(@$array_cnv,values %$hash_cnv);
+			
 		}
 	}
+	
+	foreach my $h (keys %$hash_cnv){
+		warn  $hash_cnv->{$h}->{CALLER};
+	}
+	$hPat_CNV->{'caller_depth'} = SVParser::gatherCNV_from_samecaller($patname,$array_cnv);
+	
 	my $cnvs = gather_identical_CNV($hPat_CNV,$patient);
 	push(@$total_cnvs,@$cnvs);
 
@@ -396,13 +413,17 @@ sub gather_identical_CNV
 					$hCNV->{$id}->{'end'} = $current_cnv->{'END'};
 					$hCNV->{$id}->{'len'} = abs ($hCNV->{$id}->{'END'} - $hCNV->{$id}->{'START'}) +1;				
 					# pour sauvegarder l'info propre aux differents callers
-					$hCNV->{$id}->{callers} = 0 unless exists $hCNV->{$id}->{caller_flag};
-					 my $vc = $cnv_callers->{$current_cnv->{CALLER}};
+					$hCNV->{$id}->{callers} = 0 unless exists $hCNV->{$id}->{callers};
+					 $current_cnv->{HASH_CALLER}->{$current_cnv->{CALLER}} ++;
+					foreach my $caller (keys %{$current_cnv->{HASH_CALLER}}) {
+						 my $vc = $cnv_callers->{$caller};
 #					warn $current_cnv->{REAL_CALLER}." ".$vc;
-					 die() unless $vc; 
+					# die() unless $vc; 
 					
 					$hCNV->{$id}->{callers} =  $hCNV->{$id}->{callers} | $vc;
-				
+					}
+					warn $hCNV->{$id}->{callers};
+					#die() if $hCNV->{$id}->{callers} == 512;
 					$hCNV->{$id}->{caller_type_flag} = 0 unless exists $hCNV->{$id}->{caller_type_flag};
 					$hCNV->{$id}->{caller_type_flag} =  $hCNV->{$id}->{caller_type_flag} | $caller_type_flag->{$caller_flag};
 					$hCNV->{$id}->{sr1} = -1; 
@@ -410,11 +431,12 @@ sub gather_identical_CNV
 					$hCNV->{$id}->{pr1} = -1; 
 					$hCNV->{$id}->{pr2} = -1;
 					$hCNV->{$id}->{sr_qual} = -1;
+				
 					my $caller = $hCNV->{$id}->{CALLER};
 					if ($caller_flag eq "caller_sr") {
 					$hCNV->{$id}->{sr1} = $current_cnv->{'INFOS'}->{SR}->[0]; 
 					$hCNV->{$id}->{sr2} = $current_cnv->{'INFOS'}->{SR}->[1];; 
-					$hCNV->{$id}->{pr1} =  $current_cnv->{'INFOS'}->{PR}->[0]; ; 
+					$hCNV->{$id}->{pr1} =  $current_cnv->{'INFOS'}->{PR}->[0]; 
 					$hCNV->{$id}->{pr2} =  $current_cnv->{'INFOS'}->{PR}->[1]; 
 					$hCNV->{$id}->{sr_qual} =  $current_cnv->{'QUAL'};
 					}
