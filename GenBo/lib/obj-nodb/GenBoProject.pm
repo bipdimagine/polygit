@@ -963,6 +963,9 @@ sub getFileName {
 			my $dir_out= $self->getVariationsDir("dude");
 			return "$dir_out/dude.done";
 		}
+		elsif ($step eq "deepvariant_denovo") {
+			return $self->getVariationsDir($step)."/$step.done";
+		}
 		
 		else {die("nothing konwn about $step ")};
 }
@@ -1166,9 +1169,11 @@ has mean_amount_reads => (
 	default => sub {
 		my $self = shift;
 		my $nb;
-	
+		my $xx;
 		foreach my $patient (@{$self->getPatients()}){
 			$nb+= $patient->nb_reads->{all};
+			$xx ++;
+			last if $xx > 20;
 		}
 		return int($nb/(scalar @{$self->getPatients()}));
 	},
@@ -1794,8 +1799,11 @@ sub get_gencode_directory {
 	
 	my $database = "gencode";
 	$version = $self->gencode_version unless $version;
+
+	
 	return $self->{directory}->{$version}->{$database} if exists $self->{directory}->{$version}->{$database};
-	confess() unless exists $self->buffer->gencode->{$version}->{directory};
+	warn $self->buffer->gencode->{$version}->{directory};
+	confess($version) unless exists $self->buffer->gencode->{$version}->{directory};
 	$self->{directory}->{$version}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->gencode->{$version}->{directory};
 	confess( "\n\nERROR: score:$database " . $self->{directory}->{$version}->{$database}."\n/n" ) unless -e $self->{directory}->{$version}->{$database};
 
@@ -2660,6 +2668,8 @@ sub getChromosomes {
 	my @chr_sorted = sort { $a->karyotypeId <=> $b->karyotypeId } @$chr;
 	return \@chr_sorted;
 }
+
+
 
 has callingMethods => (
 	is      => 'rw',
@@ -4068,7 +4078,6 @@ sub myflushobjects {
 				$self->getVariantFromId($id);
 			}
 			elsif ( $type eq 'mnps' ) {
-				warn $id . "-";
 				$self->getVariantFromId($id);
 			}
 			elsif ( $type eq 'runs' ) { $self->getRunFromId($id); }
@@ -6993,7 +7002,7 @@ sub preload_patients {
 	foreach my $p (@{$self->getPatients()}) {
 		$p->callingSVMethods();
 		$p->callingMethods();
-		$p->getBamFile(undef,1);
+		#$p->getBamFile(undef,1,undef);
 
 }
 $self->getRuns();

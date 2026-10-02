@@ -80,7 +80,6 @@ foreach my $chr (@{$project->getChromosomes}){
 
 close(BED);
 close (LIST);
-die();
 my $vcf_giab = $GIAB_DIR."/vcf.gz";
 my $bcftools = $buffer->software("bcftools");
 my $bgzip = $buffer->software("bgzip");
@@ -99,7 +98,6 @@ system("$bcftools view $vcf_giab -R $bed | $bcftools annotate --rename-chrs $lis
 system("$tabix -f -p vcf $fileout  ");
 
 die() unless -e $fileout.".tbi";
-die();
 warn "$RealBin/../../../bds_cache.pl -project=$project_name -control=1 -force=1 -yes=1";
 system("$RealBin/../../../bds_cache.pl -project=$project_name -nolimit=1 -control=1 -force=1 -yes=1");
 
