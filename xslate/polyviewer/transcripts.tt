@@ -211,19 +211,19 @@
 		
 		<td>
 			: if $item.alphagenome == -99 {
-   	 			<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
+   	 			<button onClick="window.open('https://deepmind.google.com/science/alphagenome/atlas?q=<: $var_id :>','_blank')" type="button" class= "btn btn-xs btn-primary " style="border-color:#D0D0D0;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><span class='glyphicon glyphicon-minus' aria-hidden='true'/></button>
 			: }
 			: else if $item.alphagenome >= 30 { 
-				<button type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
+				<button onClick="window.open('https://deepmind.google.com/science/alphagenome/atlas?q=<: $var_id :>','_blank')" type="button" class= "btn btn-xs btn-primary " style="border-color:#e74c3c;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
 			: }
 			: else if $item.alphagenome >= 20 { 
-				<button type="button" class= "btn btn-xs btn-primary " style="border-color:#ff9800;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
+				<button onClick="window.open('https://deepmind.google.com/science/alphagenome/atlas?q=<: $var_id :>','_blank')" type="button" class= "btn btn-xs btn-primary " style="border-color:#ff9800;background-color:white;color:#e74c3c;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
 			: }
 			: else if $item.alphagenome >= 10 {
-				<button "type="button" class= "btn btn-xs btn-primary " style="border-color:#188c52;background-color:white;color:green;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
+				<button onClick="window.open('https://deepmind.google.com/science/alphagenome/atlas?q=<: $var_id :>','_blank')" type="button" class= "btn btn-xs btn-primary " style="border-color:#188c52;background-color:white;color:green;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
 			: }
 			: else  {
-				<button type="button" class= "btn btn-xs btn-primary " style="border-color:black;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
+				<button onClick="window.open('https://deepmind.google.com/science/alphagenome/atlas?q=<: $var_id :>','_blank')" type="button" class= "btn btn-xs btn-primary " style="border-color:black;background-color:white;color:black;font-size: 8px;font-family:  Verdana"><: $item.alphagenome :></button>
 			: }
 		</td>
 
