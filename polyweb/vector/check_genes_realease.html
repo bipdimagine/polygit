@@ -422,8 +422,8 @@
             require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
             
             
-            var release = 'HG19';
-            var release_annotation = '46';
+            var release = 'HG38';
+            var release_annotation = '49';
             $(document).ready(function () {
             	document.getElementById("text_list_genes").value = "";
 		    	document.getElementById("span_release_annotation").innerHTML = "<font color='green'><b>" + release + "<br> g:" + release_annotation + "</b></font>";
@@ -545,11 +545,12 @@ l		</script>
 							Release<br>Annotation<br><span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
 						</li>
 						<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+							<a class="dropdown-item" href="#" onClick="change_annotation('49', 'HG38')"><center>HG38 / Gencode 49</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('46', 'HG38')"><center>HG38 / Gencode 46</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('43', 'HG38')"><center>HG38 / Gencode 43</center></a>
 							<a class="dropdown-item" href="#" onClick="change_annotation('46', 'HG19')"><center>HG19 / Gencode 46</center></a selected>
 						</div>
-						<li class="list-group-item"><span id="span_release_annotation">HG19<br> g:46 </span></li>
+						<li class="list-group-item"><span id="span_release_annotation">HG38<br> g:49 </span></li>
 					</ul>
 				</div>
 				<br>
