@@ -30,73 +30,74 @@ my $dir_pipeline_script = qq{$Bin/scripts/scripts_pipeline/pacbio/};
 my $fork = 64;
 
 my $nb=0;
+my @steps = ("pbmm2","deepvariant","binary_depth","sawfish","wisecondor","spectre","hificnv","calling_wisecondor");
+
+my @calling =("pbmm2","sawfish","wisecondor","spectre","hificnv","calling_wisecondor");
+my @project_steps =("deepvariant_denovo");
+my $scripts = {
+		pbmm2 => {cmd=>"$dir_pipeline_script/pbmm2.pl"},
+		deepvariant => {cmd=>"$dir_pipeline_script/deepvariant.pl",previous=>"pbmm2"},
+		binary_depth => {cmd=>"$dir_pipeline_script/../coverage_genome.pl",previous=>"pbmm2"},
+		sawfish => {cmd=>"$dir_pipeline_script/sawfish.pl",previous=>"pbmm2"},
+		wisecondor =>  {cmd=>"$dir_pipeline_script/wisecondor.pl",previous=>"pbmm2"},
+		calling_wisecondor =>  {cmd=>"$dir_pipeline_script/calling_wisecondor.pl",previous=>"wisecondor"},
+		spectre =>  {cmd=>"$dir_pipeline_script/spectre.pl",previous=>"pbmm2"},
+		hificnv =>  {cmd=>"$dir_pipeline_script/hificnv.pl",previous=>"pbmm2"},
+		deepvariant_denovo => {cmd=>"$dir_pipeline_script/../deepvariant/deepvariant_denovo.pl",previous=>"deepvariant"},
+};
+
 foreach my $project_name (split(",",$arg_project_name)) {
-	warn $project_name;
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
 my $groups;
 my $stforce;
 
-my @steps = ("pbmm2","deepvariant","binary_depth","sawfish","wisecondor","spectre","hificnv","calling_wisecondor");
-
-
-
-
- foreach my $patient (@{$project->getPatients}) {
-	#binary_depth,coverage,melt,deepvariant
-	my $patient_name = $patient->name;
-	
-	my $previous_dude;
-	#Coverage 
-		
-	my $align = qq{$dir_pipeline_script/pbmm2.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce}."&&  $Bin/bam2cram.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce";
-	my $id1;
-	
-	
-	unless (-e $patient->getFileName("pbmm2") or $force ){
-			
-			$id1 = $slurm->add_job({cmd=>$align,name=>"pbmm2!".$project->name,type=>$patient->name,cpu=>128});
-	}
-	unless (-e $patient->getFileName("deepvariant")){
-			my $cmd_deepvariant = qq{$dir_pipeline_script/deepvariant.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
-			 $slurm->add_job({cmd=>$cmd_deepvariant,name=>"deep!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
-	}
-	unless (-e $patient->getFileName("deepvariant")){
-			my $cmd_deepvariant = qq{$dir_pipeline_script/deepvariant.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
-			 $slurm->add_job({cmd=>$cmd_deepvariant,name=>"deep!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
-	}
-	unless (-e $patient->getFileName("binary_depth")){
-			my $cmd_coverage = qq{perl $dir_pipeline_script/../coverage_genome.pl -project=$project_name -patient=$patient_name -fork=$fork -$stforce};
-			$slurm->add_job({cmd=>$cmd_coverage,name=>"binary-depth!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
-			
-	}
-	unless (-e $patient->getFileName("sawfish")){
-			my $cmd_sawfish = qq{$dir_pipeline_script/sawfish.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
-			$slurm->add_job({cmd=>$cmd_sawfish,name=>"sawfish!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
-	}
-	my $wise_id;
-	unless (-e $patient->getFileName("wisecondor")){
-		
-			my $cmd_wsiecondor = qq{$dir_pipeline_script/wisecondor.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
-			$wise_id = $slurm->add_job({cmd=>$cmd_wsiecondor,name=>"wise1!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
-	}
-	#warn  $patient->getFileName("spectre");
-	#die();
-	unless (-e $patient->getFileName("spectre")){
-			my $cmd_wsiecondor = qq{$dir_pipeline_script/spectre.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
-			$wise_id = $slurm->add_job({cmd=>$cmd_wsiecondor,name=>"spectre!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
-	}
-	unless (-e $patient->getFileName("hificnv")){
-			my $cmd_wsiecondor = qq{$dir_pipeline_script/hificnv.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
-			$wise_id = $slurm->add_job({cmd=>$cmd_wsiecondor,name=>"hificnv!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$id1]});
-	}
-	unless (-e $patient->getFileName("calling_wisecondor")){
-		my $cmd_wsiecondor2 = qq{$dir_pipeline_script/calling_wisecondor.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce};
-		$slurm->add_job({cmd=>$cmd_wsiecondor2,name=>"wiseC!".$project->name,type=>$patient->name,cpu=>$fork,previous=>[$wise_id]});
-	}
-
- }
+foreach my $c (@calling){
+#	system("add_calling_methods.sh -project=".$project->name." -method=".$c);
 }
 
+my $per_fam;
+my $deep;
+my $hids;
+ foreach my $patient (@{$project->getPatients}) {
+	
+	my $patient_name = $patient->name();
+	foreach my $step (@steps){
+		unless (-e $patient->getFileName($step) or $force) {
+			my $cmd = $scripts->{$step}->{cmd}.qq{ -project=$project_name -patient=$patient_name -fork=$fork $stforce};#."&&  $Bin/bam2cram.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce";
+			my $hh ={cmd=>$cmd,name=>"${step}#".$project->name,type=>$patient->name,cpu=>128};
+			if (exists $scripts->{$step}->{previous}){
+				my $previous = $scripts->{$step}->{previous};
+				if (exists $hids->{$previous}){
+					$hh->{previous}=$hids->{$previous}->{$patient->id};
+				}
+			}
+			
+			my $id = $slurm->add_job($hh);
+			push(@{$hids->{$step}->{$patient->id}}, $id);
+		}
+		} 
+	}
+	foreach my $step (@project_steps){
+		unless (-e $project->getFileName($step) or $force ){
+			if ($force) {
+				unlink $project->getFileName($step);
+			}
+			my $cmd = $scripts->{$step}->{cmd}.qq{ -project=$project_name -fork=$fork $stforce};
+			my $hh ={cmd=>$cmd,name=>"${step}#".$project->name,type=>$project->name,cpu=>128};
+			if (exists $scripts->{$step}->{previous}) {
+				my $previous = $scripts->{$step}->{previous};
+				if (exists $hids->{$previous}) {
+					foreach my $a  (values %{$hids->{$previous}}){
+						#$hh->{previous}=$hids->{$previous}->{$patient->id};
+						push(@{$hh->{previous}}, @$a);
+					}
+				}
+			}
+			my $id = $slurm->add_job($hh);
+			$hids->{$step}->{$project->id} = $id;
+		}
+	}
+}
 $slurm->print_jobs();
 $slurm->run_slurm;
