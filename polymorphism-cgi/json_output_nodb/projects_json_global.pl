@@ -183,25 +183,26 @@ sub getProjectListsDefidiag {
 		my $disabled;
 		
 		my $is_public = $buffer->getQuery->isProjectPublic($pro->{id});
+		next if not $isUserMagic and not $is_public;
 
-		if ($is_public) {
-			if ($pro->{'cache'} eq 'rocks') {
-				$url_query = 'vector/gene.html?project='.$pro->{'name'};
-				$url_diag = 'coverage.html?project='.$pro->{'name'};
-				$url_viewer = 'polyviewer.html?project='.$pro->{'name'};
-				$url_resume = 'launch_resume_project(\''.$pro->{'name'}.'\')';
-			}
-			elsif ($pro->{'cache'} eq 'resume') {
-				$url_resume = 'launch_resume_project_no_cache(\''.$pro->{'name'}.'\')';
-				$disabled = 'disabled';
-			}
-			else {
-				$url_resume = 'launch_resume_project_archive(\''.$pro->{'name'}.'\')';
-				$url_query = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/vector/gene.html?project='.$pro->{'name'};
-				$url_diag = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/coverage.html?project='.$pro->{'name'};
-				$url_viewer = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/polyviewer.html?project='.$pro->{'name'};
-			}
-			if ($type_projects eq 'polyviewer') {
+		if ($pro->{'cache'} eq 'rocks') {
+			$url_query = 'vector/gene.html?project='.$pro->{'name'};
+			$url_diag = 'coverage.html?project='.$pro->{'name'};
+			$url_viewer = 'polyviewer.html?project='.$pro->{'name'};
+			$url_resume = 'launch_resume_project(\''.$pro->{'name'}.'\')';
+		}
+		elsif ($pro->{'cache'} eq 'resume') {
+			$url_resume = 'launch_resume_project_no_cache(\''.$pro->{'name'}.'\')';
+			$disabled = 'disabled';
+		}
+		else {
+			$url_resume = 'launch_resume_project_archive(\''.$pro->{'name'}.'\')';
+			$url_query = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/vector/gene.html?project='.$pro->{'name'};
+			$url_diag = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/coverage.html?project='.$pro->{'name'};
+			$url_viewer = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/polyviewer.html?project='.$pro->{'name'};
+		}
+		if ($type_projects eq 'polyviewer') {
+			if ($is_public) {
 				$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-warning btn-sm'>Resume</button></center></td>};
 				if ($disabled) {
 					$out .= qq{<td></td>};
@@ -212,7 +213,13 @@ sub getProjectListsDefidiag {
 					$out .= qq{<td><center><button onclick="window.open('$url_viewer', '_blank')" class='btn btn-primary btn-sm'>PolyViewer</button></center></td>};
 				}
 			}
-			if ($type_projects eq 'polydiag') {
+			else {
+				$out .= qq{<td colspan='2'><b><i><span style='color:red;'><center>--- OFFLINE ---</center></span></td>};
+				$out .= qq{<td><center><button onclick="window.open('$url_viewer', '_blank')" class='btn btn-primary btn-sm'>PolyViewer</button></center></td>};
+			}
+		}
+		if ($type_projects eq 'polydiag') {
+			if ($is_public) {
 				$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-primary btn-sm'>Resume</button></center></td>};
 				if ($disabled) {
 					$out .= qq{<td></td>};
@@ -229,10 +236,16 @@ sub getProjectListsDefidiag {
 					}
 				}
 			}
-		}
-		else {
-			next if not $isUserMagic;
-			$out .= qq{<td colspan='3'><b><i><span style='color:red;'>OFFLINE</span> (in progress...)</td>};
+			else {
+				$out .= qq{<td colspan='2'><b><i><span style='color:red;'><center>--- OFFLINE ---</center></span></td>};
+				if ($pro->{'type_analyse'} eq 'target') {
+					$out .= qq{<td><center><button onclick="window.open('$url_diag', '_blank')" class='btn btn-warning btn-sm'>PolyDiag</button></center></td>};
+				}
+				else {
+					next;
+				
+				}
+			}
 		}
 		push(@lHTML, $out);
 	}
