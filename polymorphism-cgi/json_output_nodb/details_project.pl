@@ -188,6 +188,18 @@ else {
 	$h4->{key} = 'ho_regions_extra_large';
 	$h4->{value} = $project->ho_regions_extra_large_value();
 	push(@lItems, $h4);
+	if ($project->isPublic()) {
+		my $h5;
+		$h5->{key} = 'is_offline';
+		$h5->{value} = 'no';
+		push(@lItems, $h5);
+	}
+	else {
+		my $h5;
+		$h5->{key} = 'is_offline';
+		$h5->{value} = 'yes';
+		push(@lItems, $h5);
+	}
 }
 
 my $hashRes;

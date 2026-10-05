@@ -79,6 +79,16 @@ sub hasHgmdAccess {
 	return;
 }
 
+has isPublic => (
+	is 	 	=> 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self    = shift;
+		return $self->buffer->getQuery()->isProjectPublic($self->id());
+		return;
+	},
+);
+
 has extAlignFile => (
 is      => 'ro',
 	lazy    => 1,
