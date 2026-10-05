@@ -183,33 +183,39 @@ sub get_value {
 }
 
 sub gatherCNV_from_samecaller{
-	my ($name,$hcnv) = @_;
+	my ($name,$acnv) = @_;
 	my $htree;
 	my $hintspan;
 
 	# 1)  detecter les SV chevauchants 
 	
 	# creer les arbres
-	
-
-foreach my $id  (keys %{$hcnv}) {
+	my $hcnv;
+foreach my $hcnv1  (@{$acnv}) {
+#foreach my $id  (keys %{$hcnv}) {
+	my $id = $hcnv1->{id};
+	my $uid =$id."_". $hcnv1->{CALLER};
+	$hcnv->{$uid} = $hcnv1;
 						my ($t,$c,$d,$f) = split( /_/, $id );
 						
 						$htree->{$t}->{$c}= Set::IntervalTree->new unless exists $htree->{$t}->{$c} ;
 						$hintspan->{$t}->{$c}= Set::IntSpan::Fast->new() unless exists $hintspan->{$t}->{$c} ;;
-						$htree->{$t}->{$c}->insert($id,$d,$f);
+						$htree->{$t}->{$c}->insert($uid,$d,$f);
 	}
 	
 
 	# 2) associer a chaque SV trouve avec le même caller ceux qui lui sont proches	
-foreach my $id  (keys %{$hcnv}) 
-				{
+#foreach my $id  (keys %{$hcnv}) 
+#				{
+#foreach my $hcnv  (@{$acnv}) {
+foreach my $id  (keys %{$hcnv}) {
+#			my $id = $hcnv->{ID};					
 						#on cherche les regroupements
-						my ($t,$c,$dtheSV,$ftheSV) = split( /_/, $id );
+			my ($t,$c,$dtheSV,$ftheSV,$ca) = split( /_/, $id );
 		
-						my $padding = 0.1 * abs($ftheSV-$dtheSV);
+			my $padding = 0.1 * abs($ftheSV-$dtheSV);
 		
-						my $tab_id = $htree->{$t}->{$c}->fetch($dtheSV-$padding,$ftheSV+$padding);
+				my $tab_id = $htree->{$t}->{$c}->fetch($dtheSV-$padding,$ftheSV+$padding);
 
 						# on regroupe les id dans un intspan
 						my $gdeb=0;
@@ -217,13 +223,14 @@ foreach my $id  (keys %{$hcnv})
 			
 						foreach my $ind_id ( @$tab_id ) 
 						{
-							my ($t,$c,$d,$f) = split(/_/, $ind_id);
+							my ($t,$c,$d,$f,$ca) = split(/_/, $ind_id);
 				
 		 				   	$gdeb = $d if ( ($d < $gdeb) || ($gdeb==0));
 		 					$gend = $f if ( ($f > $gend) );
  						}
 						$hintspan->{$t}->{$c}->add_range($gdeb,$gend);
 				}
+				
 
 	return gather_id($htree,$hintspan,$hcnv);
 }
@@ -274,9 +281,11 @@ sub gather_id {
 					my $qual;
 					my $index;
 					my $cn = -99;
-					
+					$hcnv_gather->{$global_id}->{CALLER} = 0;
 					foreach my $id ( @$tab_ind_id )
-					{		
+					{
+						die() unless exists $hcnv->{$id};
+						warn $id;		
 						$ggfreq = $hcnv->{$id}->{'GOLD_G_FREQ'} if ($hcnv->{$id}->{'GOLD_G_FREQ'} > $ggfreq);
 						$glfreq = $hcnv->{$id}->{'GOLD_L_FREQ'} if ($hcnv->{$id}->{'GOLD_L_FREQ'} > $glfreq);
 						$mg = "yes" if ($hcnv->{$id}->{'OMIN_MG'} eq "yes");
@@ -290,10 +299,10 @@ sub gather_id {
 						$hcnv_gather->{$global_id}->{'INFOS'}  = $hcnv->{$id}->{'INFOS'};
 						$hcnv_gather->{$global_id}->{REAL_CALLER} = $hcnv->{$id}->{'REAL_CALLER'};
 						$hcnv_gather->{$global_id}->{CALLER} = $hcnv->{$id}->{'CALLER'};
+						$hcnv_gather->{$global_id}->{HASH_CALLER}->{$hcnv->{$id}->{'CALLER'}} ++;
 						push(@$elementary_ids,$id);
 					}
 					$hcnv_gather->{$global_id}->{'ELEMENTARY'} = $elementary_ids;
-					
 					$hcnv_gather->{$global_id}->{'GOLD_G_FREQ'} = $ggfreq;
 					$hcnv_gather->{$global_id}->{'GOLD_L_FREQ'} = $glfreq;
 					$hcnv_gather->{$global_id}->{'OMIN_MG'} = $mg;
