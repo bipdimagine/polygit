@@ -669,7 +669,7 @@ else {
 $t     = time;
 #my $stdout_end = tee_stdout {
 	
-	warn "genes:".scalar(@$genes);
+	#warn "genes:".scalar(@$genes);
 	if (@genes_local_validation_high) {
 		foreach my $gene (@genes_local_validation_high) { $gene->{uid} = $gene->{id}."_".int(rand(time)) unless exists $gene->{uid}; }
 		my @this_genes = sort{$b->{max_score} <=> $a->{max_score}} @genes_local_validation_high;
@@ -691,11 +691,11 @@ $t     = time;
 	}
 	else {
 		if ($gene_name_filtering ) {
-		print qq{<div class="knockout">No Variation Found for gene $gene_name_filtering</div>};
-	}
-	else {
-		print qq{<div class="knockout">No Variation Found</div>};
-	}
+			print qq{<br><div style="font-size:40px;color:red;">No Variation Found for gene <b>$gene_name_filtering</b></div>};
+		}
+		else {
+			print qq{<br><div style="font-size:40px;color:red;">No Variation Found</div>};
+		}
 	}
 	warn "hetero " . abs( time - $t ) if $print;
 	$ztime .= ' hetero:' . ( abs( time - $t ) );

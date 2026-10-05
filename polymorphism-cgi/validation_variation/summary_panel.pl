@@ -603,7 +603,7 @@ my $list_control_panels =
 if ( $cgi->param('print') ) {
 
 	#die();
-	html::print_cgi_header( $cgi, $CSS, 1, $project_name . " - PolyDiag" );
+	html::print_cgi_header( $cgi, $CSS, 1, "$project_name Resume" );
 	print $CSS;
 	table_patients_printer($project);
 	exit(0);
@@ -687,7 +687,11 @@ my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table"."02-05-2024");
 my $htable = $no_cache->get_cache( $table_id );
 $no_cache->close();
 $htable = undef if $dev or $cgi->param('force');
-unless ($htable) {
+
+#warn "here";
+
+
+unless ($htable and $project->isPublic()) {
 	print qq{<div style="display: none">};
 	
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project) unless $patient_value;
@@ -706,6 +710,19 @@ else {
 }
 
 $| = 1;
+
+if (not $project->isPublic()){
+	print qq{<div style="height:80px;background-color:red;"><center><span style="color:white;font-size:40px;padding-top:20px;"><i><b>-------- PROJECT OFFLINE --------</i></b></span></center></div>};
+	if ($project->buffer->getQuery->isUserMagic($user)) {
+		print qq{<br><center><button onClick="put_project_online();" type="button" style="font-size:20px;color:green;border: solid 1px green;" class="btn btn-outline-success">--- Put ONLINE ---</button></center></div><br>};
+	}
+	else {
+		print qq{<br><br><br>};
+		print qq{<center><span class="glyphicon glyphicon-warning-sign" style="font-size:65px;color:orange;"></span><span style="font-size:65px;color:orange;"> Project in progress...</span></center};
+		print qq{<br><br><br>};
+		exit(0);
+	}
+}
 
 foreach my $run ( @{ $project->getRuns() } ) {
 	print $header->{ $run->id };

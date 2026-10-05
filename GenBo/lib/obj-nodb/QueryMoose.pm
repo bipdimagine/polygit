@@ -696,6 +696,19 @@ sub existsPublicDatabaseVersionId {
 	#my $s = $sth->fetchall_hashref("$pid");
 }
 
+sub isProjectPublic {
+	my ($self,$pid) = @_;
+	my $dbh = $self->getDbh();
+	return $dbh->selectrow_array(qq{SELECT public from PolyprojectNGS.projects where project_id = $pid;});
+}
+
+sub setProjectInpublic {
+	my ($self,$pid) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{UPDATE PolyprojectNGS.projects SET public='1' WHERE project_id=$pid;};
+	$dbh->do($sql) or confess();
+	return 1;
+}
 
 #cahe history
 sub ListCacheHistoryVersion {

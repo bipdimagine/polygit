@@ -88,8 +88,6 @@ sub check_login_have_projects {
 	my $res = $buffer->getQuery()->getProjectListForUser($login, $pwd );
 	export_data::print_simpleJson($cgi,$res);
 	exit(0);
-	warn Dumper $res;
-	die;
 }
 
 sub getProjectLists {
@@ -156,6 +154,10 @@ sub getProjectLists {
 	
 		$project->{isDude} = 0;
 		$project->{isDude} = 1 if ($project2->isDude());
+		
+		$res->[0]->{is_public} = $project2->isPublic();
+		$res->[0]->{is_staff} = $project2->buffer->getQuery->isUserMagic($login);
+		
 		#warn 
 		unless ($buffer->getQuery()->isUserMagic($login)){
 		$buffer->getQuery()->writeLatestInfos($project2->id,$login);
@@ -165,14 +167,13 @@ sub getProjectLists {
 	 }
 	 if ($project_name){
 	 	my $buffer2 = GBuffer->new;
-	 	my $project2 = $buffer2->newProject( -name => $project_name ); 	
+	 	my $project2 = $buffer2->newProject( -name => $project_name ); 
 	 	my $captures = $project2->getCaptures();
 	 	foreach my $a (@$res){
 	 		next unless $a->{name} ne $project_name;
 	 		$a->{sequencing_type} = "panel";
 	 		$a->{sequencing_type} = "genome" if $project2->isGenome;
 	 		$a->{sequencing_type} = "exome" if $project2->isExome;
-	 		
 	 	}
 	 }
 	export_data::print_simpleJson($cgi,$res) if $project_query;
@@ -291,7 +292,6 @@ sub getProjectLists {
 	}
 	warn "end";
 	export_data::print_simpleJson($cgi,\@res2);
-	
 	exit(0);
 }
 

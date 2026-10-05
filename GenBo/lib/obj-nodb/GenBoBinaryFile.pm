@@ -334,7 +334,7 @@ sub getMean {
 	warn join(";",$chr,$start,$end);
 	my $a  = $self->getDepth($chr,$start,$end);
 	warn Dumper $a;
-	die();
+	confess();
 	my $sum = sum(@$a);
 	my $nb = scalar(@$a);
 	

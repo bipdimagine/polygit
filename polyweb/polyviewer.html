@@ -352,19 +352,33 @@ function onSearchAll_polyviewer (input,name){
 					dijit.byId('login').show();
 					return;
 					};
+				
+				var url_header1 = url_header_polyviewer+"?project="+projectName+"&user="+cookie_username;
+                header.setHref(url_header1);
+				
+				if (items[0].is_public == 0 && items[0].is_staff == 0) {
+					var url_project = url_summary;
+					var this_args = "project="+project_name+"&&user_name="+cookie_username;
 					
+					var xhr = new XMLHttpRequest();
+					xhr.open('POST', url_project, true);
+					xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+					xhr.onreadystatechange = function() {
+						document.getElementById("summary").innerHTML = this.response;
+						dijit.byId('waiting').hide();
+					}
+					xhr.send(this_args);
+					return;
+				}
+				
 				getGencodeTrackForProject(projectName);
 				var url1 = construct_url(url_fast_patients);
-			
-				 storeP = new dojo.data.ItemFileWriteStore({
-						url: url1
-					});
-				   storeP.fetch({onComplete: tabPatients});
-				    storeP.fetch({onComplete:fillgridPatients});
+				storeP = new dojo.data.ItemFileWriteStore({
+					url: url1
+				});
+				storeP.fetch({onComplete: tabPatients});
+			    storeP.fetch({onComplete:fillgridPatients});
 				  
-				  var url_header1 = url_header_polyviewer+"?project="+projectName+"&user="+cookie_username;
-				  
-                header.setHref(url_header1);
 				reload_project();
 				var elm = document.getElementById('checkbox');
  				 if (igv_js != document.getElementById("check_igv").checked) {
@@ -461,6 +475,21 @@ function just_reload_project(){
 dijit.byId('waiting').show();
 	xhr.send(this_args);
 	}
+	
+function put_project_online() {
+	var this_url = url_path + "/validation_variation/put_project_online.pl?project=" + project_name;
+	$.getJSON( this_url, function( data ) {
+		console.log(data.items);
+		if (data.items[0].done == 1) {
+			alert ('Project '+project_name+' is ONLINE !');
+			window.location.reload();
+		}
+		else {
+			alert("ERROR: please contact bioinformatics platform");
+		}
+    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
+	
+}	
 	
 function reload_project(force){
 	document.getElementById("summary").innerHTML = ' <span class="dijitInline dijitIconLoading"></span> Loading';

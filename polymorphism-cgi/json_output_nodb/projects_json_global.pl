@@ -59,7 +59,7 @@ checkAuthentification($buffer,$login,$pwd,$cgi->param('project')) if $action eq 
  
 sub getProjectListsDefidiag {
 	my ( $buffer, $login, $pwd ) = @_;
-	
+	my $isUserMagic = $buffer->getQuery()->isUserMagic($login);
 	my $type_projects = $cgi->param('type_projects');
 	print $cgi->header('text/json-comment-filtered');
 	print "{\"progress\":\".";
@@ -181,6 +181,10 @@ sub getProjectListsDefidiag {
 		#dialog_resume_project
 		#$url_resume = 'https://defidiag.polyweb.fr/cgi-bin/polymorphism-cgi//validation_variation/summary_panel.pl?project='.$pro->{'name'}.'&user_name=masson';
 		my $disabled;
+		
+		my $is_public = $buffer->getQuery->isProjectPublic($pro->{id});
+		next if not $isUserMagic and not $is_public;
+
 		if ($pro->{'cache'} eq 'rocks') {
 			$url_query = 'vector/gene.html?project='.$pro->{'name'};
 			$url_diag = 'coverage.html?project='.$pro->{'name'};
@@ -198,24 +202,42 @@ sub getProjectListsDefidiag {
 			$url_viewer = 'https://'.$ENV{HTTP_HOST}."/".$buffer->config->{polyweb_url}->{polyweb_OLD}.'polyweb/polyviewer.html?project='.$pro->{'name'};
 		}
 		if ($type_projects eq 'polyviewer') {
-			$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-warning btn-sm'>Resume</button></center></td>};
-			if ($disabled) {
-				$out .= qq{<td></td>};
-				$out .= qq{<td></td>};
+			if ($is_public) {
+				$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-warning btn-sm'>Resume</button></center></td>};
+				if ($disabled) {
+					$out .= qq{<td></td>};
+					$out .= qq{<td></td>};
+				}
+				else {
+					$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
+					$out .= qq{<td><center><button onclick="window.open('$url_viewer', '_blank')" class='btn btn-primary btn-sm'>PolyViewer</button></center></td>};
+				}
 			}
 			else {
-				$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
+				$out .= qq{<td colspan='2'><b><i><span style='color:red;'><center>--- OFFLINE ---</center></span></td>};
 				$out .= qq{<td><center><button onclick="window.open('$url_viewer', '_blank')" class='btn btn-primary btn-sm'>PolyViewer</button></center></td>};
 			}
 		}
 		if ($type_projects eq 'polydiag') {
-			$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-primary btn-sm'>Resume</button></center></td>};
-			if ($disabled) {
-				$out .= qq{<td></td>};
-				$out .= qq{<td></td>};
+			if ($is_public) {
+				$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-primary btn-sm'>Resume</button></center></td>};
+				if ($disabled) {
+					$out .= qq{<td></td>};
+					$out .= qq{<td></td>};
+				}
+				else {
+					$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
+					if ($pro->{'type_analyse'} eq 'target') {
+						$out .= qq{<td><center><button onclick="window.open('$url_diag', '_blank')" class='btn btn-warning btn-sm'>PolyDiag</button></center></td>};
+					}
+					else {
+						next;
+					
+					}
+				}
 			}
 			else {
-				$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
+				$out .= qq{<td colspan='2'><b><i><span style='color:red;'><center>--- OFFLINE ---</center></span></td>};
 				if ($pro->{'type_analyse'} eq 'target') {
 					$out .= qq{<td><center><button onclick="window.open('$url_diag', '_blank')" class='btn btn-warning btn-sm'>PolyDiag</button></center></td>};
 				}
