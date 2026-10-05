@@ -25,7 +25,7 @@ is		=> 'rw',
 lazy=>1,
 default => sub {
 		my $self = shift;
-		confess( $self->dir()) unless $self->dir();
+		confess( $self->dir()." ".$self->name) unless $self->dir();
 		return $self->dir."/".$self->name;
 		
 	
