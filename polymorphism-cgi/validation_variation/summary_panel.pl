@@ -635,8 +635,6 @@ my $dev;
 $t = time;
 $| = 1;
 my $key_quality = args_quality($project);
-#warn $key_quality;
-# my $key_quality = args_quality($project);
 my $no_cache = $project->get_lmdb_cache_summary("r");
 args_muc1( $project, $key_quality ) if $project->getCaptures->[0]->analyse =~ /renom/i;
 push( @$key_quality, "muc1.adVntr.10.05.23.6" ) if $project->getCaptures->[0]->analyse =~ /renom/i;
@@ -651,7 +649,6 @@ $no_cache->close();
 $project->getChromosomes();
 $project->getPatients();
 
-
 my $has_MUC1 = 1;
 foreach my $p (@{$project->getPatients()}) {
 	$has_MUC1 = undef if not -e $project->getVariationsDir("vntyper").'/'.$p->name.'.json';
@@ -665,7 +662,6 @@ my ( $gstats, $lstats, $patient_value );
 my $cache_icon = "";
 unless ($header) {
 	print qq{<div style="display: none">};
-	
 	( $gstats, $lstats, $patient_value ) = statistics_projects($project);
 	$hmendel = get_mendelian_statistics($project);
 	foreach my $run ( @{ $project->getRuns() } ) {
@@ -691,7 +687,6 @@ my $table_id =   md5_hex(join( ";", @$key_quality ) . ".table"."02-05-2024");
 my $htable = $no_cache->get_cache( $table_id );
 $no_cache->close();
 $htable = undef if $dev or $cgi->param('force');
-#warn "here";
 unless ($htable) {
 	print qq{<div style="display: none">};
 	
@@ -790,8 +785,6 @@ sub print_line_patient {
 	$style_btn_name = qq{style ="background-color:#C6E7F6;color:black"}
 	  if $p->sex() == 1;
 
-	#			warn $sex_eval ." ".$p->sex();
-	#			die();
 	if ( $sex_eval ne $p->sex() && $sex_eval ne -1 ) {
 
 		# $class->{class}= "danger";
@@ -1001,7 +994,6 @@ sub column_control {
 			$sex_eval = $p->compute_sex();
 		}
 
-		# warn $p->name.' '.$p->compute_sex.' '.$p->coverage_SRY();
 		my $color = "#009B77";
 		if ( $sex_eval ne $p->sex() && $sex_eval ne -1 ) {
 
@@ -1126,19 +1118,21 @@ sub exists_disomy {
 
 			my $max  = -10;
 			my $show = 0;
-	#	warn Dumper $hash->{$chr} if $chr eq "14";
 		# Detection de larges deletions
 			if (( $hash->{$chr}->{"TRANSMIS_BYF"} > 10 )	&& ( $hash->{$chr}->{"TRANSMIS_BYM"} > 10 )) # pas d'unidisomie
 			{
+				
 				if (( $hash->{$chr}->{"ISO_UPD_M"} > 10 ) && ( $hash->{$chr}->{"HoFrom_M"} > 50 ) )
 				{
 					$type = $chr; # deletion des alleles paternels
-					return "LD"
+					#die();
+					return "LD&nbsp$chr"
 				}
 				if (( $hash->{$chr}->{"ISO_UPD_F"} > 10 ) && ( $hash->{$chr}->{"HoFrom_F"} > 50 ) )
 				{
 					
-						return "LD"; # deletion des alleles maternels
+						#die();
+						return "LD&nbsp$chr"; # deletion des alleles maternels
 				}
 			}
 			else
@@ -1532,7 +1526,6 @@ sub table_design {
 					$hgenes->{ $g->id }->{obj} = $g;
 					$hgenes->{ $g->id }->{nb}++;
 	
-					#warn $g->external_name;
 				}
 			}
 		}
@@ -1756,7 +1749,6 @@ sub get_mendelian_statistics {
 	
 	return $hmendel unless $data;
 
-	#warn scalar @{$data->{data}};
 	#die();
 	foreach my $line ( @{ $data->{data} } ) {
 		next unless $line;
@@ -1797,7 +1789,6 @@ sub statistics_projects {
 	my $lstat;
 	my $patient_value;
 	push( @$query, $project->name() ) unless $query;
-
 	my $nbpp = 0;
 	if ( scalar(@$query) > 0 ) {
 		foreach my $p (@$query) {
@@ -1811,7 +1802,6 @@ sub statistics_projects {
 				my $data = $no->get( $project2->name, "$v" );
 				next unless $data;
 				$nbpp++;
-#				warn "**** ".$v;
 				foreach my $p_value ( @{ $data->{data} } ) {
 					$nb++;
 
@@ -1845,7 +1835,6 @@ sub statistics_projects {
 			}
 		}
 	}
-	
 	unless ($this_stats) {
 		$gstat->{"15X"}  = Statistics::Descriptive::Full->new();
 		$gstat->{"30X"}  = Statistics::Descriptive::Full->new();
@@ -1861,7 +1850,6 @@ sub statistics_projects {
 		$gstat->{$k}->add_data( @{ $stats->{$k} } );
 
 	}
-
 	foreach my $k ( keys %$this_stats ) {
 		foreach my $r ( keys %{ $this_stats->{$k} } ) {
 
@@ -1870,7 +1858,6 @@ sub statistics_projects {
 
 		}
 	}
-
 	return ( $gstat, $lstat, $patient_value );
 
 }
@@ -2091,6 +2078,7 @@ sub construct_identito_vigilence {
 	elsif ( scalar(@iv_vcf) > scalar(@iv) ) {
 		$level = pop(@iv_vcf);
 	}
+	$ENV{HTTP_HOST} = "" unless $ENV{HTTP_HOST};
 	my $url = 'https://'.$ENV{HTTP_HOST}."/cgi-bin/HG38/polymorphism-cgi/validation_variation/explain_identito_error.pl?project=".$project->name."&patient=".$p->name;
 	my $out =qq{<a href="$url" target="_blank">};
 	my $error = 0;
@@ -2178,7 +2166,6 @@ my $t = time;
 		my $mean     = $cov->{mean};
 		my $x30      = $cov->{"30x"};
 		my $cov_sry  = $p->coverage_SRY();
-		warn $cov_sry;
 		my $sex_eval = $p->compute_sex();
 		
 		my $color = "#009B77";
@@ -2190,19 +2177,15 @@ my $t = time;
 			$error++;
 			$color = "#DD4132";
 		}
-#		warn "2";
 		my $c2 = $c1 . "1";
 		my $text2 =
 qq{<i class="fa fa-circle" style="color:$color;margin-right: 5px;margin-left: 2px; "></i>}
 		  . $hsex1->{$sex_eval};
 		my $iv      = "";
 		my $iverror = 0;
-#		warn "id";
 		
 		( $iv, $iverror ) = (0,0);
 		if ($p->identity_vigilance()) { ( $iv, $iverror ) = construct_identito_vigilence($p); }
-		warn "---";
-#		warn "end";
 		if ( $iverror == 2 ) {
 			$c1 = "danger";
 			$error++;
@@ -2246,6 +2229,7 @@ qq{  <img src="https://img.icons8.com/material/14/000000/mars-symbol.png">/<img 
 	my $run_id = $run->id;
 	$out2 =
 qq{<div class="btn  btn-info btn-xs $btn" style="position:relative;bottom:1px;min-width:200px;;border-color:black" onClick='collapse_panel("control_sex","$list_control_panels","$run_id")'>  $text <span class="badge badge-danger">$error</span> </div>};
+	warn "end sub sex";
 	return ( $out2, $out );
 
 }
@@ -4094,7 +4078,6 @@ sub args_validation {
 		my $stv = $p1->get_string_validations();
 		next unless $stv;
 
-		#warn $stv;
 		push( @z, $stv );
 
 	}
