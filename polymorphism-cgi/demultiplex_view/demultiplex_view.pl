@@ -256,14 +256,12 @@ foreach my $date (reverse sort keys %$h_files_date) {
 			$h_db_by_proj->{$project_name}->{$pat_name} = undef;
 		}
 			
-			
-			
 		my $h_by_proj;
 		foreach my $project_name (sort keys %{$h_db_by_proj}) {
 			my $b = new GBuffer;
 			my $proj = $b->newProject( -name => $project_name );
 			foreach my $pat_name (sort keys %{$h_db_by_proj->{$project_name}}) {
-				my $patient = $proj->getPatient($pat_name);
+				my $patient = $proj->getPatientOrControl($pat_name);
 				my $specie_found = $patient->fastq_screen_found_specie();
 				if ($specie_found) {
 					my ($glyph, $species_text, $spec1, $spec2);
@@ -1050,8 +1048,8 @@ sub add_file_html {
 	next unless ($file =~ /\.html/);
 	next if ($file =~ /tree\.html/);
 	
-	warn "\n\n";
-	warn $file;
+#	warn "\n\n";
+#	warn $file;
 	my $name = $path;
 	$name =~ s/$origin_path//;
 	$name =~ s/$file//;
