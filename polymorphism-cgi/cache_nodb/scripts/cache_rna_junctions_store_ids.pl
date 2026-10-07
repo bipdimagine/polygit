@@ -79,7 +79,7 @@ my $file_ok = $project->lmdb_cache_variations_dir().'/chr'.$chr_name.'_store_ids
 
 $project->preload_patients();
 $project->buffer->disconnect();
-$project->buffer->{dbh} ="-";
+#$project->buffer->{dbh} ="-";
 #system("/software/bin/vmtouch -t /data-isilon/public-data/repository/HG19/gnomad-exome/2.1/lmdb//snps/".$chr->name);
 #warn "/data-isilon/public-data/repository/HG19/gnomad-exome/2.1/lmdb//snps/".$chr->name;
 #warn "------------------------";
