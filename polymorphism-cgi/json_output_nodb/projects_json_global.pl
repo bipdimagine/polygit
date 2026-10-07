@@ -205,8 +205,7 @@ sub getProjectListsDefidiag {
 			if ($is_public) {
 				$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-warning btn-sm'>Resume</button></center></td>};
 				if ($disabled) {
-					$out .= qq{<td></td>};
-					$out .= qq{<td></td>};
+					$out .= qq{<td colspan='2' style="color:blue;"><center><b><i>--- NO INTERFACE ---</b></i></center></td>};
 				}
 				else {
 					$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
@@ -222,8 +221,7 @@ sub getProjectListsDefidiag {
 			if ($is_public) {
 				$out .= qq{<td><center><button onclick="$url_resume" class='btn btn-primary btn-sm'>Resume</button></center></td>};
 				if ($disabled) {
-					$out .= qq{<td></td>};
-					$out .= qq{<td></td>};
+					$out .= qq{<td colspan='2' style="color:blue;"><center><b><i>--- NO INTERFACE ---</b></i></center></td>};
 				}
 				else {
 					$out .= qq{<td><center><button onclick="window.open('$url_query', '_blank')" class='btn btn-success btn-sm'>PolyQuery</button></center></td>};
