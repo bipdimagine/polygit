@@ -7010,7 +7010,7 @@ sub preload_patients {
 	$self->getFamilies();
 	$self->pedigree_details;
 	foreach my $p (@{$self->getPatients()}) {
-		$p->callingSVMethods() if not $self->isRna();
+		$p->callingSVMethods() if not $self->isRna() and $self->isGenome();
 		$p->callingMethods();
 		#$p->getBamFile(undef,1,undef);
 
