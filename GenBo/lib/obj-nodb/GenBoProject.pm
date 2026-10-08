@@ -1811,7 +1811,7 @@ sub get_gencode_directory {
 
 	
 	return $self->{directory}->{$version}->{$database} if exists $self->{directory}->{$version}->{$database};
-	warn $self->buffer->gencode->{$version}->{directory};
+#	warn $self->buffer->gencode->{$version}->{directory};
 	confess($version) unless exists $self->buffer->gencode->{$version}->{directory};
 	$self->{directory}->{$version}->{$database} = $self->public_data_root . "/". $self->annotation_genome_version . "/". $self->buffer->gencode->{$version}->{directory};
 	confess( "\n\nERROR: score:$database " . $self->{directory}->{$version}->{$database}."\n/n" ) unless -e $self->{directory}->{$version}->{$database};
@@ -7009,7 +7009,7 @@ sub preload_patients {
 	$self->getFamilies();
 	$self->pedigree_details;
 	foreach my $p (@{$self->getPatients()}) {
-		$p->callingSVMethods();
+		$p->callingSVMethods() if not $self->isRna() and $self->isGenome();
 		$p->callingMethods();
 		#$p->getBamFile(undef,1,undef);
 

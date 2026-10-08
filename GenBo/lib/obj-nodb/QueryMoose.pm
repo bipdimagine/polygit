@@ -710,6 +710,14 @@ sub setProjectInpublic {
 	return 1;
 }
 
+sub setProjectOffline {
+	my ($self,$pid) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{UPDATE PolyprojectNGS.projects SET public='0' WHERE project_id=$pid;};
+	$dbh->do($sql) or confess();
+	return 1;
+}
+
 #cahe history
 sub ListCacheHistoryVersion {
 	my ($self,$pid) = @_;

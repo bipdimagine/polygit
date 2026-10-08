@@ -371,6 +371,10 @@ function onSearchAll_polyviewer (input,name){
 					return;
 				}
 				
+				if (items[0].is_public == 1 && items[0].is_staff == 1) {
+					document.getElementById('b_staff_put_offline').style.display = "block";
+				}
+				
 				getGencodeTrackForProject(projectName);
 				var url1 = construct_url(url_fast_patients);
 				storeP = new dojo.data.ItemFileWriteStore({
@@ -482,6 +486,21 @@ function put_project_online() {
 		console.log(data.items);
 		if (data.items[0].done == 1) {
 			alert ('Project '+project_name+' is ONLINE !');
+			window.location.reload();
+		}
+		else {
+			alert("ERROR: please contact bioinformatics platform");
+		}
+    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
+	
+}	
+	
+function put_project_offline() {
+	var this_url = url_path + "/validation_variation/put_project_offline.pl?project=" + project_name;
+	$.getJSON( this_url, function( data ) {
+		console.log(data.items);
+		if (data.items[0].done == 1) {
+			alert ('Project '+project_name+' is OFFLINE now !');
 			window.location.reload();
 		}
 		else {
