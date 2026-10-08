@@ -1387,12 +1387,19 @@ sub init_annotation {
 	}
 	my $span = $self->getGenomicSpan();
 	$annot->{all}->{mask} = 0;
-
+	
+	my $score_alphagenome = $self->alphagenome();
+	
 	foreach my $tr ( @{ $self->getTranscripts() } ) {
 		my $gid = $tr->getGene()->id();
 		$annot->{$gid}->{mask} =  0 unless exists $annot->{$gid}->{mask};
 		$annot->{$tr->id}->{mask} =  0;
 		my $trid = $tr->id;
+		
+		if ($score_alphagenome && $score_alphagenome ne "-" && int($score_alphagenome) >= 25) {
+			$annot->{$trid}->{mask} = $annot->{$trid}->{mask} | $project->getMaskCoding("predicted_splice_site");
+			#last;
+		}
 		
 		###
 		# test exonic
