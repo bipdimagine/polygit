@@ -380,6 +380,11 @@ sub get_annotations {
 			$intspan_global_categories->{'ngs_score0'}->add($lmdb_index);
 		}
 		
+		my $value_alphagenome = $variation->alphagenome();
+		if (defined($value_alphagenome)) {
+			if ($value_alphagenome >= 25) { $intspan_global_categories->{predicted_splice_site}->add($lmdb_index); }	
+		}
+		
 		my $cadd_score = $variation->cadd_score();
 		if ($cadd_score == -1)    { $intspan_global_categories->{cadd_not}->add($lmdb_index);  }
 		elsif ($cadd_score >= 40) { $intspan_global_categories->{cadd_40}->add($lmdb_index); }
