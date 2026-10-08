@@ -544,7 +544,6 @@ sub sequence {
 	read( GENOME, $seq2, $file_length, 0 );
 	$seq2 =~ s/\n//g;
 	close GENOME;
-
 	#	warn 'seq: '.$seq2;
 	return $seq2;
 }
@@ -810,6 +809,37 @@ sub getWindowCaptureForCallingCapture1 {
 	return $res;
 }
 
+has blacklist => (
+	is      => 'ro',
+	lazy    => 1,
+	default => sub {
+		my $self     = shift;
+		my $intspan_region = Set::IntSpan::Fast->new();
+	my $tabix = Bio::DB::HTS::Tabix->new( filename => $self->project->blacklist_file);
+	my $res = $tabix->query( $self->ucsc_name );    # if $start;
+	
+	while ( my $line = $res->next ) {
+			chomp($line);
+			my ( $chr, $start, $end, $name, $color ) = split( " ", $line );
+			$intspan_region->add_range($start,$end);
+		}
+		return $intspan_region;
+	}
+);
+
+sub isInBlackList {
+	my ( $self, $start,$end) = @_;
+	$end = $start unless $end;
+	
+	my $test  = Set::IntSpan::Fast->new($start,$end);
+	my $in = $test->intersection($self->blacklist );
+	my $l = scalar($in->as_array);
+	my $l2 = ($start-$end)+1;
+	my $p = ($l/$l2);
+	return $p;
+	
+}
+
 sub chunk {
 	my ( $self, $size ) = @_;
 	return $self->{chunk}->{$size} if exists $self->{chunk}->{$size};
@@ -897,18 +927,20 @@ sub getIntSpanCaptureForCalling {
 			$capture->getIntSpanForChromosome( $self, $span_limit ) );
 	}
 	if ( $project->isDiagnostic ) {
+	
 		#my $span3 = Set::IntSpan::Fast::XS->new() ;
 		my $trs;
 		foreach my $capture ( @{ $project->getCaptures } ) {
+			
 			push( @$trs, @{ $capture->transcripts_name() } );
 		}
+		
 		my $span_transcript = Set::IntSpan::Fast::XS->new();
 		
 		my $nb_ok = 0;
 		my $nb_ok_1 = 0;
 		my $nb_ok_2 = 0;
 		my $nb_error = 0;
-		
 		foreach my $tr (@$trs) {
 			my $t = $project->newTranscript($tr);
 			next if $t->getChromosome()->name ne $self->getChromosome()->name;
@@ -918,9 +950,9 @@ sub getIntSpanCaptureForCalling {
 			$span_transcript->add_range( $g->start() - 1000, $g->end + 1000 );
 		}
 		$span = $span->union($span_transcript);
-
 		my $primers      = $self->getPrimers();
 		my $span_primers = Set::IntSpan::Fast::XS->new();
+		
 		foreach my $primer (@$primers) {
 
 		#next if $primer->getChromosome()->name ne $self->getChromosome()->name;
@@ -1218,7 +1250,7 @@ has intspan_pseudo_autosomal => (
 			confess();
 		}
 
-		return Set::IntSpan::Fast::XS->new($pos);
+		return Set::IntSpan::Fast->new($pos);
 	}
 );
 

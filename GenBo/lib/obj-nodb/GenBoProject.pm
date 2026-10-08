@@ -842,7 +842,6 @@ has parquet_cache_variants => (
 	my $name = $self->parquet_cache_dir();
 	$name.=$self->name.".variants.parquet";
 	return $name;
-	
 	}
 );
 sub rocks_pipeline_directory {
