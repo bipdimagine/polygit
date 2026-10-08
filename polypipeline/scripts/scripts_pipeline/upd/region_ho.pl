@@ -171,7 +171,6 @@ for my $right (0 .. $#snp) {
     my $length = $right - $left + 1;
 
     if ($length > $best_length) {
-
         $best_length = $length;
 
         $best_left  = $left;
