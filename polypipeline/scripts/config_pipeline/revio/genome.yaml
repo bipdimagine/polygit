@@ -15,36 +15,36 @@ project_steps:
 
 scripts:
   pbmm2:
-    cmd: "pacbio/pbmm2.pl -force=1"
+    script: "pacbio/pbmm2.pl -force=1"
 
   deepvariant:
-    cmd: "pacbio/deepvariant.pl"
+    script: "pacbio/deepvariant.pl"
     previous: pbmm2
 
   binary_depth:
-    cmd: "coverage_genome.pl"
+    script: "coverage_genome.pl"
     previous: pbmm2
 
   sawfish:
-    cmd: "pacbio/sawfish.pl"
+    script: "pacbio/sawfish.pl"
     previous: pbmm2
 
   wisecondor:
-    cmd: "pacbio/wisecondor.pl"
+    script: "pacbio/wisecondor.pl"
     previous: pbmm2
 
   calling_wisecondor:
-    cmd: "pacbio/calling_wisecondor.pl"
+    script: "pacbio/calling_wisecondor.pl"
     previous: wisecondor
 
   spectre:
-    cmd: "pacbio/spectre.pl"
+    script: "pacbio/spectre.pl"
     previous: pbmm2
 
   hificnv:
-    cmd: "pacbio/hificnv.pl"
+    script: "pacbio/hificnv.pl"
     previous: pbmm2
 
   deepvariant_denovo:
-    cmd: "deepvariant/deepvariant_denovo.pl"
+    script: "deepvariant/deepvariant_denovo.pl"
     previous: deepvariant
