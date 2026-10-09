@@ -1,0 +1,54 @@
+steps:
+
+  - binary_depth
+
+  - deepvariant
+
+  - melt
+
+  - wisecondor
+
+  - calling_wisecondor
+
+project_steps:
+
+  - deepvariant_denovo
+
+scripts:
+
+  deepvariant:
+
+    script: deepvariant/deepvariant.pl
+
+  binary_depth:
+
+    script: coverage_genome.pl
+
+  coverage:
+
+    script: coverage.pl
+
+    previous: binary_depth
+
+  melt:
+
+    script: melt/melt.pl
+
+  wisecondor:
+
+    script: wisecondor/wisecondor.pl
+
+  calling_wisecondor:
+
+    script: wisecondor/calling_wisecondor.pl
+
+    previous: wisecondor
+
+  deepvariant_denovo:
+
+    script: deepvariant/deepvariant_denovo.pl
+
+    previous: deepvariant
+	
+
+	

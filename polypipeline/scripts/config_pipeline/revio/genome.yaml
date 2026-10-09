@@ -1,0 +1,50 @@
+steps:
+  - pbmm2
+  - deepvariant
+  - binary_depth
+  - sawfish
+  - wisecondor
+  - spectre
+  - hificnv
+  - calling_wisecondor
+
+
+
+project_steps:
+  - deepvariant_denovo
+
+scripts:
+  pbmm2:
+    cmd: "pacbio/pbmm2.pl -force=1"
+
+  deepvariant:
+    cmd: "pacbio/deepvariant.pl"
+    previous: pbmm2
+
+  binary_depth:
+    cmd: "coverage_genome.pl"
+    previous: pbmm2
+
+  sawfish:
+    cmd: "pacbio/sawfish.pl"
+    previous: pbmm2
+
+  wisecondor:
+    cmd: "pacbio/wisecondor.pl"
+    previous: pbmm2
+
+  calling_wisecondor:
+    cmd: "pacbio/calling_wisecondor.pl"
+    previous: wisecondor
+
+  spectre:
+    cmd: "pacbio/spectre.pl"
+    previous: pbmm2
+
+  hificnv:
+    cmd: "pacbio/hificnv.pl"
+    previous: pbmm2
+
+  deepvariant_denovo:
+    cmd: "deepvariant/deepvariant_denovo.pl"
+    previous: deepvariant
