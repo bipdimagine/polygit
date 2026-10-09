@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pileup Viewer</title>
+
+	<style>
+
+	    * {
+	        box-sizing: border-box;
+	    }
+
+	    body {
+	        margin: 0;
+	        font-family: Arial, Helvetica, sans-serif;
+	        background: #f4f6f8;
+	        color: #222;
+	    }
+
+	    .header {
+	        background: #263238;
+	        color: white;
+	        padding: 20px 30px;
+	    }
+
+	    .header h1 {
+	        margin: 0 0 8px 0;
+	        font-size: 25px;
+	    }
+
+	    .header .project {
+	        opacity: 0.8;
+	        font-size: 14px;
+	    }
+
+	    .container {
+	        max-width: 1600px;
+	        margin: auto;
+	        padding: 20px;
+	    }
+
+	    .toolbar {
+	        background: white;
+	        padding: 15px;
+	        border-radius: 8px;
+	        margin-bottom: 20px;
+	        box-shadow: 0 1px 4px rgba(0,0,0,.12);
+	    }
+
+	    .filters {
+	        display: flex;
+	        flex-wrap: wrap;
+	        gap: 10px;
+	        align-items: center;
+	    }
+
+	    input[type="text"] {
+	        padding: 9px 12px;
+	        border: 1px solid #ccc;
+	        border-radius: 5px;
+	        font-size: 14px;
+	        min-width: 220px;
+	    }
+
+	    button {
+	        padding: 9px 14px;
+	        border: 0;
+	        border-radius: 5px;
+	        background: #455a64;
+	        color: white;
+	        cursor: pointer;
+	    }
+
+	    button:hover {
+	        background: #37474f;
+	    }
+
+	    label {
+	        font-size: 14px;
+	    }
+
+	    #status {
+	        margin-top: 12px;
+	        color: #666;
+	        font-size: 14px;
+	    }
+
+	    .position {
+	        background: white;
+	        border-radius: 8px;
+	        margin-bottom: 18px;
+	        box-shadow: 0 1px 4px rgba(0,0,0,.12);
+	        overflow: hidden;
+	    }
+
+	    .position-header {
+	        padding: 13px 18px;
+	        background: #eceff1;
+	        cursor: pointer;
+	        display: flex;
+	        justify-content: space-between;
+	        align-items: center;
+	    }
+
+	    .position-header:hover {
+	        background: #e0e5e8;
+	    }
+
+	    .position-title {
+	        font-weight: bold;
+	        font-size: 16px;
+	    }
+
+	    .position-info {
+	        color: #666;
+	        font-size: 13px;
+	    }
+
+	    .position-content {
+	        display: none;
+	        padding: 0;
+	    }
+
+	    .position.open .position-content {
+	        display: block;
+	    }
+
+	    /*
+	     * --------------------------------------------------------
+	     * Barre IGV
+	     * --------------------------------------------------------
+	     */
+
+	    .igv-toolbar {
+	        padding: 10px 15px;
+	        background: #fafafa;
+	        border-bottom: 1px solid #ddd;
+
+	        display: flex;
+	        align-items: center;
+	        gap: 12px;
+	    }
+
+	    .igv-toolbar button {
+	        background: #1565c0;
+	    }
+
+	    .igv-toolbar button:hover {
+	        background: #0d47a1;
+	    }
+
+	    .igv-toolbar button:disabled {
+	        background: #b0bec5;
+	        cursor: not-allowed;
+	    }
+
+	    .igv-selected-count {
+	        color: #666;
+	        font-size: 13px;
+	    }
+
+	    .igv-select-all {
+	        margin-left: auto;
+	        font-size: 13px;
+	    }
+
+	    /*
+	     * --------------------------------------------------------
+	     * Table
+	     * --------------------------------------------------------
+	     */
+
+	    table {
+	        width: 100%;
+	        border-collapse: collapse;
+	        font-size: 13px;
+	    }
+
+	    th {
+	        background: #37474f;
+	        color: white;
+	        padding: 9px 7px;
+	        text-align: center;
+	        cursor: pointer;
+	        position: sticky;
+	        top: 0;
+	    }
+
+	    td {
+	        padding: 7px;
+	        border-bottom: 1px solid #eee;
+	        text-align: center;
+	    }
+
+	    td.patient {
+	        text-align: left;
+	        font-weight: 500;
+	    }
+
+	    td.select-patient {
+	        width: 45px;
+	    }
+
+	    tr:hover {
+	        background: #f5f5f5;
+	    }
+
+	    .patient-select {
+	        cursor: pointer;
+	        transform: scale(1.1);
+	    }
+
+	    .base {
+	        font-weight: bold;
+			color: #CCCCCC;
+	    }
+		.base-ref {
+		       background-color:#FDAC53;
+			   color:black;
+		    }
+
+		 .base-alt {
+		    background-color:#FDAC53;
+			color:black;
+		    }
+	    .base-A {
+	        color: #d32f2f;
+	    }
+
+	    .base-C {
+	        color: #1976d2;
+	    }
+
+	    .base-G {
+	        color: #388e3c;
+	    }
+
+	    .base-T {
+	        color: #f57c00;
+	    }
+
+	    .anomaly {
+	        background: #fff3cd !important;
+	    }
+
+	    .depth-high {
+			background:#FDAC53;
+	        font-weight: bold;
+	    }
+
+	    .insertion {
+	        color: #CCCCCC;
+	    }
+
+	    .deletion {
+	        color: #CCCCCC;
+	    }
+
+	    .error {
+	        background: #ffebee;
+	        color: #c62828;
+	        padding: 15px;
+	        border-radius: 6px;
+	        margin-bottom: 20px;
+	    }
+
+	    .loading {
+	        opacity: 0.7;
+	    }
+
+	    .empty {
+	        padding: 30px;
+	        text-align: center;
+	        color: #777;
+	    }
+
+	    @media (max-width: 800px) {
+
+	        .container {
+	            padding: 10px;
+	        }
+
+	        table {
+	            font-size: 11px;
+	        }
+
+	        th,
+	        td {
+	            padding: 5px 3px;
+	        }
+
+	        input[type="text"] {
+	            min-width: 160px;
+	        }
+
+	        .igv-toolbar {
+	            flex-wrap: wrap;
+	        }
+
+	        .igv-select-all {
+	            margin-left: 0;
+	        }
+	    }
+
+	</style>
+	</head>
+	<body>
+		<div class="header">
+			<h1 id="pageTitle">
+			    Amplicon Viewer
+			</h1>
+
+			<div class="project" id="projectName"></div>
+			</div>
+			<div class="container">
+				<div class="toolbar">
+
+				    <div class="filters">
+
+				        <input
+				            type="text"
+				            id="patientFilter"
+				            placeholder="Rechercher un patient..."
+				        >
+
+				        <input
+				            type="text"
+				            id="positionFilter"
+				            placeholder="Rechercher une position..."
+				        >
+
+				        <label>
+				            <input
+				                type="checkbox"
+				                id="anomalyFilter"
+				            >
+				            Anomalies uniquement
+				        </label>
+
+				        <button
+				            type="button"
+				            id="openAll"
+				        >
+				            Open All
+				        </button>
+
+				        <button
+				            type="button"
+				            id="closeAll"
+				        >
+				           	Close All
+				        </button>
+
+				    </div>
+
+				    <div id="status">
+				        Init ...
+				    </div>
+
+				</div>
+
+
+				<div id="results">
+
+				    <div class="empty">
+				        Loading...
+				    </div>
+
+				</div>
+				</div>
+				<script>
+
+				"use strict";
+
+
+				let DATA = {};
+				let PROJECT = null;
+
+
+				/* ============================================================
+				   Initialisation
+				   ============================================================ */
+
+				document.addEventListener("DOMContentLoaded", function () {
+
+				    const params =
+				        new URLSearchParams(window.location.search);
+
+				    PROJECT = params.get("project");
+
+
+				    if (!PROJECT) {
+
+				        document.getElementById("status").textContent =
+				            "Aucun projet spécifié. Exemple : index.html?project=NGS2026_09064";
+
+				        document.getElementById("results").innerHTML =
+				            '<div class="error">' +
+				            'Paramètre <b>project</b> manquant dans l URL.' +
+				            '</div>';
+
+				        return;
+				    }
+
+
+				    document.title =
+				        "Pileup - " + PROJECT;
+
+
+				    document.getElementById("pageTitle").textContent =
+				        "Amplicon Viewer " + PROJECT;
+
+
+				    document.getElementById("projectName").textContent =
+				        "Projet : " + PROJECT;
+
+
+				    loadPileup();
+
+
+				    document.getElementById("patientFilter")
+				        .addEventListener("input", render);
+
+
+				    document.getElementById("positionFilter")
+				        .addEventListener("input", render);
+
+
+				    document.getElementById("anomalyFilter")
+				        .addEventListener("change", render);
+
+
+				    document.getElementById("openAll")
+				        .addEventListener("click", function () {
+
+				            document.querySelectorAll(".position")
+				                .forEach(function (element) {
+
+				                    element.classList.add("open");
+
+				                });
+
+				        });
+
+
+				    document.getElementById("closeAll")
+				        .addEventListener("click", function () {
+
+				            document.querySelectorAll(".position")
+				                .forEach(function (element) {
+
+				                    element.classList.remove("open");
+
+				                });
+
+				        });
+
+				});
+
+
+				/* ============================================================
+				   Chargement du JSON depuis le CGI
+				   ============================================================ */
+
+				function loadPileup() {
+
+				    const status =
+				        document.getElementById("status");
+
+
+				    status.textContent =
+				        "Calcul du pileup...";
+
+
+				    status.classList.add("loading");
+
+
+				    const url =
+				        "https://www.polyweb.fr/cgi-bin/pnitschk/polymorphism-cgi//validation_variation/pileup.pl?project=" +
+				        encodeURIComponent(PROJECT);
+
+
+				    fetch(url)
+
+				        .then(function (response) {
+
+				            if (!response.ok) {
+
+				                throw new Error(
+				                    "Erreur HTTP " + response.status
+				                );
+
+				            }
+
+				            return response.json();
+
+				        })
+
+				        .then(function (data) {
+
+				            status.classList.remove("loading");
+
+
+				            if (data.error) {
+
+				                status.textContent =
+				                    "Erreur";
+
+
+				                document.getElementById("results").innerHTML =
+				                    '<div class="error">' +
+				                    escapeHtml(data.error) +
+				                    '</div>';
+
+				                return;
+				            }
+
+
+				            DATA = data;
+
+
+				            updateSummary();
+
+
+				            status.textContent =
+				                Object.keys(DATA).length +
+				                " position(s) chargée(s).";
+
+
+				            render();
+
+				        })
+
+
+				        .catch(function (error) {
+
+				            status.classList.remove("loading");
+
+
+				            status.textContent =
+				                "Erreur lors du chargement.";
+
+
+				            document.getElementById("results").innerHTML =
+				                '<div class="error">' +
+
+				                '<b>Impossible de charger le pileup.</b>' +
+
+				                '<br><br>' +
+
+				                escapeHtml(error.message) +
+
+				                '</div>';
+
+
+				            console.error(error);
+
+				        });
+
+				}
+
+
+				/* ============================================================
+				   Résumé
+				   ============================================================ */
+
+				function updateSummary() {
+
+				    return;
+
+				}
+
+
+				/* ============================================================
+				   Affichage
+				   ============================================================ */
+
+				function render() {
+
+				    const results =
+				        document.getElementById("results");
+
+
+				    const patientFilter =
+				        document.getElementById("patientFilter")
+				            .value
+				            .toLowerCase()
+				            .trim();
+
+
+				    const positionFilter =
+				        document.getElementById("positionFilter")
+				            .value
+				            .toLowerCase()
+				            .trim();
+
+
+				    const anomalyOnly =
+				        document.getElementById("anomalyFilter")
+				            .checked;
+
+
+				    let html = "";
+
+
+				    Object.keys(DATA)
+
+				        .sort()
+
+				        .forEach(function (region) {
+
+
+				            const regionData =
+				                DATA[region];
+
+
+				            let rows = [];
+							let allele = region.split(":")[2].split("/");
+							 let ref = allele[0]; // T
+							 let alt = allele[1]; // C
+
+				            /*
+				             * Patients visibles dans ce tableau.
+				             *
+				             * Set permet de ne créer qu'une seule
+				             * checkbox par patient.
+				             */
+
+				            let patients = new Set();
+
+
+				            Object.keys(regionData)
+
+				                .sort()
+
+				                .forEach(function (patient) {
+
+
+				                    if (
+				                        patientFilter &&
+				                        patient
+				                            .toLowerCase()
+				                            .indexOf(patientFilter) === -1
+				                    ) {
+
+				                        return;
+
+				                    }
+
+
+				                    const pileups =
+				                        regionData[patient].pileup || {};
+
+
+				                    Object.keys(pileups)
+
+				                        .sort(function (a, b) {
+
+				                            return Number(a) - Number(b);
+
+				                        })
+
+				                        .forEach(function (actualPosition) {
+
+
+				                            /*
+				                             * Le filtre position peut porter
+				                             * soit sur la région, soit sur
+				                             * la position réelle.
+				                             */
+
+				                            if (
+
+				                                positionFilter &&
+
+				                                region
+				                                    .toLowerCase()
+				                                    .indexOf(positionFilter) === -1 &&
+
+				                                actualPosition
+				                                    .toLowerCase()
+				                                    .indexOf(positionFilter) === -1
+
+				                            ) {
+
+				                                return;
+
+				                            }
+
+
+				                            const pileup =
+				                                pileups[actualPosition];
+
+
+				                            if (
+				                                anomalyOnly &&
+				                                !isAnomaly(pileup)
+				                            ) {
+
+				                                return;
+
+				                            }
+
+
+				                            rows.push({
+
+				                                patient: patient,
+
+				                                position: actualPosition,
+
+				                                pileup: pileup
+
+				                            });
+
+
+				                            /*
+				                             * On mémorise le patient.
+				                             *
+				                             * Il ne sera affiché qu'une seule
+				                             * fois dans la sélection IGV.
+				                             */
+
+				                            patients.add(patient);
+
+				                        });
+
+				                });
+
+
+				            if (rows.length === 0) {
+
+				                return;
+
+				            }
+
+
+				            html +=
+				                '<div class="position">';
+
+
+				            /*
+				             * ------------------------------------------------
+				             * Header
+				             * ------------------------------------------------
+				             */
+
+				            html +=
+				                '<div class="position-header" ' +
+
+				                'onclick="togglePosition(this.parentElement)">' +
+
+
+				                '<div>' +
+
+				                    '<div class="position-title">' +
+
+				                        escapeHtml(region) +
+
+				                    '</div>' +
+
+
+				                    '<div class="position-info">' +
+
+				                        rows.length +
+
+				                        ' ligne(s) - ' +
+
+				                        patients.size +
+
+				                        ' patient(s)' +
+
+				                    '</div>' +
+
+				                '</div>' +
+
+
+				                '<div>?</div>' +
+
+
+				                '</div>';
+
+
+				            /*
+				             * ------------------------------------------------
+				             * Contenu
+				             * ------------------------------------------------
+				             */
+
+				            html +=
+				                '<div class="position-content">';
+
+
+				            /*
+				             * ------------------------------------------------
+				             * Barre IGV
+				             * ------------------------------------------------
+				             */
+
+				            html +=
+				                '<div class="igv-toolbar">' +
+
+
+				                    '<button ' +
+
+				                        'type="button" ' +
+
+				                        'onclick="openIGV(this)">' +
+
+				                        'Open with IGV' +
+
+				                    '</button>' +
+
+
+				                    '<span class="igv-selected-count">' +
+
+				                        '0 patient sélectionné' +
+
+				                    '</span>' +
+
+
+				                    '<label class="igv-select-all">' +
+
+				                        '<input ' +
+
+				                            'type="checkbox" ' +
+
+				                            'class="select-all-patients">' +
+
+				                        'Tout sélectionner' +
+
+				                    '</label>' +
+
+
+				                '</div>';
+
+
+				            /*
+				             * ------------------------------------------------
+				             * Tableau
+				             * ------------------------------------------------
+				             */
+
+				            html +=
+				                '<table class="pileup-table">';
+
+
+				            html +=
+				                '<thead>';
+
+
+				            html +=
+				                '<tr>';
+
+
+				            html +=
+				                '<th>IGV</th>';
+
+				            html +=
+				                '<th>Patient</th>';
+
+				            html +=
+				                '<th>Position</th>';
+
+				            html +=
+				                '<th>DP</th>';
+
+				            html +=
+				                '<th>A</th>';
+
+				            html +=
+				                '<th>C</th>';
+
+				            html +=
+				                '<th>G</th>';
+
+				            html +=
+				                '<th>T</th>';
+
+				            html +=
+				                '<th>N</th>';
+
+				            html +=
+				                '<th>INS</th>';
+
+				            html +=
+				                '<th>DEL</th>';
+
+
+				            html +=
+				                '</tr>';
+
+
+				            html +=
+				                '</thead>';
+
+
+				            html +=
+				                '<tbody>';
+
+
+				            /*
+				             * ------------------------------------------------
+				             * Lignes
+				             * ------------------------------------------------
+				             */
+
+				            rows.forEach(function (row) {
+
+
+				                const p = row.pileup;
+				                const anomaly = isAnomaly(p);
+
+
+				                html +=
+				                    '<tr class="' +
+
+				                    (anomaly
+				                        ? 'anomaly'
+				                        : '') +
+
+				                    '">';
+
+
+				                /*
+				                 * Checkbox IGV
+				                 *
+				                 * IMPORTANT :
+				                 * data-patient contient le patient.
+				                 */
+
+				                html +=
+				                    '<td class="select-patient">' +
+
+				                        '<input ' +
+
+				                            'type="checkbox" ' +
+
+				                            'class="patient-select" ' +
+
+				                            'data-patient="' +
+
+				                            escapeHtml(row.patient) +
+
+				                            '">' +
+
+				                    '</td>';
+
+
+				                html +=
+				                    '<td class="patient">' +
+
+				                        escapeHtml(row.patient) +
+
+				                    '</td>';
+
+
+				                html +=
+				                    '<td>' +
+
+				                        escapeHtml(row.position) +
+
+				                    '</td>';
+
+
+				                const dp =
+				                    Number(p.depth || 0);
+
+
+				                html +=
+				                    '<td class="' +
+
+				                    (dp > 1000
+				                        ? 'depth-high'
+				                        : '') +
+
+				                    '">' +
+
+				                    formatNumber(dp) +
+
+				                    '</td>';
+
+			
+				                html +=
+				                    baseCell(p, "A",ref,alt);
+
+
+				                html +=
+				                    baseCell(p, "C",ref,alt);
+
+
+				                html +=
+				                    baseCell(p, "G",ref,alt);
+
+
+				                html +=
+				                    baseCell(p, "T",ref,alt);
+
+
+				                html +=
+				                    '<td>' +
+
+				                    formatNumber(p.N || 0) +
+
+				                    '</td>';
+
+
+				                html +=
+				                    '<td class="insertion">' +
+
+				                    formatIndel(p.INS) +
+
+				                    '</td>';
+
+
+				                html +=
+				                    '<td class="deletion">' +
+
+				                    formatIndel(p.DEL) +
+
+				                    '</td>';
+
+
+				                html +=
+				                    '</tr>';
+
+				            });
+
+
+				            html +=
+				                '</tbody>';
+
+
+				            html +=
+				                '</table>';
+
+
+				            html +=
+				                '</div>';
+
+
+				            html +=
+				                '</div>';
+
+				        });
+
+
+				    if (!html) {
+
+				        html =
+				            '<div class="empty">' +
+
+				            'None' +
+
+				            '</div>';
+
+				    }
+
+
+				    results.innerHTML =
+				        html;
+
+				}
+
+
+				/* ============================================================
+				   Gestion des checkbox patients
+				   ============================================================ */
+
+				document.addEventListener("change", function (event) {
+
+
+				    /*
+				     * Checkbox individuelle
+				     */
+
+				    if (
+				        event.target.classList.contains(
+				            "patient-select"
+				        )
+				    ) {
+
+				        updateIGVSelection(
+				            event.target.closest(
+				                ".position-content"
+				            )
+				        );
+
+				        return;
+
+				    }
+
+
+				    /*
+				     * Checkbox "Tout sélectionner"
+				     */
+
+				    if (
+				        event.target.classList.contains(
+				            "select-all-patients"
+				        )
+				    ) {
+
+				        const content =
+				            event.target.closest(
+				                ".position-content"
+				            );
+
+
+				        const checked =
+				            event.target.checked;
+
+
+				        content
+				            .querySelectorAll(
+				                ".patient-select"
+				            )
+				            .forEach(function (checkbox) {
+
+				                checkbox.checked =
+				                    checked;
+
+				            });
+
+
+				        updateIGVSelection(content);
+
+				    }
+
+				});
+
+
+				/* ============================================================
+				   Mise à jour du compteur
+				   ============================================================ */
+
+				function updateIGVSelection(content) {
+
+
+				    if (!content) {
+				        return;
+				    }
+
+
+				    /*
+				     * Important :
+				     *
+				     * un patient peut apparaître plusieurs fois
+				     * dans le tableau.
+				     *
+				     * On utilise donc un Set pour compter
+				     * chaque patient une seule fois.
+				     */
+
+				    const patients =
+				        new Set();
+
+
+				    content
+				        .querySelectorAll(
+				            ".patient-select:checked"
+				        )
+				        .forEach(function (checkbox) {
+
+				            patients.add(
+				                checkbox.dataset.patient
+				            );
+
+				        });
+
+
+				    const count =
+				        patients.size;
+
+
+				    const counter =
+				        content.querySelector(
+				            ".igv-selected-count"
+				        );
+
+
+				    if (!counter) {
+				        return;
+				    }
+
+
+				    if (count === 0) {
+
+				        counter.textContent =
+				            "0 patient sélectionné";
+
+				    }
+
+				    else if (count === 1) {
+
+				        counter.textContent =
+				            "1 patient sélectionné";
+
+				    }
+
+				    else {
+
+				        counter.textContent =
+				            count +
+				            " patients sélectionnés";
+
+				    }
+
+				}
+
+
+				/* ============================================================
+				   Ouvrir dans IGV
+				   ============================================================ */
+
+				function openIGV(button) {
+
+
+				    const content =
+				        button.closest(
+				            ".position-content"
+				        );
+
+
+				    if (!content) {
+				        return;
+				    }
+
+
+				    /*
+				     * Set pour éviter les doublons.
+				     *
+				     * Un même patient peut avoir plusieurs
+				     * lignes dans le tableau.
+				     */
+
+				    const patients =
+				        new Set();
+
+
+				    content
+				        .querySelectorAll(
+				            ".patient-select:checked"
+				        )
+				        .forEach(function (checkbox) {
+
+				            patients.add(
+				                checkbox.dataset.patient
+				            );
+
+				        });
+
+
+				    if (patients.size === 0) {
+
+				        alert(
+				            "Sélectionnez au moins un patient."
+				        );
+
+				        return;
+				    }
+
+
+				    /*
+				     * Conversion du Set en tableau
+				     */
+
+				    const patientList =
+				        Array.from(patients);
+						const positionElement =
+
+						    content
+
+						        .closest(".position")
+
+						        .querySelector(".position-title");
+
+						const position =
+
+						    positionElement
+
+						        ? positionElement.textContent.trim()
+
+						        : "";
+					
+
+				    /*
+				     * Construction de l'URL du CGI
+				     */
+
+				    const url =
+				        "https://www.polyweb.fr/cgi-bin/pnitschk/" +
+				        "polymorphism-cgi//validation_variation/igv_web.pl" +
+
+				        "?project=" +
+
+				        encodeURIComponent(PROJECT) +
+
+				        "&patients=" +
+
+				        encodeURIComponent(
+				            patientList.join(",")
+				        )+
+						"&position=" +
+
+						       encodeURIComponent(position);
+
+
+
+
+				    console.log(
+				        "IGV URL :",
+				        url
+				    );
+
+
+				    /*
+				     * Ouverture dans un nouvel onglet
+				     */
+
+				    window.open(
+				        url,
+				        "_blank"
+				    );
+
+				}
+
+
+				/* ============================================================
+				   Cellule A/C/G/T
+				   ============================================================ */
+
+				function baseCell(p, base,ref,alt) {
+
+
+				    const value =
+				        Number(p[base] || 0);
+
+					
+				    const dp =
+				        Number(p.depth || 0);
+
+
+				    let frequency = 0;
+
+
+				    if (dp > 0) {
+
+				        frequency =
+				            value / dp;
+
+				    }
+
+
+				    let cls =  "base base-" + base;
+					if (base === ref) {
+						cls =  "base base-ref";
+					}
+					else if (base === alt) {
+							cls =  "base base-alt";
+					}
+					else {
+						cls =  "base";
+					}
+					
+
+				    return (
+
+				        '<td class="' +
+				        cls +
+				        '" title="' +
+
+				       formatNumber(value) +
+
+				        '%">' +
+
+				        formatNumber(					(frequency * 100)
+									            .toFixed(2)) +"%"+
+
+				        '</td>'
+
+				    );
+
+				}
+
+
+				/* ============================================================
+				   Anomalies
+				   ============================================================ */
+
+				function isAnomaly(p) {
+		
+					return false;
+				    const dp =
+				        Number(p.depth || 0);
+
+
+				    if (dp > 500) {
+
+				        return true;
+
+				    }
+
+
+				    const bases = [
+
+				        Number(p.A || 0),
+
+				        Number(p.C || 0),
+
+				        Number(p.G || 0),
+
+				        Number(p.T || 0)
+
+				    ];
+
+
+				    bases.sort(function (a, b) {
+
+				        return b - a;
+
+				    });
+
+
+				    /*
+				     * Deuxième base >= 5 %
+				     */
+
+				    if (
+
+				        bases.length > 1 &&
+
+				        bases[1] / dp >= 0.05
+
+				    ) {
+
+				        return false;
+
+				    }
+
+
+				    /*
+				     * Présence d'insertion
+				     */
+
+				    if (
+				        hasIndel(p.INS)
+				    ) {
+
+				        return false;
+
+				    }
+
+
+				    /*
+				     * Présence de délétion
+				     */
+
+				    if (
+				        hasIndel(p.DEL)
+				    ) {
+
+				        return true;
+
+				    }
+
+
+				    return false;
+
+				}
+
+
+				/* ============================================================
+				   INS / DEL
+				   ============================================================ */
+
+				function hasIndel(value) {
+
+
+				    if (!value) {
+
+				        return false;
+
+				    }
+
+
+				    if (typeof value === "number") {
+
+				        return value > 0;
+
+				    }
+
+
+				    if (typeof value === "object") {
+
+				        return Object.keys(value)
+				            .some(function (key) {
+
+				                return Number(value[key]) > 0;
+
+				            });
+
+				    }
+
+
+				    return false;
+
+				}
+
+
+				function formatIndel(value) {
+
+
+				    if (!value) {
+
+				        return "0";
+
+				    }
+
+
+				    if (typeof value === "number") {
+
+				        return formatNumber(value);
+
+				    }
+
+
+				    if (typeof value === "object") {
+
+
+				        const entries =
+				            Object.keys(value);
+
+
+				        if (entries.length === 0) {
+
+				            return "0";
+
+				        }
+
+
+				        return entries
+
+				            .map(function (key) {
+
+				                return (
+
+				                    escapeHtml(key) +
+
+				                    " (" +
+
+				                    formatNumber(
+				                        value[key]
+				                    ) +
+
+				                    ")"
+
+				                );
+
+				            })
+
+				            .join("<br>");
+
+				    }
+
+
+				    return escapeHtml(
+				        String(value)
+				    );
+
+				}
+
+
+				/* ============================================================
+				   Ouvrir / fermer une position
+				   ============================================================ */
+
+				function togglePosition(element) {
+
+				    element.classList.toggle(
+				        "open"
+				    );
+
+				}
+
+
+				/* ============================================================
+				   Utilitaires
+				   ============================================================ */
+
+				function formatNumber(value) {
+
+				    return Number(
+				        value || 0
+				    ).toLocaleString(
+				        "fr-FR"
+				    );
+
+				}
+
+
+				function escapeHtml(value) {
+
+				    return String(value)
+
+				        .replace(
+				            /&/g,
+				            "&amp;"
+				        )
+
+				        .replace(
+				            /</g,
+				            "&lt;"
+				        )
+
+				        .replace(
+				            />/g,
+				            "&gt;"
+				        )
+
+				        .replace(
+				            /"/g,
+				            "&quot;"
+				        )
+
+				        .replace(
+				            /'/g,
+				            "&#039;"
+				        );
+
+				}
+
+				</script>
+				</body>
+				</html>
