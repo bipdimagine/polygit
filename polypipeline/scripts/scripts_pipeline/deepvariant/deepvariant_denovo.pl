@@ -17,21 +17,21 @@ use Storable qw(store retrieve freeze);
 my $project_name;
 my $final_vcf;
 my $log_file;
-my $patient_name;
+my $fam_name;
 my $fork;
 
 GetOptions(
 	'project=s'   => \$project_name,
 	"log=s" =>\$log_file,
 	"vcf=s" => \$final_vcf,
-	"patient=s"=>\$patient_name,
 	"fork=s" =>\$fork,
 );
 
 
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
-
+my $f = $project->getFileName("deepvariant_denovo");
+unlink $f if -e $f;
 foreach my $f (@{$project->getFamilies}){
 	my $parents = $f->getParents;
 	next unless @$parents;
@@ -40,6 +40,9 @@ foreach my $f (@{$project->getFamilies}){
 	change_vcf_parent($f->getFather,$variants_child) if $f->getFather();
 	
 }
+warn $f;
+system("touch $f && chmod a+rw $f");
+
 sub change_vcf_parent {
 	my ($p,$variants) = @_;
 	my $vcf = $p->getVariationsFile("deepvariant");
@@ -145,6 +148,7 @@ my $nb_change =0;
     }
     close($fh_in);
     close($fh_out);
+    system("mv $vcf ${vcf}.ori");
     system("bgzip -f $vcf_out ; cp ${vcf_out}.gz $vcf;tabix -f -p vcf $vcf");
     warn "  end \n\n";
     warn $vcf_out;

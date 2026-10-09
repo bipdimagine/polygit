@@ -86,7 +86,7 @@ system("$cmd_sniffles2")  unless -e $snf_json;
 my $cmd_spectre = qq{$singularity spectre.sif spectre CNVCaller --coverage $mosdepth_file --sample-id $pname --output-dir $dir_out --reference $ref  --snfj $snf_json --metadata /data-bipd/data-pure/public-data/genome/HG38_DRAGEN/fasta/all.spectre.mdr --min-cnv-len 30000  --threads $fork};
 #my $cmd = qq{$singularity $deeptools bamCoverage -b $align -o $outf  -p $fork --binSize 50 --normalizeUsing None --extendReads 0 --minMappingQuality 10};
 warn $cmd_spectre;
-my $spectre_vcf_gz = $patient->getVariationsFileName("Spectre");
+my $spectre_vcf_gz = $patient->getVariationsFileName("spectre");
 
 system($cmd_spectre);
 my $vf = $dir_out."/".$pname.".vcf.gz";
