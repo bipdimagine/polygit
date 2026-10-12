@@ -170,17 +170,18 @@ $layout->{variations}->{ngs} = [
 		styles    => 'text-align:center;'
 	},
 	{
+		name      => "AlphaGenome",
+		field     => "alphagenome",
+		formatter => "formatGnomadLink",
+		width     => "5%",
+		styles    => 'text-align:center;'
+	},
+	{
 		name      => "dbscsnv",
 		field     => "dbscsnv",
 		width     => "5%",
 		styles    => 'text-align:center;'
 	},
-#	{
-#		name      => "Is<br>Clinical",
-#		field     => "isClinical",
-#		width     => "5%",
-#		styles    => 'text-align:center;'
-#	},
 	{
 		name		=> "Gene<br>Omim",
 		field		=> "gene_in_omim",
@@ -188,13 +189,6 @@ $layout->{variations}->{ngs} = [
 		styles		=> 'text-align:center;font-size : 09px;',
 		formatter	=> "format_is_omim",
 	}, 
-	{
-		name      => "HGMD<br>Class",
-		field     => "hgmd_class",
-		formatter => "formatHgmd",
-		width     => "5%",
-		styles    => 'text-align:center;'
-	},
 ];
 $layout->{variations}->{cnv} = [
 	{
