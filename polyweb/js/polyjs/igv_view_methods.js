@@ -124,12 +124,38 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name) {
 	    list_tracks.push(track);
 	}
     
-    var options =
-        {
-            genome: genome,
-            locus: locus,
-            tracks:list_tracks
-        }
+    var options;
+    if (url_fasta) {
+    	var track = {};
+	    track['name'] = 'Refseq All';
+	    track['format'] = 'refgene';
+	    track['url'] = 'https://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/ncbiRefSeq.txt.gz';
+	    track['infoURL'] = 'https://www.ncbi.nlm.nih.gov/gene/?term=$$';
+	    track['order'] = 1000000;
+	    track['indexed'] = 'false';
+        track['chromosomeOrder'] = 'chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX,chrY';
+	    list_tracks.push(track);
+	    
+    	options =
+	        {
+	            reference: {
+	            	"id": "HG19_MT",
+	            	"name": "Human (HG19_MT)",
+	            	"fastaURL": window.location.origin + '/' + url_fasta,
+					"indexURL": window.location.origin + '/' + url_fasta + ".fai",
+	            },
+	            locus: locus,
+	            tracks:list_tracks
+	        }
+    }
+    else {
+	    options =
+	        {
+	            genome: genome,
+	            locus: locus,
+	            tracks:list_tracks
+	        }
+    }
     
     setTimeout(function() {
     	if (browser_igv == 1) {
