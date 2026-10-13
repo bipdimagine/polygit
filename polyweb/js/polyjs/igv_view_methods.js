@@ -121,6 +121,7 @@ function view_web_igv_bam(dialog_name, div_name, locus, file, name) {
 	    track['name'] = list_names[i];
 	    track['height'] = 600;
         track['showSoftClips'] = true;
+		track['alleleFreqThreshold'] = 0.2;
 	    list_tracks.push(track);
 	}
     
