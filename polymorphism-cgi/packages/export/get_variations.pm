@@ -320,14 +320,21 @@ sub getIds_byCache_onlive {
 		$hash->{'gnomad_ac'} = '-';
 		$hash->{'gnomad_ho'} = '-';
 		$hash->{'gnomad_an'} = '-';
+		my $vn = $var->gnomad_id();
+		$vn =~ s/chr//;
 		if ($var->getGnomadAC()) {
-			my $vn = $var->gnomad_id();
-			$vn =~ s/chr//;
 			my $link = "https://gnomad.broadinstitute.org/variant/$vn";
 			$hash->{'gnomad_ac'} = $var->getGnomadAC().';'.$link;
 			$hash->{'gnomad_ho'} = $var->getGnomadHO().';'.$link;
 			$hash->{'gnomad_an'} = $var->getGnomadAN().';'.$link;
 		}
+		
+		my $alphagenome = $var->alphagenome();
+		if ($alphagenome and $alphagenome > 0) {
+			my $link_alphagenome = 'https://deepmind.google.com/science/alphagenome/atlas?q='.$vn;
+			$hash->{'alphagenome'} = $var->alphagenome().';'.$link_alphagenome;
+		}
+		else { $hash->{'alphagenome'} = '-'; }
 		
 		$hash->{'isClinical'} = 'No';
 		$hash->{'isClinical'} = 'Yes' if ($var->isClinical());

@@ -724,7 +724,11 @@ function launch_web_igv_add_bam_and_locus(project, name, file, locus){
 var previous_bams = new Array();
 var igv_genome;
 
-function launch_web_igv_js(project, patients_names, bams_files, locus){
+function launch_web_igv_js(project, patients_names, bams_files, locus, genome_url){
+	url_fasta = undefined;
+	if (genome_url) {
+		url_fasta = genome_url;
+	}
 	var locus2 = locus.replace(':', ';');
 	locus2 = locus2.replace('-', ';');
 	var lTmp = locus2.split(';');

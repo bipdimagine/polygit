@@ -938,13 +938,19 @@ return $text;
 
 sub igv {
 	my ($self,$debug) = @_;
-	my $gn = $self->project->getVersion();
+	my $gn;
+	my $locus = $self->variant->locus;
+	$locus =~ s/MT:/M:/;
+	if ($locus =~ /M:/ and $self->project->getVersion() eq 'HG19_MT') {
+		$gn = $self->project->getGenomeFasta();
+		$gn =~ s/.+public-data/\/public-data/;
+	}
 	my $project_name = $self->project->name;
 	my $f =  join(";",@{$self->bam_files});#$patient->{obj}->bamUrl;;
 	my $pnames = join(";",@{$self->names});
-	my $locus = $self->variant->locus;
 	my $v1 = "/";
-	return qq{<button class='igvIcon3' onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus","$v1","$gn")' style="color:black"></button>};
+	return qq{<button class='igvIcon3' onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus","$gn")' style="color:black"></button>} if ($gn);
+	return qq{<button class='igvIcon3' onclick='launch_web_igv_js("$project_name","$pnames","$f","$locus")' style="color:black"></button>};
 }
 
 
