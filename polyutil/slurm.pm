@@ -355,7 +355,7 @@ sub display_jobs_status {
 			my $st =  $value1->{status};
 			$count->{$type}->{$st} ++;
 			$nb_ok ++ if $st eq "OK";
-			my ($sname,@other) = split("!",$value1->{name});
+			my ($sname,@other) = split("#",$value1->{name});
 			$st_error .= $sname." " if ($st eq "ERROR");
 			$st_running .= $sname."[".$value1->{elapsed}."]-" if ($st eq "RUNNING");
 			$error ++ if $st eq "ERROR";
@@ -413,7 +413,7 @@ sub print_jobs {
 	 my $h ;
 	foreach my $k (keys %{$self->jobs_by_type_name}){
 		foreach my $name (keys %{$self->jobs_by_type_name->{$k}}){
-			my ($step,$project) = split("!",$name);
+			my ($step,$project) = split("#",$name);
 			$h->{$project}->{$k}->{$step} ++;
 		}
 	}
@@ -498,6 +498,7 @@ foreach my $uid (@{$self->jobs}) {
 	my $job = $self->get_job($uid);
     my $command = $job->{cmd};
     my $name  = $job->{type}."-".$job->{name};
+    $name =~ s/\#/_/g;
     my $cpu = $job->{cpu};
     my $dir_log = $self->dir_log;
     my $dependency="";
@@ -506,13 +507,15 @@ foreach my $uid (@{$self->jobs}) {
 		#$dependency="--dependency=afterok";
 		foreach my $uid (@{$job->{previous}}){
 			next unless $uid;
-			$dependency  ="--dependency=afterok" if $dependency eq "";
+			
+			$dependency  ="--kill-on-invalid-dep=yes  --dependency=afterok" if $dependency eq "";
 			my $previous_jobs = $self->get_job($uid);
 			die() unless exists $previous_jobs->{id};
 			$dependency.=":".$previous_jobs->{id};
 				
 			}
 	}
+	warn $dependency;
     my $sbatch_cmd = "sbatch --parsable "
                    . "--job-name=$name "
                    . "--output=$dir_log/$name-%j.out "
@@ -523,7 +526,7 @@ foreach my $uid (@{$self->jobs}) {
                    .$dependency." "
                    . "--wrap=\"$command\"";
     # Exécution de sbatch et récupération de l'ID du job
-    my $job_id = `$sbatch_cmd`;
+    my $job_id  = `$sbatch_cmd`;
     chomp($job_id);
     $job->{log} = "$dir_log/$name-$job_id.out";
 
