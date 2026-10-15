@@ -133,20 +133,15 @@ function displayInIGV(chr, start, end){
 
 function getUrlLoadingGenome(file) {
 	var url = '';
+	var re_hg19_MT = new RegExp('HG19_MT');
 	var re_hg19 = new RegExp('HG19*');
 	var re_hg38 = new RegExp('HG38*');
 	var re_mm38 = new RegExp('MM38*');
 	var re_mm39 = new RegExp('MM39*');
-	
-//	if (url_fasta) {
-//		url += "&genome=" + window.location.origin + '/' + url_fasta;
-//		if (url_gene_bed) {
-//			url += "&file=" + window.location.origin + '/' + url_gene_bed;
-//		}
-//	}
-//	else if (re_hg19.test(file)) {
-
-	if (re_hg19.test(file)) {
+	if (url_fasta && re_hg19_MT.test(file)) {
+		url += "&genome=" + window.location.origin + '/' + url_fasta;
+	}
+	else if (re_hg19.test(file)) {
 	    url += "&genome=hg19";
 	}
 	else if (re_hg38.test(file)) {
