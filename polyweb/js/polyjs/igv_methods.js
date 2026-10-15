@@ -158,6 +158,10 @@ function getUrlLoadingGenome(file) {
 
 function displayOneBAMIGV(file){
     var url = "http://localhost:60151/load?file="+file;
+	var re_hg19_MT = new RegExp('HG19_MT');
+	if (url_fasta && re_hg19_MT.test(file)) {
+    	url += ",https://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/ncbiRefSeq.txt.gz";
+    }
     url += getUrlLoadingGenome(file);
 	url += "&merge=true";
     httpGetFocusOn(url);
