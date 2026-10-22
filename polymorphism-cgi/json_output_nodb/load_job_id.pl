@@ -36,6 +36,7 @@ use QueryVectorFilter;
 use IO::Handle;
 use xls_export;
 use session_export;
+use Compress::Zlib qw(compress);
 
 
 my $cgi = new CGI();
@@ -78,11 +79,16 @@ unless ($hRes->{'html_variants'}) {
 	$hRes->{'html_title'} = 'Expired';
 }
 
-print $cgi->header('text/json-comment-filtered');
 my $json_encode = encode_json $hRes;
-print $json_encode;
+my $compressed_data = compress($json_encode);
+print "Access-Control-Allow-Origin: *\n";
+print "Access-Control-Allow-Methods: GET, POST, OPTIONS\n";
+print "Access-Control-Allow-Headers: Content-Type\n";
+print "Content-Encoding: deflate\n"; 
+print "Content-type: application/json; charset=utf-8\n";
+print "Content-Length: " . length($compressed_data) . "\n\n";
+print $compressed_data;
 exit(0);
-
 
 
 
