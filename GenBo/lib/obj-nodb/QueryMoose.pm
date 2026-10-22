@@ -1204,17 +1204,28 @@ sub getProjectListForUser {
 	my ($self,$login,$pwd)=@_;
 	my $dbh = $self->getDbh;
 	my $type_db = $self->getConfig()->{type_db};
-	my $sth = $dbh->prepare($self->sql_list_project_for_user);
-	$sth->execute($login,$pwd,$login,$pwd);
-	my $res = $sth->fetchall_hashref("id");
-	my $res_group = $self->getProjectHashForGroup($login,$pwd);
-	if ($res_group) {
-		foreach my $project_id (keys %{$res_group}) {
-			$res->{$project_id} = $res_group->{$project_id} unless (exists $res->{$project_id});
+	my ($sth, $res);
+	if ($self->isUserMagic($login)) {
+		my $sql = $self->sql_list_project_for_magic_user();
+		$sth = $dbh->prepare($sql);
+		$sth->execute();
+		$res = $sth->fetchall_hashref("id");
+	}
+	else {
+		my $sql = $self->sql_list_project_for_user();
+		$sth = $dbh->prepare($sql);
+		$sth->execute($login,$pwd,$login,$pwd);
+		my $res_group = $self->getProjectHashForGroup($login,$pwd);
+		$res = $sth->fetchall_hashref("id");
+		if ($res_group) {
+			foreach my $project_id (keys %{$res_group}) {
+				$res->{$project_id} = $res_group->{$project_id} unless (exists $res->{$project_id});
+			}
 		}
 	}
 	#my @toto = sort{$a->{type} cmp $b->{type} || $a->{name} cmp $b->{name}} values %$res;
 	my @toto =   values %$res;
+	
 	return \@toto; 
 }
 
@@ -1281,6 +1292,17 @@ sub getUserType {
 	my $sth = $dbh->prepare($self->sql_list_project_for_user);
 	$sth->execute($login,$pwd,$login,$pwd);
 	my $res = $sth->fetchall_hashref("id");
+	my @toto = sort{$a->{type} cmp $b->{type} || $a->{name} cmp $b->{name}} values %$res;
+	return \@toto; 
+}
+
+sub canLogLogin {
+	my ($self,$login,$pwd)=@_;
+	my $dbh = $self->getDbh;
+	my $sql = "SELECT LOGIN, NOM_RESPONSABLE as nom, PRENOM_U as prenom FROM bipd_users.USER where LOGIN=? and password_txt=password(?)";
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($login,$pwd);
+	my $res = $sth->fetchall_hashref("LOGIN");
 	my @toto = sort{$a->{type} cmp $b->{type} || $a->{name} cmp $b->{name}} values %$res;
 	return \@toto; 
 }

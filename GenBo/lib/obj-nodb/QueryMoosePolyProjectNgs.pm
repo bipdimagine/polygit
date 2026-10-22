@@ -524,6 +524,40 @@ has sql_list_project_for_user =>(
 	},
 );
 
+has sql_list_project_for_magic_user =>(
+	is		=> 'ro',
+	lazy =>1,
+	default	=> sub {
+		my $sql = qq{
+			SELECT 
+			    o.project_id AS id, 
+			    o.name AS name, 
+			    o.cache AS cache, 
+			    pt.name AS type, 
+			    o.description AS description, 
+			    o.validation_db,
+			    o.creation_date,
+			    COALESCE(p_agg.patient_details, '') AS patient_details,
+			    r.name AS genome
+			FROM PolyprojectNGS.projects o
+			INNER JOIN PolyprojectNGS.project_types pt 
+			    ON o.type_project_id = pt.type_project_id
+			LEFT JOIN (
+			    SELECT 
+			        project_id,
+			        GROUP_CONCAT(CONCAT(patient_id, ',', name, ',', family, ',', status, ',', type, ',', capture_id) SEPARATOR ';') AS patient_details
+			    FROM PolyprojectNGS.patient
+			    GROUP BY project_id
+			) p_agg ON p_agg.project_id = o.project_id
+			LEFT JOIN PolyprojectNGS.project_release pr 
+			    ON pr.project_id = o.project_id
+			LEFT JOIN PolyprojectNGS.releases r 
+			    ON r.release_id = pr.release_id;
+		};
+	return $sql
+	},
+);
+
 has sql_list_project_for_group =>(
 	is		=> 'ro',
 	

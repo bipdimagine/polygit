@@ -21,6 +21,7 @@ use export_data;
 use Carp;
 use JSON;
 use Time::Piece;
+use Compress::Zlib qw(compress);
 #use Text::CSV::Slurp; 
 
 #ce script est utilisé pour renvoyer les noms des projets d'un utilisateur après sa connection à l'interface ainsi que pour telecharger des fichiers via l'interface ou encore exporter les tableaux de données au format xls
@@ -61,11 +62,7 @@ sub getProjectListsDefidiag {
 	my ( $buffer, $login, $pwd ) = @_;
 	my $isUserMagic = $buffer->getQuery()->isUserMagic($login);
 	my $type_projects = $cgi->param('type_projects');
-	print $cgi->header('text/json-comment-filtered');
-	print "{\"progress\":\".";
-	
 	my $res2 = $buffer->getQuery()->getProjectListForUser($login, $pwd );
-	print '.';
 	my $res = $res2;
 	if ($defidiag){
 		@$res = grep{$_->{validation_db}  eq "defidiag"} @$res2;
@@ -73,25 +70,48 @@ sub getProjectListsDefidiag {
 	else {
 		@$res = grep{$_->{validation_db}  ne "defidiag"} @$res2;
 	}
+	
+	my $h_capture_id_found;
 	my @lHTML;
 	my @ids = map{$_->{id}} @$res;
 	foreach my $pro (@$res) {	
-		print '.';
 		my $debug;
 		
 		next if not $pro->{name} =~ /NGS20[0-9][0-9]_[0-9]+/;
-		my @samples =  @{$buffer->getQuery->getPatients($pro->{id})};
+		
+		
+		my $is_rna;
+		my @samples_names;
 		my %captures_id;
-		foreach my $p (@samples){
-			$captures_id{$p->{capture_id}} ++;
+		if (exists $pro->{patient_details}) {
+			foreach my $patient_info (split(';', $pro->{patient_details})) {
+				my ($pat_id, $pat_name, $pat_family, $pat_status, $pat_type, $pat_capture_id) = split(',', $patient_info);
+				$captures_id{$pat_capture_id} ++;
+				push(@samples_names, $pat_name);
+				$is_rna = 1 if $pat_type eq 'rna';
+			}
 		}
+		else {
+			my @samples =  @{$buffer->getQuery->getPatients($pro->{id})};
+			foreach my $p (@samples){
+				$captures_id{$p->{capture_id}} ++;
+			}
+		}
+		next if $is_rna;
+		
+		
 		
 		my $find;
 		my (@c, $h_type);
+		
 		foreach my $cid (keys %captures_id){
-			my $capt =  $buffer->getQuery()->getCaptureInfos($cid);
-			push(@c,$capt->{name});
-			$h_type->{$capt->{analyse}} = undef;
+			if (not exists $h_capture_id_found->{$cid}) {
+				my $capt =  $buffer->getQuery()->getCaptureInfos($cid);
+				$h_capture_id_found->{$cid}->{name} = $capt->{name};
+				$h_capture_id_found->{$cid}->{analyse} = $capt->{analyse};
+			}
+			push(@c, $h_capture_id_found->{$cid}->{name});
+			$h_type->{$h_capture_id_found->{$cid}->{analyse}} = undef;
 		}
 		$pro->{capture_name} = join(",",@c);
 
@@ -104,7 +124,9 @@ sub getProjectListsDefidiag {
 		
 		my $pheno = $buffer->queryPhenotype->getPhenotypeInfosForProject($pro->{id});
 		$pro->{gencode} = $buffer->getQuery->getGencodeVersion($pro->{id});
-		$pro->{genome} = $buffer->getQuery->getReleaseGenome($pro->{id});
+		if (not exists $pro->{genome}) {
+			$pro->{genome} = $buffer->getQuery->getReleaseGenome($pro->{id});
+		}
 		$pro->{annotation} = $buffer->getQuery->getPublicDatabaseVersion($pro->{id});
 		if ($pheno){
 			$pro->{phenotype} = join(";",keys %$pheno);
@@ -112,8 +134,7 @@ sub getProjectListsDefidiag {
 		else {
 			$pro->{phenotype} = "-";
 		}
-		$pro->{samples} = scalar(@samples);
-		my @trio = grep{$_->{status} == 2 && ($_->{mother} or $_->{father})} @samples;
+		$pro->{samples} = scalar(@samples_names);
 		my $dir = $buffer->getDataDirectory("cache")."/".$pro->{genome}.'.'.$pro->{gencode}.".".$pro->{annotation}."/".$pro->{name}."/vector/lmdb_cache/1";
 		my $t = (stat $dir )[9];
 		my ($dc,$h) = split(" ", $pro->{creation_date});
@@ -126,25 +147,6 @@ sub getProjectListsDefidiag {
              
 		my $days_difference = int((time - $t) / 86400);
 		my $vtrio;
-		if (@trio){
-		$pro->{child} = $trio[0]->{name};
-		if (scalar(@trio) > 1){
-		$pro->{child} = scalar @trio;
-		}
-		map {$pro->{patient_name}.=$_->{name}.";".$_->{family}.";"} @samples;
-		$pro->{child_sex} = $trio[0]->{sex};
-		$pro->{trio} = "trio";
-		$vtrio = scalar(@trio);
-		}
-		else {
-			$pro->{trio} = "solo";
-			my @children = grep{$_->{status} == 2} @samples;
-			@children = @samples unless (@children);
-			$pro->{child} = $children[0]->{name};
-			$pro->{child_sex} = $children[0]->{sex};
-			$vtrio = 0;
-			map {$pro->{patient_name}.=$_->{name}.";".$_->{family}.";"} @samples;
-		}
 		my $genome;
 		$genome = 'HG19' if  $pro->{genome} =~ /HG19/;
 		$genome = 'HG38' if  $pro->{genome} =~ /HG38/;
@@ -166,7 +168,7 @@ sub getProjectListsDefidiag {
 		my $out = "<td>".$pro->{'b1'}."</td>";
 		$out .= "<td>".$pro->{'description'}."</td>";
 		my @lPat = split(';', $pro->{'patient_name'});
-		my $patient_text = join(", ", sort @lPat);
+		my $patient_text = join(", ", sort @samples_names);
 		$out .= qq{<td><center><button onClick="alert('Patients: $patient_text');">}.$pro->{'samples'}."</button></center></td>"; #TODO: ajouter bouton
 		$out .= "<td>".$pro->{'type_analyse'}."</td>";
 		$out .= "<td>".$pro->{'capture_name'}."</td>";
@@ -289,9 +291,14 @@ sub getProjectListsDefidiag {
 sub printJson {
 	my ($hashRes, $test) = @_;
 	my $json_encode = encode_json $hashRes;
-	print ".\",";
-	$json_encode =~ s/{//;
-	print $json_encode;
+	my $compressed_data = compress($json_encode);
+	print "Access-Control-Allow-Origin: *\n";
+	print "Access-Control-Allow-Methods: GET, POST, OPTIONS\n";
+	print "Access-Control-Allow-Headers: Content-Type\n";
+	print "Content-Encoding: deflate\n"; 
+	print "Content-type: text/html; charset=utf-8\n";
+	print "Content-Length: " . length($compressed_data) . "\n\n";
+	print $compressed_data;
 	exit(0);
 }
 
