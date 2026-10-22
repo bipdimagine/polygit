@@ -93,8 +93,14 @@ sub check_login_have_projects {
 sub getProjectLists {
 	my ( $buffer, $login, $pwd ) = @_;
 	#renvoit tous les origin associés au login et au mdp spécifié
-	warn "start";
 	my $res = $buffer->getQuery()->getProjectListForUser($login, $pwd );
+	my $h_user_infos = $buffer->getQuery()->getUserInfos($login);
+	$res->[0]->{otp} = $h_user_infos->{$login}->{uKey};
+	$res->[0]->{team} = $h_user_infos->{$login}->{EQUIPE_ID};
+	if ($buffer->getQuery()->isUserMagic($login)) {
+		$res->[0]->{is_staff} = 1;
+	}
+	
 	if ($res->[0]->{otp} == 1 ) {
 		#$res->[0]->{otp_qr_code} = $buffer->google_auth_qr_code();
 		$res->[0]->{otp_code} = $buffer->google_auth_issuer().': '.$buffer->google_auth_key_id();
@@ -105,6 +111,11 @@ sub getProjectLists {
 	if ($project_query and $project_query ne '*'){
 		my @z = grep {$_->{name} eq $project_query} @$res;
 		$res = \@z;
+	}
+	elsif ($project_query and $project_query eq '*'){
+		my @ltmp;
+		push(@ltmp, $res->[0]);
+		$res = \@ltmp;
 	}
 	
 	
