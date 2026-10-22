@@ -644,6 +644,7 @@ sub store_cnvs_infos {
 			$hash->{$chr_h_id}->{$var_id}->{'rsname'} = '';
 			$hash->{$chr_h_id}->{$var_id}->{'type'} = 'cnv' if ( $var->isCnv() );
 			my $h_dejavu   = $var->deja_vu();
+			my $h_dejavu;
 			my $nb_project = 0;
 			my $nb_patient = 0;
 			my $he         = 0;
@@ -978,9 +979,9 @@ sub store_variants_infos {
 			}
 		}
 	}
-	if (@lCnv and scalar(@lCnv) > 0) {
-		$self->store_cnvs_infos(\@lCnv, $project, $list_patients );
-	}
+#	if (@lCnv and scalar(@lCnv) > 0) {
+#		$self->store_cnvs_infos(\@lCnv, $project, $list_patients );
+#	}
 }
 
 sub store_specific_infos {
