@@ -1200,16 +1200,26 @@ sub getAllProjects {
 	return \@toto; 
 }
 
+sub getProjectListForStaff {
+	my ($self)=@_;
+	my $dbh = $self->getDbh;
+	my $type_db = $self->getConfig()->{type_db};
+	my ($sth, $res);
+	my $sql = $self->sql_list_project_for_magic_user();
+	$sth = $dbh->prepare($sql);
+	$sth->execute();
+	$res = $sth->fetchall_hashref("id");
+	my @toto =   values %$res;
+	return \@toto;
+}
+
 sub getProjectListForUser {
 	my ($self,$login,$pwd)=@_;
 	my $dbh = $self->getDbh;
 	my $type_db = $self->getConfig()->{type_db};
 	my ($sth, $res);
 	if ($self->isUserMagic($login)) {
-		my $sql = $self->sql_list_project_for_magic_user();
-		$sth = $dbh->prepare($sql);
-		$sth->execute();
-		$res = $sth->fetchall_hashref("id");
+		return $self->getProjectListForStaff();
 	}
 	else {
 		my $sql = $self->sql_list_project_for_user();

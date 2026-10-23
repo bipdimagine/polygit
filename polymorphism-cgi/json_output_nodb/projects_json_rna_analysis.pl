@@ -21,6 +21,7 @@ use export_data;
 use Carp;
 use JSON;
 use Time::Piece;
+use Compress::Zlib qw(compress);
 #use Text::CSV::Slurp; 
 
 #ce script est utilisé pour renvoyer les noms des projets d'un utilisateur après sa connection à l'interface ainsi que pour telecharger des fichiers via l'interface ou encore exporter les tableaux de données au format xls
@@ -58,23 +59,45 @@ getProjectListsRNA($buffer,$login,$pwd,$project_query) if $action eq "list";
  
 sub getProjectListsRNA {
 	my ( $buffer, $login, $pwd, $project_name ) = @_;
-	print $cgi->header('text/json-comment-filtered');
-	print "{\"progress\":\".";
+	my $isUserMagic = $buffer->getQuery()->isUserMagic($login);
+	my $type_projects = $cgi->param('type_projects');
+	my $res;
+	if ($isUserMagic) { $res = $buffer->getQuery()->getProjectListForUser($login, $pwd ); }
+	else { $res = $buffer->getQuery->getListProjectsRnaSeqFromLoginPwd($login, $pwd, $project_name); }
 	
-	my $is_BIPD_login = $buffer->getQuery->isLoginSTAFF($login);
-	my $list_proj = $buffer->getQuery->getListProjectsRnaSeqFromLoginPwd($login, $pwd, $project_name);
 	my ($hDone, $h_ok);
-	
-	my $b1 = GBuffer->new;
-	foreach my $h (@$list_proj) {
-		print '.';
+	my $h_capture_id_found;
+	my @lHTML;
+	my @ids = map{$_->{id}} @$res;
+	foreach my $h (@$res) {
 		my $h_users;
 		foreach my $this_user_name (split(',', $h->{username})) { $h_users->{$this_user_name} = undef; }
-		unless ($is_BIPD_login) {
+		unless ($isUserMagic) {
 			next unless exists $h_users->{$login};
 		}
 		my $name = $h->{name};
 		next if exists $hDone->{name};
+		my $debug;
+		next if not $h->{name} =~ /NGS20[0-9][0-9]_[0-9]+/;
+		
+		my $is_rna;
+		my @samples_names;
+		my %captures_id;
+		if (exists $h->{patient_details}) {
+			foreach my $patient_info (split(';', $h->{patient_details})) {
+				my ($pat_id, $pat_name, $pat_family, $pat_status, $pat_type, $pat_capture_id) = split(',', $patient_info);
+				$captures_id{$pat_capture_id} ++;
+				push(@samples_names, $pat_name);
+				$is_rna = 1 if $pat_type eq 'rna';
+			}
+		}
+		else {
+			my @samples =  @{$buffer->getQuery->getPatients($h->{id})};
+			foreach my $p (@samples){
+				$captures_id{$p->{capture_id}} ++;
+			}
+		}
+		next if not $is_rna;
 		
 		$h->{button_splices} = '';
 		$h->{button_rna} = '';
@@ -86,7 +109,6 @@ sub getProjectListsRNA {
 #			$h->{button} = '1::'.$project_name;
 #		}
 #		$h->{button} = '2::'.$h->{name} if (-d $p1->get_path_rna_seq_polyrna_root());
-
 
 		$h->{genome} = $buffer->getQuery->getReleaseGenome($h->{id});
 		my $pathRoot1 = $buffer->config_path("root","project_data-isilon")."/ngs/".$name.'/';
@@ -212,28 +234,27 @@ sub getProjectListsRNA {
 	foreach my $name (reverse sort keys %$h_ok) {
 		push (@list_res, $h_ok->{$name});
 	}
-	print_simpleJson($cgi, \@list_res);
+	printJson(\@list_res);
 	exit(0);
 }
 
-
-
-sub print_simpleJson {
-	my ($cgi,$data,$type_identifier) = @_;
-	
-	$type_identifier = "name" unless defined $type_identifier;
+sub printJson {
+	my ($data, $test) = @_;
 	my %all;
-	#$all{identifier} = "name";
-	$all{label}      = $type_identifier;
+	$all{label}      = "name";
 	$all{items}      = $data;	
-	
 	my $json_encode = encode_json \%all;
-	print ".\",";
-	$json_encode =~ s/{//;
-	print $json_encode;
+	my $compressed_data = compress($json_encode);
+	
+	print "Access-Control-Allow-Origin: *\n";
+	print "Access-Control-Allow-Methods: GET, POST, OPTIONS\n";
+	print "Access-Control-Allow-Headers: Content-Type\n";
+	print "Content-Encoding: deflate\n"; 
+	print "Content-type: application/json; charset=utf-8\n";
+	print "Content-Length: " . length($compressed_data) . "\n\n";
+	print $compressed_data;
 	exit(0);
 }
-
 
 
 sub checkAuthentification {

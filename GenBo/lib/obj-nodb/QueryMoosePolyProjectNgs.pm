@@ -1384,32 +1384,28 @@ sub isLoginSTAFF {
 
 sub getListProjectsRnaSeqFromLoginPwd {
 	my ($self, $login, $pwd,  $project_name) = @_;
-	
-	my $is_BIPD_login = $self->isLoginSTAFF($login);
+	my $is_BIPD_login = $self->isUserMagic($login);
 	my $h_found;
-	my @lProj = @{$self->getListProjectsRnaSeq($project_name)};
-	foreach my $hpr (@lProj) {
-		$h_found->{$hpr->{id}} = undef;
-	}
-	if (not $is_BIPD_login) {
-		@lProj = ();
-		my $res_group = $self->getProjectHashForGroup($login,$pwd);
-		if ($res_group) {
-			foreach my $project_id (keys %{$res_group}) {
-				next unless exists $h_found->{$project_id};
-				$res_group->{$project_id}->{username} = $login;
-				push(@lProj, $res_group->{$project_id}) if  exists $h_found->{$project_id};
-				delete $h_found->{$project_id};
-			}
+	my @lProj;
+	foreach my $h (@{$self->getProjectListForStaff()}) {
+		my $is_rna = 0;
+		foreach my $patient_infos (split(';', $h->{patient_details})) {
+			my @list_patient_infos = split(',', $patient_infos);
+			my $dna_rna = $list_patient_infos[4];
+			$is_rna = 1 if lc($list_patient_infos[4]) eq 'rna';
 		}
-		
-		foreach my $h (@{$self->getProjectListForUser($login, $pwd)}) {
-			$h->{username} = $login;
-			push(@lProj, $h) if  exists $h_found->{$h->{id}};
-			delete $h_found->{$h->{id}};
-		}
+		next if $is_rna == 0;
+		push(@lProj, $h);
 	}
-	return \@lProj;
+	return \@lProj if $is_BIPD_login;
+	my @lProjUser;
+	foreach my $h (@{$self->getProjectListForUser($login, $pwd)}) { $h_found->{$h->{id}} = 1; }
+	foreach my $h (@lProj) {
+		next if not exists $h_found->{$h->{id}};
+		$h->{username} = $login;
+		push(@lProjUser, $h);
+	}
+	return \@lProjUser;
 }
 
 sub getListProjectsRnaSeq {

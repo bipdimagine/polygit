@@ -162,7 +162,7 @@
             }
             
             function okfunction_view_case(items) {
-				if (team_user == 6){
+				if (is_staff){
 				  dojo.style("polyrun","visibility","visible");
 				  dojo.style("polyproject","visibility","visible");
 				  dojo.style("polytools","visibility","visible");
@@ -179,6 +179,7 @@
             }
   			
   			var team_user;
+  			var is_staff;
   			function okfunction (items, request){
 		 		dojo.style("waiting", "opacity", "0");
 				if (items.length == 0) {
@@ -187,6 +188,7 @@
 					return;
 				};
 		 		team_user = items[0].team;
+		 		is_staff = items[0].is_staff;
 				if (items[0].otp_need == 1) {
 					//if (items[0].team == 6) {
 						if (checkCookieOtp()) {
