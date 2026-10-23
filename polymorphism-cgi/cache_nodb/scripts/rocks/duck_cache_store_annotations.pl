@@ -159,7 +159,22 @@ my $select = join(",",@$aselect);
 my $tume = time;
 my $diro = $project->rocks_directory();
 my $nb = 0;
-foreach my $chr (@{$project->getChromosomes}){
+
+my @lChr;
+if ($project->isDiagnostic()) {
+	my $hchr;
+	foreach my $capt (@{$project->getCaptures()}) {
+		foreach my $chr_name (@{$capt->getCaptureChromosomesName()}) {
+			my $chr = $project->getChromosome($chr_name);
+			next if exists $hchr->{$chr->id()};
+			push (@lChr, $chr);
+			$hchr->{$chr->id()} = undef;
+		}
+	}
+}
+else { @lChr = @{$project->getChromosomes()}; }
+
+foreach my $chr (@lChr){
 #	next if $chr->name ne "MT";	
 	my $no = $chr->get_rocks_variations("r");
    	my $nproc = 10;	
