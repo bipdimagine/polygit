@@ -95,6 +95,7 @@ sub getProjectListsDefidiag {
 			my @samples =  @{$buffer->getQuery->getPatients($pro->{id})};
 			foreach my $p (@samples){
 				$captures_id{$p->{capture_id}} ++;
+				push(@samples_names, $p->{name});
 			}
 		}
 		next if $is_rna;
