@@ -65,14 +65,14 @@ MCE::Loop::init {
 
     chunk_size => 1,
 
-    max_workers => 8,
+    max_workers => 20,
 
     gather => sub {
 
         my ($result) = @_;
 
         my $patient = $result->{patient};
-
+		
         foreach my $region (keys %{$result->{data}}) {
 
             $pileup->{$region}{$patient} = $result->{data}{$region};
@@ -98,12 +98,12 @@ mce_loop {
         -bam => $bam,
 
     );
-	$hts->max_pileup_cnt(100000);
+	$hts->max_pileup_cnt(3200000);
     my %patient_pileup;
 
     foreach my $p (@$positions) {
 
-        my $region =  $p->{chr} . ":" . $p->{start} . "-" . $p->{end}.":".$p->{ref}."/".$p->{alt};
+        my $region =  $p->{chr} . ":" . $p->{start} . "-" . $p->{end}.":".$p->{ref}."/".$p->{alt}.":".$p->{name};
 
         my $r = _pileup(
 
@@ -195,12 +195,68 @@ sub _pileup {
     # correspond à la position 101 en coordonnées 1-based.
 
     my $region = $chr . ":" . ($start ) . "-" . ($end);
-	warn $region;
+#    $res{$start} = {
+#
+#            A     => 0,
+#
+#            T     => 0,
+#
+#            C     => 0,
+#
+#            G     => 0,
+#
+#            N     => 0,
+#
+#            INS   => 0,
+#
+#            DEL   => 0,
+#
+#            depth => 0,
+#
+#        };
+#	warn $region;
     # --------------------------------------------------------
 
     # Callback appelé pour chaque position
 
     # --------------------------------------------------------
+sub deletions_at_position {
+
+    my ($alignment, $target_pos) = @_;
+
+    my $ref_pos = $alignment->start;
+
+    foreach my $op (@{$alignment->cigar_array}) {
+        my ($type, $len) = @$op;
+        if ($type eq 'D') {
+            # On compte uniquement les délétions d'UNE base
+
+            if ($len == 1 &&
+
+                $target_pos >= $ref_pos &&
+
+                $target_pos < $ref_pos + $len) {
+
+                return 1;
+
+            }
+
+            $ref_pos += $len;
+
+        }
+
+        elsif ($type eq 'M' || $type eq '=' || $type eq 'X' || $type eq 'N') {
+
+            $ref_pos += $len;
+
+        }
+
+    }
+
+    return 0;
+
+}
+
 
     my $callback = sub {
 
@@ -225,17 +281,18 @@ sub _pileup {
 
             N     => 0,
 
-            INS   => 0,
+            INS => 0,
 
             DEL   => 0,
 
             depth => 0,
 
         };
-
+		warn "end";
         foreach my $p (@$pileups) {
+			# next if rand() >= 0.10;
             $r->{depth}++;
-
+			
             # ------------------------------------------------
 
             # Délétion
@@ -243,9 +300,11 @@ sub _pileup {
             # ------------------------------------------------
 
             if ($p->is_del) {
-
-                $r->{DEL}++;
-
+			#	my $indel = $p->indel;
+			#	warn $p->indel;
+			#warn deletions_at_position($p->alignment,$pos);
+			 $r->{DEL}++  if (deletions_at_position($p->alignment,$pos));
+               #if $indel == 1;
                 next;
 
             }
@@ -323,8 +382,9 @@ sub _pileup {
         # Si tu veux aussi les positions avec profondeur 0,
 
         # il faudra les initialiser avant le pileup.
-
-        $res{$pos} = $r;
+		if ($r->{depth}> 50 ){
+        	$res{$pos} = $r;
+       }
 
     };
 
@@ -341,7 +401,7 @@ sub _pileup {
         $callback
 
     );
-
+	
     return \%res;
 
 }
@@ -366,17 +426,17 @@ while (<$BED>) {
 
     die "BED invalide : $_ \n".scalar(@line) if @line < 3;
 
-    my ($chr, $start, $end,$all) = @line[0,1,2,3];
+    my ($chr, $start, $end,$all,$name) = @line[0,1,2,3,4];
 	my ($ref,$alt) = split("/",$all);
-
+	warn "-".$alt."-";
     push @positions, {
         chr   => $chr,
         start => $start,
         end   => $end,
         ref=> $ref,
-        alt=> $alt
+        alt=> $alt,
+        name=>$name,
     };
-
 }
 
 close($BED);

@@ -216,9 +216,9 @@
 			color: #CCCCCC;
 	    }
 		.base-ref {
-		       background-color:   #FDE0BD;
+		       background-color: #FDE0BD;
 			   color:black;
-		    }
+		  }
 
 		 .base-alt {
 		    background-color:    #FDE0BD;
@@ -616,7 +616,8 @@
 
 
 				            let rows = [];
-							let allele = region.split(":")[2].split("/");
+							let champ =  region.split(":");
+							let allele =champ[2].split("/");
 							 let ref = allele[0]; // T
 							 let alt = allele[1]; // C
 
@@ -980,7 +981,6 @@
 
 				                    '</td>';
 
-			
 				                html +=
 				                    baseCell(p, "A",ref,alt);
 
@@ -1014,11 +1014,11 @@
 
 
 				                html +=
-				                    '<td class="deletion">' +
+				                   // '<td class="deletion">' +
+										baseCell(p, "DEL",ref,alt)
+				                    //formatIndel(p.DEL) +
 
-				                    formatIndel(p.DEL) +
-
-				                    '</td>';
+				                   // '</td>';
 
 
 				                html +=
@@ -1353,11 +1353,15 @@
 
 
 				    let cls =  "base base-" + base;
-					if (base === ref) {
+					console.log("++"+ base+"-    " +alt+"-");							 
+					if ((base === ref)  || (base === alt)) {
+						console.log(base+" :::   "+alt);
+						if (frequency < 0.1 ){
 						cls =  "base base-ref";
-					}
-					else if (base === alt) {
+						}
+						else {
 							cls =  "base base-alt";
+						}
 					}
 					else {
 						cls =  "base";
