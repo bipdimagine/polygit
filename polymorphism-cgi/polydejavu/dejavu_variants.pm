@@ -235,7 +235,7 @@ has hash_users_projects => (
 	default => sub {
 		my $self = shift;
 		my ($h_projects, $h_projectsNames, $h_parquets, @list_hash);
-		if (not $self->hash_exclude_projects() and ($self->view_all_projects() or $self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd()))) {
+		if ($self->view_all_projects() or $self->buffer->getQuery->isUserMagic($self->user_name(), $self->pwd())) {
 			$self->{is_magic_user} = 1;
 			my $dir_parquets = $self->buffer->dejavu_parquet_dir();
 			opendir my $dir, $dir_parquets or die "Cannot open directory: $!";
@@ -248,6 +248,7 @@ has hash_users_projects => (
 				next if scalar(@ltmp) != 3;
 				next if $ltmp[-1] eq 'no_dejavu';
 				my $proj_name = $ltmp[0];
+				next if $self->hash_exclude_projects() and exists $self->hash_exclude_projects->{$proj_name};
 				my $proj_id = $ltmp[1];
 				$h_projects->{$proj_name}->{description} = '-';
 				$h_projects->{$proj_name}->{name} = $proj_name;
@@ -325,6 +326,21 @@ has hash_only_patients =>  (
 has hash_exclude_projects => (
 	is		=> 'rw',
 	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		return $self->init_excluded_project();
+	}
+);
+
+has hash_exclude_validation_names => (
+	is		=> 'rw',
+	lazy    => 1,
+	default => sub {
+		my $self = shift;
+		my $h;
+		$h->{'prenatome'} = undef;
+		return $h;
+	}
 );
 
 has hash_lift_variants => (
@@ -368,6 +384,21 @@ has hash_variant_pathogenic  => (
 	is		=> 'rw',
 	lazy    => 1,
 );
+
+sub init_excluded_project {
+	my ($self) = @_;
+	my $h_exc;
+	my $buffer = $self->buffer();
+	my $h_som = $self->buffer->getQuery->getProjectsNames_somatic();
+	foreach my $project_name (keys %$h_som) { $h_exc->{$project_name}->{somatic} = 1; }
+	my $h_nodv = $self->buffer->getQuery->getProjectsNames_nodejavu();
+	foreach my $project_name (keys %$h_nodv) { $h_exc->{$project_name}->{nodejavu} = 1; }
+	foreach my $validation_name (keys %{$self->hash_exclude_validation_names()}) {
+		my $h_val = $self->buffer->getQuery->getProjectsNames_validation_db_name($validation_name);
+		foreach my $project_name (keys %$h_val) { $h_exc->{$project_name}->{$validation_name} = 1; }
+	}
+	return $h_exc;
+}
 
 sub check_he_composite {
 	my ($self, $hVariantsDetails) = @_;

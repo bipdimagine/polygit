@@ -1784,4 +1784,40 @@ sub getPatientChemistry {
 	return undef;
 }
 
+sub getProjectsNames_somatic {
+	my ($self) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT * FROM PolyprojectNGS.projects where somatic=1;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute();
+	my $h = $sth->fetchall_hashref('name');
+	return $h;
+}
+
+sub getProjectsNames_nodejavu {
+	my ($self) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT * FROM PolyprojectNGS.projects where dejaVu=0;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute();
+	my $h = $sth->fetchall_hashref('name');
+	return $h;
+}
+
+sub getProjectsNames_validation_db_name {
+	my ($self, $validation_name) = @_;
+	my $dbh = $self->getDbh();
+	my $sql = qq{
+		SELECT * FROM PolyprojectNGS.projects where validation_db=?;
+	};
+	my $sth = $dbh->prepare($sql);
+	$sth->execute($validation_name);
+	my $h = $sth->fetchall_hashref('name');
+	return $h;
+}
+
 1;
