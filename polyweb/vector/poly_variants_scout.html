@@ -1531,6 +1531,12 @@
 			    if (el.style.display === "none") { el.style.display = "block"; }
 			    else { el.style.display = "none"; }
 			}
+			
+			function show_text_popup(text) {
+				document.getElementById('span_popup_text').innerHTML = '';
+				document.getElementById('span_popup_text').innerHTML = text;
+				dijit.byId('popup_text').show();
+			}
 	        
 		</script>
     </head>
@@ -2173,8 +2179,12 @@
             <div  id="div_popup_hgmd" jsId="div_popup_hgmd" data-dojo-type="dijit/layout/ContentPane"></div>	
         </div>
         
-        <div id="popup_dude" dojoType="dojox.widget.Dialog"   sizeToViewport="true" viewportPadding="20" > 
+        <div id="popup_dude" dojoType="dojox.widget.Dialog" sizeToViewport="true" viewportPadding="20" > 
         	<div  id="div_popup_dude" jsId="div_popup_dude" data-dojo-type="dijit/layout/ContentPane"></div>	
+		</div>
+        
+        <div id="popup_text" dojoType="dojox.widget.Dialog" sizeToViewport="true" viewportPadding="150"> 
+        	<span id="span_popup_text"></span>	
 		</div>
        
 		<div id="dialog_igv" dojoType="dijit.Dialog" title="" style="border:solid 1px black;background-color:white;height:90%;width:98%;background-color:white;overflow: auto;">

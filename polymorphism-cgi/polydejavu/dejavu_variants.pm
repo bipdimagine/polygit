@@ -1219,10 +1219,12 @@ sub print_line_variant_all_patients {
 	my $i = 0;
 	my $h_proj_pat_list_print_html;
 	
+	my $h_proj_mails;
 #	if (not $self->is_magic_user()) {
 		foreach my $h_proj_pat (@{$list_h_details}) {
 			my $b = new GBuffer;
 			my $pr = $b->newProject(-name => $h_proj_pat->{project_name});
+			$h_proj_mails->{$pr->name()} = $pr->get_list_emails() if not exists $h_proj_mails->{$pr->name()};
 			$pr->getPatients();
 			$pr->getFamilies();
 			$pr->project_root_path();
@@ -1323,8 +1325,11 @@ sub print_line_variant_all_patients {
 					$project_phenotypes = qq{<span hidden>}.$self->{hash_users_projects}->{$proj_name}->{phenotypes_tags}.qq{</span>};
 					$project_phenotypes .= qq{<span style='color:green;'><i>}.$self->{hash_users_projects}->{$proj_name}->{phenotypes}.qq{</i></span><br>};
 				}
-				my $project_description = $this_print_html->patient->getProject->name().', Description: '.$this_print_html->patient->getProject->description();
-				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;width:120px;'><center>".$project_phenotypes."<button class='btn btn-outline-secondary d-inline-flex align-items-left' onClick='alert(\"$project_description\")' style='padding-bottom:2px;font-size:10px;'><b>".$this_print_html->patient->getProject->name().'</b></button><br>'.$igv_b.'&nbsp;&nbsp;&nbsp;<b>'.$this_print_html->patient->getFamily->name()."</b></td></center></td><td><nobr>".$html_pat."</nobr></td></tr>");
+				my $project_description = "<br><br><center><b>".$this_print_html->patient->getProject->name().'</b><br><br>Description: '.$this_print_html->patient->getProject->description()."</center>";
+				my $project_mails = "<center><table><tr>";
+				foreach my $mail (@{$h_proj_mails->{$this_print_html->patient->getProject->name()}}) { $project_mails .= "<tr><td>$mail</td></tr>"; }
+				$project_mails .= "</table><center>";
+				push(@l_html_calling, "<tr style='padding:6px;'><td style='padding-right:10px;width:120px;'><center>".$project_phenotypes."<div class='btn-group' role='group'><button class='btn btn-secondary d-inline-flex align-items-left' style='padding-left:3px;padding-right:3px;font-size:11px;'><b onClick='show_text_popup(\"$project_mails\")'>@</b></button><button class='btn btn-outline-secondary d-inline-flex align-items-left' onClick='show_text_popup(\"$project_description\")' style='padding-bottom:2px;font-size:10px;'><b>".$this_print_html->patient->getProject->name().'</b></button></div><br>'.$igv_b.'&nbsp;&nbsp;&nbsp;<b>'.$this_print_html->patient->getFamily->name()."</b></td></center></td><td><nobr>".$html_pat."</nobr></td></tr>");
 				push(@l_html_calling, "<tr style='padding:6px;'><td><br></td><td><br></td></tr>");
 			}
 		}
