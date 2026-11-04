@@ -726,7 +726,7 @@ var igv_genome;
 
 function launch_web_igv_js(project, patients_names, bams_files, locus, genome_url){
 	url_fasta = undefined;
-	if (genome_url) {
+	if (genome_url && genome_url.match(/fa/)) {
 		url_fasta = genome_url;
 	}
 	var locus2 = locus.replace(':', ';');
