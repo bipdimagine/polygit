@@ -1,0 +1,953 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>PLOT Proj / Pat / Chr</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+        <!-- chargement des feuilles de styles necessaires a l'affichage -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+        <style type="text/css">
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojo/resources/dojo.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dijit/themes/claro/claro.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/grid/resources/claroGrid.css";
+            @import "//ajax.googleapis.com/ajax/libs/dojo/1.10.3/dojox/widget/Dialog/Dialog.css";
+			@import "../css/polycss/login.css";
+      		@import "../css/polycss/button.css";
+    
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }
+            
+            .gutter {
+			    background-color: #ccc;
+			    background-repeat: no-repeat;
+			    background-position: 50%;
+			    cursor: col-resize;
+			}
+			.gutter:hover {
+			    background-color: #007bff;
+			}
+    
+            #borderContainer {
+                width: 100%;
+                height: 100%;
+            }
+    
+    		.table > tbody > tr > td, .table > tbody > tr > th, .table > tfoot > tr > td, .table > tfoot > tr > th, .table > thead > tr > td, .table > thead > tr > th {
+    			vertical-align: middle !important;
+    		}
+    
+            .testDialog {
+                font-size: 8pt;
+            }
+    
+            .dojoxGrid-row-odd td {
+                background: #e8f2ff;
+            }
+    
+            .name {
+                color: #2962A7;
+                font-weight: bold;
+            }
+    
+            .pconseq {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_blue.png);
+                padding: 1em;
+                width: 1200px;
+                min-width: 400px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .ptranscript {
+                background: #DFE8EE;
+                background-image: url(../images/polyicons/bckgrd_grey.png);
+                padding: 1em;
+                min-width: 100px;
+                height: 15px;
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .pconseq .gridconseq {
+                background: #fff;
+                height: 150px;
+                position: float;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .partsContainerSmall {
+                background: rgb(192,80,77);
+                padding: 1em;
+                background-image: url(../images/polyicons/bckgrdsmall.png);
+                -webkit-box-shadow: 2px 8px 11px #888;
+                padding-bottom: 20px;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+                border-top: 1px solid #000;
+            }
+    
+            .titleSmall {
+                font-family: Verdana, Arial, Helvetica, sans-serif;
+                padding: 0.5em 0.5em 0 0.5em;
+                color: #000000;
+                background: rgb(192,80,77);
+                font-weight: normal;
+                -moz-border-radius-topleft: 8px;
+                -moz-border-radius-topright: 8px;
+                -webkit-border-top-left-radius: 8px;
+                -webkit-border-top-right-radius: 8px;
+                -webkit-box-shadow: 2px 2px 11px #888;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+            }
+    
+            .partsContainerSmall .gridContainerSmall {
+                background: #fff;
+                height: 150px;
+                border-top: 1px solid #000;
+                border-left: 1px solid #000;
+                border-right: 1px solid #000;
+                border-bottom: 1px solid #000;
+            }
+    
+            .person_name {
+                padding: 3px 3px 3px 25px;
+                font-size: 23px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #ff5500;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .titre {
+                padding: 1px 5px 1px 25px;
+                margin-left: 70px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 12px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+            }
+    
+            .run {
+                padding: 1px 1px 1px 25px;
+                margin-left: 50px;
+                margin-bottom: 16px;
+                white-space: nowrap;
+                font-size: 13px;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000000;
+                font-weight: bold;
+                text-align: center;
+                background: url(../images/polyicons/lightning.png) no-repeat center left;
+            }
+    
+            .span_desc {
+                font-family: arial;
+                font-size: 10px;
+                padding: 8px 1px 1px 25px;
+                background: url(../images/polyicons/star.png) no-repeat center left;
+            }
+    
+            .alternateDock {
+                position: absolute;
+                background-color: #000000;
+                right: 0px;
+                top: 0px;
+                border-left: 1px solid #ccc;
+                height: 100%;
+            }
+    
+            #alternateDock ul.dojoxDockList {
+                display: block;
+            }
+    
+            .td_align {
+                border: 2px solid;
+            }
+    
+            .tundra #toolbar.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar2.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+    
+            .tundra #toolbar3.dijitToolbar {
+                height: 50px;
+                background-image: url(/icons/Polyicons/subtitle_greyblack.png);
+                background-repeat: repeat-x;
+            }
+            
+            table.dataTable thead .sorting:before, table.dataTable thead .sorting:after, table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after, table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+               padding: 5px;
+            }
+            .dataTables_wrapper .mdb-select {
+                border: none;
+                float: left;
+            }
+            .dataTables_wrapper .mdb-select.form-control {
+                padding-top: 0;
+                margin-top: -1rem;
+                margin-left: 0.7rem;
+                margin-right: 0.7rem;
+                width: 100px;
+            }
+            .dataTables_length label {
+                float: left;
+            }
+            table.dataTable {
+                margin-bottom: 3rem!important;
+            }
+            div.dataTables_wrapper div.dataTables_info {
+                padding-top: 0;
+            }
+            
+            table #grid_var {
+                border-collapse: collapse;   
+            }
+            #grid_var tr:hover {
+                background-color: #ccc;
+            }
+            #grid_var th {
+                background-color: #fff;
+            }
+            #grid_var th, #example td {
+                padding: 3px 5px;
+            }
+            #grid_var td:hover {
+                cursor: pointer;
+            }
+            
+            table #tab_transcripts {
+                border-collapse: collapse;   
+            }
+            #tab_transcripts tr:hover {
+                background-color: #ccc;
+            }
+            #tab_transcripts th {
+                background-color: #fff;
+            }
+            #tab_transcripts th, #example td {
+                padding: 3px 5px;
+            }
+            #tab_transcripts td:hover {
+                cursor: pointer;
+            }
+            
+			.collapsing{
+			 	-webkit-transition:height .01s ease;
+			  	transition:height .01s ease
+			}
+			
+			.loader {
+				border-top: 16px solid #F5F5F5;
+				border-right: 16px solid #A9A9A9;
+				border-bottom: 16px solid #808080;
+				border-left: 16px solid #000000;
+				border-radius: 50%;
+			    width: 120px;
+			    height: 120px;
+  				-webkit-animation: spin 2s linear infinite;
+			    animation: spin 2s linear infinite;
+			}
+			
+			.nav-tabs {
+			  overflow-x: auto;
+			  overflow-y: hidden;
+			  display: -webkit-box;
+			  display: -moz-box;
+			}
+			.nav-tabs>li {
+			  float: none;
+			}
+			
+			@-webkit-keyframes spin {
+				0% { -webkit-transform: rotate(0deg); }
+				100% { -webkit-transform: rotate(360deg); }
+			}
+			
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
+			
+			#text_search_polyquery_var {
+			    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
+			    background-position: 10px 12px; /* Position the search icon */
+			    background-repeat: no-repeat; /* Do not repeat the icon image */
+			    width: 100%; /* Full-width */
+			    font-size: 16px; /* Increase font-size */
+			    padding: 12px 20px 12px 40px; /* Add some padding */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    margin-bottom: 12px; /* Add some space below the input */
+			}
+			
+			#myTable {
+			    border-collapse: collapse; /* Collapse borders */
+			    width: 100%; /* Full-width */
+			    border: 1px solid #ddd; /* Add a grey border */
+			    font-size: 18px; /* Increase font-size */
+			}
+			
+			#myTable th, #myTable td {
+			    text-align: left; /* Left-align text */
+			    padding: 12px; /* Add padding */
+			}
+			
+			#myTable tr {
+			    /* Add a bottom border to all table rows */
+			    border-bottom: 1px solid #ddd;
+			}
+			
+			#myTable tr.header, #myTable tr:hover {
+			    /* Add a grey background color to the table header and on hover */
+			    background-color: #f1f1f1;
+			}
+			 
+			.visible {
+			  visibility: visible;
+			}
+			
+			.invisible {
+			  visibility: hidden;
+			}
+			
+			.progress_chr {
+				opacity: 0;
+				-webkit-transition: opacity 2s ease-in;
+				-moz-transition: opacity 2s ease-in;
+				-o-transition: opacity 2s ease-in;
+				-ms-transition: opacity 2s ease-in;
+				transition: opacity 2s ease-in;
+			}
+			
+			.progress_chr.load {
+			    opacity: 1;
+			}
+			
+			.dijitSliderLeftBumper {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderProgressBar {
+				border-color: #b5bcc7;
+				background-color: #cfe5fa;
+			}
+			
+			.dijitSliderImageHandle {
+				border: 6px solid #cfe5fa;
+			}
+			
+			.dijitCheckBoxInput {
+				opacity:10;
+			}
+			
+			.checkbox {
+				margin: 0px 0 0;
+				margin-top: 1px \9;
+				line-height: normal;
+			}
+	
+			.badge1 {
+			  display: block;
+			  position: absolute;
+			  top: -13px;
+			  right: -2px;
+			  line-height: 16px;
+			  height: 16px;
+			  padding: 0 5px;
+			  font-family: Arial, sans-serif;
+			  color: white;
+			  text-shadow: 0 1px rgba(0, 0, 0, 0.25);
+			  border: 1px solid;
+			  border-radius: 10px;
+			  -webkit-box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 1px 1px rgba(0, 0, 0, 0.08);
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			
+			.badge1.green {
+			  background: #77cc51;
+			  border-color: #59ad33;
+			  background-image: -webkit-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -moz-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: -o-linear-gradient(top, #a5dd8c, #77cc51);
+			  background-image: linear-gradient(to bottom, #a5dd8c, #77cc51);
+			}
+			 .badge1.yellow {
+			  background: #FFFF56;
+			  border-color: #FFFF88;
+			  color:black;
+			  background-image: -webkit-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -moz-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: -o-linear-gradient(top, #FFFF88, #FFFF56);
+			  background-image: linear-gradient(to bottom, #FFFF88, #FFFF56);
+			}
+			 .badge1.red {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: -moz-linear-gradient(top, #AA0000, #FF0066);
+			  background-image: -o-linear-gradient(top, #fc9f8a, #FF0066);
+			  background-image: linear-gradient(to bottom, #fc9f8a, #FF0066);
+			}
+			
+			 .badge1.grey {
+			  background: #EEE;
+			  border-color: white;
+			  background-image: -webkit-linear-gradient(top, #EEE,beige);
+			  background-image: -moz-linear-gradient(top, #EEE,beige);
+			  background-image: -o-linear-gradient(top, #EEE,beige);
+			  background-image: linear-gradient(to bottom, #EEE,beige);
+			  color:#555
+			}	
+			 .badge1.orange {
+			  background: #fa623f;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -moz-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: -o-linear-gradient(top, #FFC04C,#FFA500);
+			  background-image: linear-gradient(to bottom, #FFC04C,#FFA500);
+			}
+			.badge1.coral {
+			;	//#FF7061
+			  background:#FF7061;# #FF7F50;
+			  border-color: #fa5a35;
+			  background-image: -webkit-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -moz-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: -o-linear-gradient(top, #FF9872,#FF7F50);
+			  background-image: linear-gradient(to bottom, #FF7F50,#FF7061);
+			}
+        </style>
+        
+        <style type="text/css" media="print">
+			@page { size: landscape; }
+			
+			.row {
+				-webkit-print-color-adjust: exact;
+			}
+		</style>
+		
+        <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>      
+		
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+	    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+		<link href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css" rel="stylesheet">
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/filter-control/bootstrap-table-filter-control.min.js"></script>
+		<link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
+		<script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+		<script src="https://unpkg.com/bootstrap-table@1.19.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.5/split.min.js"></script>
+		
+		
+        <link rel="stylesheet" type="text/css" href="../js/igv/igv-1.0.9.css">
+        <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+		<script src="https://cdn.jsdelivr.net/npm/igv@2.2.12/dist/igv.min.js"></script>
+		<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_view_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/igv_methods.js" djConfig="parseOnLoad: true"></script>
+	    <script type="text/javascript" src="../js/polyjs/alamut_methods.js" djConfig="parseOnLoad:true"></script>
+		<script type="text/javascript" src="../js/polyjs/polyweb.js" djConfig="parseOnLoad: true"></script>
+	  	<script type="text/javascript" src="../js/polyjs/include.polyviewer.js" djConfig="parseOnLoad:true"></script>
+	   	<script type="text/javascript" src="../js/polyjs/Utility/diag_global.js" djConfig="parseOnLoad:true"></script>
+		<script src="//ajax.googleapis.com/ajax/libs/dojo/1.13.0/dojo/dojo.js" djConfig="parseOnLoad:true" type="text/javascript"></script>
+		<script type="text/javascript" src="../js/polyviewer/methods_polyviewer.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-base.min.js"></script>
+		<script src="https://cdn.anychart.com/releases/v8/js/anychart-tag-cloud.min.js"></script>	
+		
+         
+        <style type="text/css">
+        	input[type="checkbox"], input[type="radio"] { margin: 0px 0 0 !important; }
+        </style>
+        
+        <script type="text/javascript">
+        	dojo.require("dijit.TitlePane");
+            dojo.require("dojo.fx.easing");
+            dojo.require("dojo.cookie");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojo.data.ItemFileReadStore");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojo.parser");    
+            dojo.require("dijit.layout.BorderContainer");
+            dojo.require("dijit.layout.SplitContainer");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.layout.TabContainer");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dojox.gfx");
+            dojo.require("dojo.colors");
+            dojo.require("dijit.form.NumberTextBox");
+            dojo.require("dijit.form.SimpleTextarea");
+            dojo.require("dijit.form.Select");
+            dojo.require("dijit.layout.AccordionContainer");
+            dojo.require("dijit.form.Form");
+            dojo.require("dijit.Toolbar");
+            dojo.require("dijit.form.MultiSelect");
+            dojo.require("dijit.form.NumberSpinner");
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.Menu");
+            dojo.require("dijit.registry");
+            dojo.require("dojo.json");
+            dojo.require("dojo.domReady!");
+            dojo.require("dojox.widget.Dialog");
+            dojo.require("dijit.form.CheckBox");
+            require([ "dojox/widget/DialogSimple", "dojox/widget/Dialog","dijit/MenuBar", "dijit/MenuBarItem", "dijit/PopupMenuBarItem","dijit/DropDownMenu", "dijit/MenuItem"]);
+            
+			
+			$(document).ready(function () {
+	            setTimeout(function() {
+					show_waiting('Checking User / Password / Projects');
+					var cookie_user = dojo.cookie("username");
+					var cookie_pwd = dojo.cookie("passwd");
+	            	if (cookie_user && cookie_pwd) {
+	            		setTimeout(function() {
+	            			checkPassword(cookie_user, cookie_pwd);
+	            		}, 500);
+	            	}
+	            	else { relogin(); }
+				}, 3000);
+	    	});
+			
+	    	function relogin() {
+	    		dijit.byId('login').show();
+	    	}
+	    	
+			function show_waiting(text) {
+	    		document.getElementById("waiting_text").innerHTML = "Loading Data...";
+	    		if (text) {
+	    			document.getElementById("waiting_text").innerHTML = text;
+	    		}
+	    		dijit.byId('waiting').show();
+	    	}
+			
+			function checkPassword(cookie_user, cookie_pwd) {
+	    		dijit.byId('login').hide();
+				document.getElementById("span_login").innerHTML = "<img src='../images/polyicons/wait18trans.gif' align='absmiddle'>";
+				var this_username, this_pwd;
+				if (cookie_user && cookie_pwd) {
+					this_username = cookie_user;
+					this_pwd = cookie_pwd;
+				}
+				else {
+					this_username = document.getElementById("username").value;
+					this_pwd = document.getElementById("passwd").value;
+				}
+				//var urlpasswd = url_listProject + "?type=login&pwd=" + this_pwd + "&login=" + this_username + "&action=check_have_projects";
+	    		urlpasswd = url_path + "json_output_nodb/projects_json_output.pl?type=login&pwd=" + this_pwd + "&login=" + this_username;
+			    $.getJSON( urlpasswd, function( data ) {
+			    	var i = 0;
+			    	$.each( data.results, function( key, val ) { i++; });
+			    	if (i > 0) {
+			    		document.getElementById("span_login").innerHTML = this_username;
+			    		dijit.byId('waiting').hide();
+			    		fill_grids_select_projects_patients(data.results);
+			    	}
+			    	else { error_login(); }
+			    }).fail(function() { alert("ERROR: please contact bioinformatics platform"); });
+			}
+			
+			function fill_grids_select_projects_patients(items) {
+				let tableData_1 = [];
+				items.sort((a, b) => b[0].localeCompare(a[0]));
+				for (const hash_project of items) {
+					//console.log(hash_project);
+					const project_name = hash_project[0];
+					const description = hash_project[1];
+					const type = ''
+					const genome = hash_project[5];
+					
+					var patients_b = hash_project[7];
+					var is_NGS = project_name.match(/NGS20.*/);
+					if (is_NGS) {
+						const cmd_1 = "launch_plot('" + project_name + "', '" + patients_b + "');";
+						const myOption_1 = document.createElement("span");
+						let project_value_1 = "<div onClick=\"" + cmd_1 + "\"><b>" + project_name + "</b> <i>" + description + "</i> <span style='color:green;'>" + type + "</span> <span style='color:red;'>" + genome + "</span></div>";
+						tableData_1.push({ project: project_value_1 });
+						
+					}
+				}
+				$('#project-select-1').bootstrapTable('load', tableData_1);
+				
+			}
+			
+			function launch_plot(project_name, patients) {
+				document.getElementById('datas_container').innerHTML = "";
+				document.getElementById('span_project').innerHTML = project_name + "<br><br>&#8595;";
+	    		list_patients_names = patients.split(',');
+	    		list_patients_names = list_patients_names.sort();
+				for (i in list_patients_names) {
+					launch_plot_patient_chr(project_name, i);
+				}
+			}
+			
+			function launch_plot_patient_chr(project_name, i) {
+				var div_id = 'div_' + i;
+				var patient_name = list_patients_names[i];
+				var container = document.getElementById('datas_container');
+				
+				var newDiv = document.createElement('div');
+				newDiv.id = div_id;
+				newDiv.style.height = "300px";
+				newDiv.style.width = "49%";
+				newDiv.style.padding = "3px";
+				newDiv.style.border = "solid 1px black";
+				newDiv.className = "col-sm-6 col-md-6";
+				container.appendChild(newDiv);
+			
+				var chr_name = document.getElementById('select_chr').value;
+				if (chr_name == '0') { return; }
+			
+				var url_plot = 'https://' + window.location.hostname + '/cgi-bin/polymorphism-cgi//validation_variation/dude_json.pl?project=' + project_name + '&patient=' + patient_name + '&chr=' + chr_name;
+				$.getJSON( url_plot, function( datas ) {
+					PlotValuesChr_json(datas.items, div_id);
+					newDiv.style.height = "400px";
+					var newSpan = document.createElement('span');
+					newSpan.innerHTML = "<br><center><span style='color:red;'><b>" + patient_name + "<br></span><span style='color:blue;'>Chr " + chr_name + "</span><br></center>";
+					newDiv.appendChild(newSpan);
+			    }).fail(function() { newSpan.innerHTML = "<br><center><span style='color:red;'><b>ERROR"; });
+			}
+
+			function PlotValuesChr_json(items, div_plot_id) {
+				var trio;
+				var tabPosR;
+				var tabRatio;
+				var tabRX;
+				var tabRY;
+				var tabplotRX = [0, 0];
+				var tabdelRX = [];
+				var tabdupRX = [];
+				var tabplotRY = [-1, 1];
+				var tabdelRY = [];
+				var tabdupRY = [];
+				if (items.FY.NO_DATA ==1) { return; }
+				tabplotRY = items.FY.all;
+				tabdupRY = items.FY.dup;
+				tabdelRY = items.FY.del;
+
+				var trace1 = {
+					x: items.FX.all,
+					y: tabplotRY,
+					yaxis: 'y1',
+					mode: 'markers',
+					showlegend: false,
+					name: ' ',
+					marker: {
+						color: "#E0B589",
+						size: 2
+					}
+				};
+
+				var trace2 = {
+					x: items.FX.dup,
+					y: tabdupRY,
+					yaxis: 'y1',
+					mode: 'markers',
+					showlegend: false,
+					name: ' ',
+					marker: {
+						color: "#0050EF",
+						size: 4
+					}
+				};
+	
+				var trace3 = {
+					x: items.FX.del,
+					y: tabdelRY,
+					yaxis: 'y1',
+					mode: 'markers',
+					showlegend: false,
+					name: ' ',
+					marker: {
+						color: '#FF0097',
+						size: 4
+					}
+				};
+	
+				var trace1F = {
+					x: items.FX.all,
+					y: items.FY.all_father,
+					yaxis: 'y2',
+					mode: 'markers',
+					showlegend: false,
+					name: ' ',
+					marker: {
+						color: '#DEEAEE',
+						size: 2
+					}
+				};
+	
+				var trace2F = {
+					x:  items.FX.dup,
+					y: items.FY.dup_father,
+					yaxis: 'y2',
+					mode: 'markers',
+					showlegend: false,
+					name: ' ',
+					marker: {
+						color: "#1BA1E2",
+						size: 3
+					}
+				};
+	
+				var trace3F = {
+					x: items.FX.del,
+					y: items.FY.del_father,
+					yaxis: 'y2',
+					mode: 'markers',
+					showlegend: false,
+					name: ' ',
+					marker: {
+						color: '#1BA1E2',
+						size: 3
+					}
+				};
+				
+				var trace1M = {
+					x: items.FX.all,
+					y: items.FY.all_mother,
+					yaxis: 'y3',
+					mode: 'markers',
+					showlegend: false,
+					name: ' ',
+					marker: {
+						color: '#F5D6C6',
+						size: 2
+					}
+				};
+	
+				var trace2M = {
+					x:  items.FX.dup,
+					y: items.FY.dup_mother,
+					yaxis: 'y3',
+					mode: 'markers',
+					showlegend: false,
+					name: ' ',
+					marker: {
+						color: "#D80073",
+						size: 3
+					}
+				};
+	
+				var trace3M = {
+					x: items.FX.del,
+					y: items.FY.del_mother,
+					yaxis: 'y3',
+					mode: 'markers',
+					showlegend: false,
+					name: ' ',
+					marker: {
+						color: '#D80073',
+						size: 3
+					}
+				};
+				
+				if (items.FY.all_mother.length == 0){
+					data = [trace1, trace2, trace3];
+					layout = {
+						yaxis1: {
+							automargin: true,
+							range: [-1.5, 1.5],
+							domain:[0,1],
+							title: {
+								text:patient,
+								font: {family: 'Verdana',size: 8,color: 'black'}
+							}
+						},
+						margin: { l:1, r:1, b:0, t:0, pad:0 },
+						xaxis: {
+							title: {
+								text: '',
+								font: {family: 'Courier New, monospace',size: 10,color: '#7f7f7f'}
+							},
+						},
+					};
+				}
+				else {
+					data = [trace1, trace2, trace3, trace1F, trace2F, trace3F, trace1M, trace2M, trace3M];
+					layout = {
+						yaxis1: {
+							automargin: true,
+							range: [-1.5, 1.5],
+							domain:[0,0.33],
+							title: { text:patient, font: { family:'Verdana', size:8, color:'black' } } 
+						},
+						margin: {l: 1,r: 1,b: 0,t: 0,pad: 0 },
+						yaxis2: { domain:[0.33,0.66],range: [-1.5,1.5], title:{ text:'Father' ,font: {family: 'Courier New, monospace',size: 10,color: 'blue'}}
+						},
+						yaxis3: {
+							domain:[0.66,1],
+							range: [-1.5,1.5],
+							title: {
+								text:'Mother',
+								font: {family: 'Courier New, monospace',size: 10,color: 'pink'}
+							}
+						},
+						xaxis: {
+							title: {
+								text: '',font: {family: 'Courier New, monospace',size: 10,color: '#7f7f7f'}
+							},
+						},
+					};
+				}
+				var config = { modeBarButtonsToRemove: ['pan2d', 'zoomIn2d', 'zoomOut2d', 'autoScale2d', 'toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'], displayModeBar: true };
+				Plotly.newPlot(div_plot_id, data, layout, config);
+			}
+			
+		</script>
+
+	</head>
+	
+    <body class="container-fluid" style="overflow-y:scroll;">
+		<nav class="navbar navbar-inverse" style="background-color:#363945;">
+			<div class="container-fluid">
+				<div class="navbar-header"> <table>
+					<tr><td><a class="navbar-brand" href="https://www.polyweb.fr/" style="padding-top: 5px;padding-bottom: 5px;"><img src='/icons/Polyicons/logo_polyweb_white2.png' width='170px' height='33px' ></a></td></tr>
+					<tr><td style="color:white;font-size:10px;text-align:center"> <span  style="color:#B1268B;font-size:12px;text-align:center">Imagine Institute</span> - <span>University Of Paris</span ></td></tr>
+					</table>
+				</div>
+				<ul class="nav navbar-nav">
+					<li><a href="#" style="padding-top: 25px;padding-left: 35px;"><span style="color:yellow;font-size:18px">PLOT DUDE Project / Patients / CHR</span></a></li>
+				</ul>
+					<ul class="nav navbar-nav navbar-right">
+					<li>
+						<button class=" btn btn-success  " onClick='relogin();' style="float:right;margin-top: 9px;margin-left: 2px;margin-right: 10px;" >
+			 				<b><i class="fa fa-sign-in pull-left" ></i><span class="glyphicon glyphicon-log-in" style="color:#449D44"></span> <span  style="margin-left: 5px;color:white;" id="span_login">Login</span></b>
+			 			</button>
+					</li>
+				</ul>
+				
+			</div>
+		</nav>
+		
+		<div id="editor_stack" jsid="editor_stack" data-dojo-type="dijit/layout/ContentPane" style="border: 2px double black;font-size:12px;width:100%;overflow-x:auto;overflow-y:hidden;margin: 0 auto;">
+			<center>
+				<div class='row no-gutters' style="height:auto;width:99%;background-color:#F0F0F0;">
+					</div>
+					<div class='col-sm-8' style="height:350px;padding-top:5px;padding-bottom:5px;" >
+						<div style="height: auto; overflow-y: auto;">
+							<table id='project-select-1' data-pagination-loop="true" data-pagination-v-align="bottom" data-pagination-h-align="left" data-pagination-pre-text="&larr;" data-pagination-next-text="&rarr;" data-pagination="true" data-page-size="5" data-page-list="[5]" data-resizable='true' data-filter-control='true' data-virtual-scroll="true" data-toggle="table" data-cache="false" class='table table-striped table-borderless table-bootstraptable' style='font-size:10px;'>
+								<thead>
+									<tr style='background-color:aliceblue;color:black'>
+										<th data-field="project" data-sortable="true" data-filter-control="input">Select Project Name</th>
+									</tr>
+								</thead>
+							</table>
+						</div>
+					</div>
+					<div class='col-sm-1' style="height:350px;padding-top:5px;padding-bottom:5px;" >
+					</div>
+					<div class='col-sm-2' style="height:350px;padding-top:5px;padding-bottom:5px;" >
+						<div style="height: auto; overflow-y: auto;">
+							<br><b>SELECT a chromosome</b><br><br>
+							<select id="select_chr" class="form-select" aria-label="">
+								<option value="0">Open this select menu</option>
+								<option value="1">Chr 1</option>
+								<option value="2">Chr 2</option>
+								<option value="3">Chr 3</option>
+								<option value="4">Chr 4</option>
+								<option value="5">Chr 5</option>
+								<option value="6">Chr 6</option>
+								<option value="7">Chr 7</option>
+								<option value="8" selected>Chr 8</option>
+								<option value="9">Chr 9</option>
+								<option value="10">Chr 10</option>
+								<option value="11">Chr 11</option>
+								<option value="12">Chr 12</option>
+								<option value="13">Chr 13</option>
+								<option value="14">Chr 14</option>
+								<option value="15">Chr 15</option>
+								<option value="16">Chr 16</option>
+								<option value="17">Chr 17</option>
+								<option value="18">Chr 18</option>
+								<option value="19">Chr 19</option>
+								<option value="20">Chr 20</option>
+								<option value="21">Chr 21</option>
+								<option value="22">Chr 22</option>
+								<option value="X">Chr X</option>
+								<option value="Y">Chr Y</option>
+								<option value="MT">Chr MT</option>
+							</select>
+							
+							<br><br><br><br>
+							<b><span id="span_project" style="color:blue;font-size:24px;"></span></b>
+						</div>
+					</div>
+					<div class='col-sm-1' style="height:350px;padding-top:5px;padding-bottom:5px;" >
+					</div>
+				<div>
+			</center>
+		</div>
+
+		<div class="container">
+			 <div class="row" id="datas_container">
+			 
+			 </div>
+		</div>
+		
+		<div id="login" dojoType="dojox.widget.Dialog" dimensions="[265,160]" title="Login" style="background-color:white;"> 
+			<div class="container" style="background-color:white;min-width:250px;max-width:250px;margin-left:auto;margin-right: auto ;">
+				<div class="panel panel-success" style="background-color:white;">
+					<div class="panel-body" style="background-color:white;">     
+						<div class="input-group input-group-sm text-success">
+							<span class="input-group-addon glyphicon glyphicon-user text-success" id="sizing-addon1"></span>
+							<label for="username" class="sr-only">Email address</label>
+							<input type="text"  id="username" name="username" class="form-control text-primary"  autocomplete="on" placeholder="bipd login" required autofocus aria-describedby="sizing-addon1">
+						</div>
+						<div class="input-group input-group-sm text-success">
+							<span class="input-group-addon glyphicon glyphicon-lock text-success" id="sizing-addon2"></span>
+							<label for="passwd" class="sr-only">Password</label>
+							<input type="password" id="passwd" name="password" class="form-control  text-primary" placeholder="Password" required aria-describedby="sizing-addon2">
+						</div> 
+						<button class="btn btn-primary btn-sm btn-x btn-block btn-success" type="submit" onClick="checkPassword();" >Sign in</button>
+					</div>
+				</div> 
+			</div>
+		</div>
+		
+		<div id="waiting" dojoType="dojox.widget.Dialog" dimensions="[300,150]" title="Waiting"> 
+			<div class="container" style="margin-left: auto ;margin-right: auto ;">
+				<div>
+					<br><br>
+					<img id="wait1" src="../images/polyicons/wait18trans.gif" align="absmiddle"/> <span id="waiting_text">Loading Data...</span>
+				</div> 
+			</div>
+		</div>
+
+    </body>
+</html>
