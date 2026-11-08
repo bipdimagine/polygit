@@ -258,6 +258,10 @@ sub run {
 					$row->{blacklist} = 70;
 			}
 		}
+		$cnv->{dupseg} = 0 unless defined $cnv->{dupseg};
+		$row->{blacklist} = 80 if ($cnv->{dupseg} ==100);
+		$row->{blacklist} = 70 if ($cnv->{dupseg} > 95);
+		
 		$row->{perc_freq_allelic} = $perc;
 			#end frequence allelic  
 		if (abs($start-$end) < 1000000 && $patient->isRevio &&  scalar(@t) == 1  ){

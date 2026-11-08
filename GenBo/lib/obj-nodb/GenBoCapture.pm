@@ -424,12 +424,9 @@ has infos =>(
 	lazy	=> 1,
 	default => sub {
 		my $self = shift;
-		warn "coucou";
 		confess() unless $self->getProject;
 		my $query = $self->getProject->buffer->getQuery();
 		my $hash1 = $query->getCaptureInfos($self->id);
-		warn Dumper $hash1;
-		die();
 		my $hash2 = $query->getCaptureTranscripts($self->id);
 		
 		my %newHash = (%$hash1, %$hash2);
@@ -446,6 +443,7 @@ has transcripts_name =>(
 		my $self = shift;
 		#my @ls =   keys %{$self->infos()->{transcripts}};
 		my @ltrs;
+		my $gb = $self->getProject->rocksGenBo;
 		foreach my $tr_id (@{$self->infos()->{transcripts_name}}) {
 			if ($tr_id =~ /_[0-9]+/) {
 				push(@ltrs, $tr_id);
@@ -454,13 +452,20 @@ has transcripts_name =>(
 			else {
 				foreach my $chr (@{$self->getProject->getChromosomes()}) {
 					my $tr_id_2 = $tr_id.'_'.$chr->id();
-					if ($self->getProject->rocksGenBo->exists($tr_id_2)) {
+					
+					if ($gb->get_raw($tr_id_2)) {
 						push(@ltrs, $tr_id_2);
 						last;
 					}
 				}
+		#		warn $self->project->rocksGenBo;
+				
+		#		warn Dumper $self->buffer->{rocks};
+			
 			}
 		}
+		
+		#die();
 		return \@ltrs;
 		#return $self->infos()->{transcripts_name};
 	}
@@ -522,9 +527,13 @@ has files =>(
 		my $return = {};
 		my $files;
 		my $file = $dir . "/" . $self->type . "/" . $self->file_name . ".gz";
-		$file = $dir . "/" . $self->type . "/" . "genome.bed.gz" if $project->isGenome;
+		$file =~ s/_hg38//i if $version =~/HG19/i;
+		
+		#$file = $dir . "/" . $self->type . "/" . "genome.bed.gz" if $project->isGenome;
 		unless (-e $file ){
+			confess($file." ".$self->name);
 			warn  $project->isExome();
+			warn $file;
 			confess("Unable to find capture file :" .$file."\n") unless $project->isExome();
 			
 			#confess("Unable to find capture file :" .$file."\n")  
@@ -620,7 +629,7 @@ has hotspots_filename => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return $self->files()->{hotspot}; 
+		return   $self->project->capture_dir . "/hotspot/" .lc($self->analyse) . ".bed";
 		
 	},
 ); 
@@ -631,7 +640,7 @@ has hotspots => (
 	
 	default => sub {
 		my $self = shift;
-		my $file = $self->files()->{hotspot}; 
+		my $file = $self->hotspots_filename(); 
 		return [] unless -e $self->hotspots_filename();
 		open (PLEX,$self->hotspots_filename()) ;
 		my $hotspots;

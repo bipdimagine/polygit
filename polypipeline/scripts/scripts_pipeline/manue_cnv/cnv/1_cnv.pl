@@ -311,7 +311,9 @@ foreach my $patobj (@$listPatients)
 			
 			else {
 				
+				
 				$hPat_CNV->{'caller_sr'}  = SVParser::parse_vcf($patient,$caller);
+				warn "SV : ".$caller .scalar (keys %{$hPat_CNV->{'caller_sr'}})." ".$patient->name;
 			}
 		}
 	}
@@ -335,9 +337,6 @@ foreach my $patobj (@$listPatients)
 		}
 	}
 	
-	foreach my $h (keys %$hash_cnv){
-		warn  $hash_cnv->{$h}->{CALLER};
-	}
 	$hPat_CNV->{'caller_depth'} = SVParser::gatherCNV_from_samecaller($patname,$array_cnv);
 	
 	my $cnvs = gather_identical_CNV($hPat_CNV,$patient);
@@ -382,7 +381,13 @@ foreach my $hcnv1 (@{$all_hash})
 					$lift->add_region_id($hcnv1);
 				}
 	my $lift =  $lift->liftOver_regions_cnv($project->name);
-	warn "end";
+	foreach my $id (keys %$lift){
+		warn "nnnn" if $id =~ /DUP_12_96207209_96399594/;
+		warn  $lift->{$id}->{sr1} if $id =~ /DUP_12_96207209_96399594/;
+		#warn  Dumper $lift->{$id} if $id =~ /DUP_12_96207209_96399594/;
+		warn "+++" if $id =~ /DUP_12_96207209_96399594/;
+		#die() if $id =~ /DUP_12_96207209_96399594/;
+	}
 	 save_csv($project,$lift);
 	
 		
@@ -392,29 +397,48 @@ sub gather_identical_CNV
 	
 	my ($hPat_CNV,$patient) = @_;
 	my $hCNV;
-	
+	my $debug;
 	foreach my $caller_flag (keys %{$hPat_CNV})
 	{
 				foreach my $id  (keys %{$hPat_CNV->{$caller_flag}})
 				{
-					my $debug;
-					$debug=1 if $id =~ /94759449/;
-					$debug = 1 if $id =~ /94759398/;
-					warn $caller_flag if $debug;
+					$debug=1 if $id =~ /96207209/;
+					warn $caller_flag." $id " if $id =~ /96207209/;
 					my $current_cnv = $hPat_CNV->{$caller_flag}->{$id};
-					$hCNV->{$id}->{"elementary_caller_sr"} = "" unless exists $hCNV->{$id}->{"elementary_caller_sr"};
-					$hCNV->{$id}->{"elementary_caller_depth"} = "" unless exists $hCNV->{$id}->{"elementary_caller_depth"};
-					$hCNV->{$id}->{"elementary_caller_coverage"} = "" unless exists $hCNV->{$id}->{"elementary_caller_coverage"}; 
-					$hCNV->{$id}->{'id'} = $id."!".$patient->id;
+					unless (exists $hCNV->{$id}){
+						$hCNV->{$id}->{sr1} = -1; 
+						$hCNV->{$id}->{sr2} = -1; 
+						$hCNV->{$id}->{pr1} = -1; 
+						$hCNV->{$id}->{pr2} = -1;
+						$hCNV->{$id}->{sr_qual} = -1;
+						$hCNV->{$id}->{"elementary_caller_sr"} = "";
+						$hCNV->{$id}->{"elementary_caller_depth"} = "" ;
+						$hCNV->{$id}->{"elementary_caller_coverage"} = "";
+						$hCNV->{$id}->{'type'} = $current_cnv->{'SVTYPE'};	
+						$hCNV->{$id}->{'chromosome'} = $project->getChromosome($current_cnv->{'CHROM'})->ucsc_name;
+						$hCNV->{$id}->{'start'} = $current_cnv->{'START'};
+						$hCNV->{$id}->{'end'} = $current_cnv->{'END'};
+						$hCNV->{$id}->{'len'} = abs ($hCNV->{$id}->{'END'} - $hCNV->{$id}->{'START'}) +1;	
+						$hCNV->{$id}->{'id'} = $id."!".$patient->id;
+						$hCNV->{$id}->{callers} = 0;
+						$hCNV->{$id}->{depth_CN} = -1; 
+						$hCNV->{$id}->{depth_qual} = -1;
+						$hCNV->{$id}->{coverage_zscore} = -1;
+						$hCNV->{$id}->{coverage_ratio} = -1;
+						$hCNV->{$id}->{patient} = $patient->id;
+						$hCNV->{$id}->{caller_type_flag} = 0 ;#unless exists $hCNV->{$id}->{caller_type_flag};
+						# unless exists $hCNV->{$id}->{callers};
+					}
+					# unless exists $hCNV->{$id}->{"elementary_caller_sr"};
+					#unless exists $hCNV->{$id}->{"elementary_caller_depth"};
+					#unless exists $hCNV->{$id}->{"elementary_caller_coverage"}; 
+					
 								
-					$hCNV->{$id}->{'type'} = $current_cnv->{'SVTYPE'};		
-					$hCNV->{$id}->{'chromosome'} = $project->getChromosome($current_cnv->{'CHROM'})->ucsc_name;
-					$hCNV->{$id}->{'start'} = $current_cnv->{'START'};
-					$hCNV->{$id}->{'end'} = $current_cnv->{'END'};
-					$hCNV->{$id}->{'len'} = abs ($hCNV->{$id}->{'END'} - $hCNV->{$id}->{'START'}) +1;				
+						
+							
 					# pour sauvegarder l'info propre aux differents callers
-					$hCNV->{$id}->{callers} = 0 unless exists $hCNV->{$id}->{callers};
-					 $current_cnv->{HASH_CALLER}->{$current_cnv->{CALLER}} ++;
+					
+					$current_cnv->{HASH_CALLER}->{$current_cnv->{CALLER}} ++;
 					foreach my $caller (keys %{$current_cnv->{HASH_CALLER}}) {
 						 my $vc = $cnv_callers->{$caller};
 #					warn $current_cnv->{REAL_CALLER}." ".$vc;
@@ -422,26 +446,29 @@ sub gather_identical_CNV
 					
 					$hCNV->{$id}->{callers} =  $hCNV->{$id}->{callers} | $vc;
 					}
-					warn $hCNV->{$id}->{callers};
 					#die() if $hCNV->{$id}->{callers} == 512;
-					$hCNV->{$id}->{caller_type_flag} = 0 unless exists $hCNV->{$id}->{caller_type_flag};
+					
+					
 					$hCNV->{$id}->{caller_type_flag} =  $hCNV->{$id}->{caller_type_flag} | $caller_type_flag->{$caller_flag};
-					$hCNV->{$id}->{sr1} = -1; 
-					$hCNV->{$id}->{sr2} = -1; 
-					$hCNV->{$id}->{pr1} = -1; 
-					$hCNV->{$id}->{pr2} = -1;
-					$hCNV->{$id}->{sr_qual} = -1;
-				
+					
 					my $caller = $hCNV->{$id}->{CALLER};
+					
 					if ($caller_flag eq "caller_sr") {
-					$hCNV->{$id}->{sr1} = $current_cnv->{'INFOS'}->{SR}->[0]; 
+					
+					$hCNV->{$id}->{sr1} = $current_cnv->{'INFOS'}->{SR}->[0];
+					$hCNV->{$id}->{sr1} = 0 unless $hCNV->{$id}->{sr1}; 
 					$hCNV->{$id}->{sr2} = $current_cnv->{'INFOS'}->{SR}->[1];; 
+					$hCNV->{$id}->{sr2} = 0 unless $hCNV->{$id}->{sr2}; 
 					$hCNV->{$id}->{pr1} =  $current_cnv->{'INFOS'}->{PR}->[0]; 
+					$hCNV->{$id}->{pr1} = 0 unless $hCNV->{$id}->{pr1}; 
 					$hCNV->{$id}->{pr2} =  $current_cnv->{'INFOS'}->{PR}->[1]; 
+					$hCNV->{$id}->{pr2} = 0 unless $hCNV->{$id}->{pr2}; 
 					$hCNV->{$id}->{sr_qual} =  $current_cnv->{'QUAL'};
+					$hCNV->{$id}->{sr_qual} = 0 unless $hCNV->{$id}->{sr_qual}; 
+					
+					# die() if $current_cnv->{'START'} == 96207209;
 					}
-					$hCNV->{$id}->{depth_CN} = -1; 
-					$hCNV->{$id}->{depth_qual} = -1;
+					
 					$hCNV->{$id}->{"elementary_".$caller_flag} = join(";",@{$current_cnv->{'ELEMENTARY'}});
 					$hCNV->{$id}->{gt} =  $current_cnv->{'GT'};
 					
@@ -449,18 +476,20 @@ sub gather_identical_CNV
 						$hCNV->{$id}->{depth_CN} = $current_cnv->{'CN'};
 						$hCNV->{$id}->{depth_qual} = $current_cnv->{'QUAL'};
 					}
-					$hCNV->{$id}->{coverage_zscore} = -1;
-					$hCNV->{$id}->{coverage_ratio} = -1;
+					
 					if ($caller_flag eq "caller_coverage")  {
 						$hCNV->{$id}->{coverage_ratio} = $current_cnv->{'RATIO'};
 						$hCNV->{$id}->{coverage_zscore} =$current_cnv->{'INFOS'}->{zscore}; 
 					}
-					$hCNV->{$id}->{patient} = $patient->id;
+					
+					warn Dumper  $hCNV->{$id}->{sr1} if  $current_cnv->{'START'} == 96207209;
 					getScoreCallers($hCNV->{$id});
 					
 				}
-					
 	}
+	
+	warn Dumper $hCNV->{DUP_12_96207209_96399594};# if $debug;
+	#die() if $debug;
 	return [values %$hCNV];
 }
 sub test_type {
@@ -536,6 +565,7 @@ sub save_csv {
 	my $col = ["project","patient","chr38","start38","end38","chr19","start19","end19","type","callers","caller_type_flag",'sr1','sr2','sr_qual','pr1','pr2',"depth_qual",'depth_CN','coverage_zscore','coverage_ratio','elementary_caller_sr','elementary_caller_depth','elementary_caller_coverage','score_caller_sr','score_caller_depth','score_caller_coverage','gt'];
 	$csv->print($fh, $col); 
 	$csv->print($fh, [0,0,"Z",-1,-1,"Z",-1,-1,"Z",0,0,0,0,0,0,0,0,0,0,0,"Z","Z","Z",0,0,0,"Z"]); 
+	#DUP_12_96207209_96399594!145286
 	foreach my $vhh (values %$snps){
 		my $chr = $project->getChromosome($vhh->{chromosome});
 		my $chr0 = $chr->name;
@@ -547,6 +577,7 @@ sub save_csv {
 		if ($chr->name eq "MT"){
 			$mt=1 if $project->getChromosome("MT")->length() == 16571 or $project->current_genome_version eq "HG38";
 		}
+		#DUP_12_96207209_96399594
 		if (exists $vhh->{LIFT} && $vhh->{LIFT}->{MULTI}  == 1 ) {
 			 if ($project->isChromosomeName($vhh->{LIFT}->{chromosome})){
 				$startlift = $vhh->{LIFT}->{start};
@@ -586,6 +617,9 @@ sub save_csv {
 			die(Dumper $vhh." ".$c) unless exists $vhh->{$c};
 			push(@$line,$vhh->{$c});
 		}
+		warn "--"  if $vhh->{start38} == 96207209;
+			warn Dumper $vhh if $vhh->{start38} == 96207209;
+			warn Dumper $line  if $vhh->{start38} == 96207209;
 			$csv->print($fh, $line);
 		
 	}

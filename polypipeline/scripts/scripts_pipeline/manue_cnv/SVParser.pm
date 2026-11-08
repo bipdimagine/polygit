@@ -86,14 +86,12 @@ sub decode_gt {
 sub parse_vcf {
 	my ($patient,$caller) =@_;
 	 my $vcf_file = $patient->getSVFile($caller);
-	 warn $caller;
 	 
 	 my $project = $patient->project;
 	# ouverture du fichier manta zippé
 	my $res;
 	my $vcf = Bio::DB::HTS::VCF->new( filename => "$vcf_file" );
 	my $header = $vcf->header();
-	
 	while (my $row = $vcf->next){
 		
 		my $chr = $project->getChromosome($row->chromosome($header),1);
@@ -110,14 +108,22 @@ sub parse_vcf {
 			$h->{'SVTYPE'} = "DEL"  if  ($row->id()  =~ m/loss/i);
 			$h->{'SVTYPE'} = "DUP" if ($row->id()  =~ m/gain/i);
 		}
+		if ($h->{'SVTYPE'}  eq "INS"){
+			$h->{'SVTYPE'} = "DUP"  if  ($row->id()  =~ m/DUP/i);
+		}
 		next unless ( ($h->{'SVTYPE'} eq "DUP") || ($h->{'SVTYPE'} eq "DEL") );
 		$h->{'CHROM'}=$chr->name;
 		$h->{"CALLER"} = $caller;
 		$h->{'END'} = $row->get_info($header, "END")->[0];
 		$h->{'START'} = $row->position();
 		$h->{'SVLEN'} =  abs($h->{'END'} - $h->{'START'});
-		
+		if ($h->{'START'} == $h->{'END'}){
+			$h->{'SVLEN'} = $row->get_info($header, "DUPSVLEN")->[0];
+			$h->{'END'} += ($h->{'SVLEN'} - 1);
+		}
 		my $res1 = $chr->genesIntervalTree->fetch( $h->{'START'},$h->{'END'} );
+		warn Dumper $res1 if $h->{'START'} == 178921361;
+		#die() if $h->{'START'} == 178921361;
 		next if scalar(@$res1) < 2;
 		
 		$h->{'KARYOTYPE_ID'}= $chr->karyotypeId;
@@ -131,7 +137,7 @@ sub parse_vcf {
 		#warn $h->{'GT_a'}->[0]."/". $h->{'GT_a'}->[1] if  $h->{'GT_a'}->[0] eq "."  or  $h->{'GT_a'}->[1] eq ".";
 		#warn $h->{'GT_a'}->[0]."/". $h->{'GT_a'}->[1];
 		next if $v->[0] eq "."  &&  $v->[1] eq ".";
-		warn "---------$caller ".$chr->name." ".$v->[0]."/".$v->[1] if $v->[1] == 0;
+#		warn "---------$caller ".$chr->name." ".$v->[0]."/".$v->[1] if $v->[1] == 0;
 		
 		$h->{'GT'} = "0/1";
 		$h->{'GT'} = "1/1" if ($h->{'GT_a'}->[0] == $h->{'GT_a'}->[1]);  
@@ -149,12 +155,13 @@ sub parse_vcf {
 			$h->{'CN'} = $h->{'INFOS'}->{CN}->[0];
 			warn "***".$h->{'INFOS'}->{CN}->[0] if $h->{'INFOS'}->{CN}->[0] == 2;
 		#	die()  if $h->{'INFOS'}->{CN}->[0] > 2;
-			warn join("/",@$v) if ($caller eq "dragen-cnv");
-			warn join("/",@{$h->{'GT_a'}}) if ($caller eq "dragen-cnv"); 
 		}
 		if ($caller eq "sawfish" || $caller eq 'pbsv'){
 			$h->{'INFOS'}->{SR} = [$h->{'INFOS'}->{AD}->[0],$h->{'INFOS'}->{AD}->[1]];
 			$h->{'INFOS'}->{PR} =  [$h->{'INFOS'}->{AD}->[0],$h->{'INFOS'}->{AD}->[1]];
+		}
+		else {
+			warn Dumper $h->{'INFOS'}->{SR} if $h->{'START'} == 96207209;
 		}
 		
 		$h->{id}=$id;
@@ -285,7 +292,6 @@ sub gather_id {
 					foreach my $id ( @$tab_ind_id )
 					{
 						die() unless exists $hcnv->{$id};
-						warn $id;		
 						$ggfreq = $hcnv->{$id}->{'GOLD_G_FREQ'} if ($hcnv->{$id}->{'GOLD_G_FREQ'} > $ggfreq);
 						$glfreq = $hcnv->{$id}->{'GOLD_L_FREQ'} if ($hcnv->{$id}->{'GOLD_L_FREQ'} > $glfreq);
 						$mg = "yes" if ($hcnv->{$id}->{'OMIN_MG'} eq "yes");

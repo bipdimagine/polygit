@@ -983,9 +983,7 @@ sub save_parquet_rocksdb {
 	
 	foreach my $cnv (@$cnvs) {
 		my $line;
-		warn "*";
 		$rocks->put($cnv->{id},$cnv);
-			warn "*";
 		push(@$line,$cnv->{id});
 		push(@$line,$cnv->{type});  
 		push(@$line,$cnv->{chromosome});
