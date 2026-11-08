@@ -34,6 +34,7 @@ foreach my $patient (@{$project->getPatients}){
 	chomp(@files);
 	die("no file for bc $bc ".$patient->name) unless @files;
 	
+	
 	#my $model = basecall_model($files[0]);
 	my $final_fastq = $fastq_dir."/".$patient->name.".fastq.gz";
 	my $ubam_out = $fastq_dir."/".$patient->name.".bam";
