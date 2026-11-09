@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use FindBin qw($Bin);
@@ -34,6 +34,7 @@ use Carp;
 use JSON::XS;
 use File::Path qw(make_path);
 use Pod::Usage;
+use autodie qw(system open);
 
 my $project_names;
 my $run_name_option;
@@ -43,6 +44,7 @@ my $no_demux_only;
 my $input_mask;
 my $trim = '';
 my $other_args;
+my $delete;
 
 GetOptions(
 	'projects=s'			=> \$project_names,
@@ -53,8 +55,9 @@ GetOptions(
 	'mask=s'				=> \$input_mask,
 	'trim!'					=> \$trim,			# Trim adapters (par défaut pour RNAseq seulement)
 	'other_args=s'			=> \$other_args,	# To add other arguments in Bases2Fastq cmd line
+	'delete!'				=> \$delete,
 	'help|?'				=> sub {pod2usage(-verbose => 2,-noperldoc=>1)},
-) || confess("Possibles options are: projects, run, mimsatches, create_fastq_umi, no_demux_only, mask, trim, other_args, help.
+) || confess("Possibles options are: projects, run, mimsatches, create_fastq_umi, no_demux_only, mask, trim, delete|nodelete, other_args, help.
 Use $0 --help to see the full documentation.\n");
 
 # Vérifications options
@@ -69,6 +72,7 @@ if ( $mismatch !~ /^[012]$/ ) {
         -exitval => 2
     );
 }
+
  
 my $run_name;
 my $umi_mask;
@@ -142,6 +146,7 @@ foreach my $project_name (split(",",$project_names)){
 	my $sp = $run->sample_sheet;
 	if (not $sp and -e $bcl_dir."/RunManifest.csv") {
 		my $prompt = prompt("No RunManifest in database. Use '$bcl_dir/RunManifest.csv' instead ? (y/n) ", -yes_no);
+		die("No RunManifest in database.") unless ($prompt);
 		$aoa = csv (in => $bcl_dir."/RunManifest.csv" ) if ($prompt);
 		next
 	}
@@ -152,6 +157,10 @@ foreach my $project_name (split(",",$project_names)){
 	close ($SP);
 	$aoa = csv (in => $csv_tmp);
 	system("rm $csv_tmp") if (-e $csv_tmp);
+}
+
+if ($bcl_dir =~ /AVITI\/IMAGINE/ and not defined $delete ) { 
+	$delete = 1 if ( prompt( "Delete Bcl after demultipex (y/n) ", -yes ) );
 }
 
 
@@ -417,13 +426,29 @@ while($checkComplete == 1){
 	sleep(3600);
 	$checkComplete = 0 if (-f $complete);
 }
+open(my $runUpload, '<', $complete) or die ("Can't open '$complete': $!");
+my $json;
+while (my $line = <$runUpload>) {
+	chomp $line;
+	$json .= $line;
+}
+close($runUpload);
+my $upload = decode_json $json;
+my $outcome = $upload->{'outcome'};
+unless ($outcome eq 'OutcomeCompleted') {
+	confess("Run failed: $outcome") unless (prompt("Run failed: $outcome. Continue anyway ? (y/n)  ", -yes_no));
+}
 
 # Copy bcl
 if ($bcl_dir =~ /AVITI\/IMAGINE/) {
-	my $cmd_rsync = "rsync -rah --no-times --size-only $bcl_dir $bcl_tmp" =~ s/\/\//\//rg;
-	warn $cmd_rsync;
-	my $exit_rsync = system($cmd_rsync);
-	die("Rsync error, please retry") if ($exit_rsync);
+#	my $cmd_rsync = "rsync -rah --no-times --size-only $bcl_dir $bcl_tmp" =~ s/\/\//\//rg;
+#	warn $cmd_rsync;
+#	my $exit_rsync = system($cmd_rsync);
+#	die("rsync error, please retry") if ($exit_rsync);
+	my $rclone_cmd = "rclone copy --local-no-set-modtime $bcl_dir $bcl_tmp --progress --transfers 16 --checkers 32";
+	warn $rclone_cmd;
+	my $exit_rclone = system($rclone_cmd);
+	die("rclone copy error, please retry") if ($exit_rclone);
 }
 my $ss1 = $ss;
 $ss1 = $bcl_tmp.$runm_name if ($bcl_dir =~ /AVITI\/IMAGINE/);
@@ -467,7 +492,7 @@ unless ($no_demux_only) {
 # Complete demultiplex
 warn $cmd;
 sleep(2);
-my $exit = system("echo $cmd | $Bin/../../../polyscripts/system_utility/run_cluster.pl -cpu=40 -name='demultiplex'");
+my $exit = system("echo $cmd | run_cluster.pl -cpu=40 -name='demultiplex'");
 die("Error while demultiplexing") if ($exit);
 
 # Copy fastq
@@ -638,6 +663,11 @@ sub report {
 	$tb2->load(@rows);
 	print $tb2;
 	print "\n ------------------------------\n";
+
+	if ($delete and $bcl_dir =~ /AVITI\/IMAGINE/) {
+		system("rm -r $bcl_tmp");
+		system(qq{find $dir_out -maxdepth 1 -type f -name "*.gz" ! -name "*_RC*" -exec rm {} +});
+	}
 }
 
 	
@@ -652,8 +682,10 @@ Optionels:
 	mismatches <i>             nombre de mismatch(es) à autoriser,
 	                           valeurs possibles: 0,1,2, défaut: 1
 	no_demux_only              ne pas faire l'étape demux only, lancer directement le démultiplexage complet
+	trim                       active le trimming des adaptateurs, par défaut pour le RNAseq uniquement.
 	create_fastq_umi           générer des fastq pour les UMI
 	mask <s>                   masque de démultiplexage, détail de la syntaxe dans la documentation complète
+	delete                     
 	other_args                 autre arguments à passer à Bases2Fastq (voir https://docs.elembio.io/docs/bases2fastq/optional-arguments/)
 	help                       affiche un message d'aide détaillé
 
@@ -723,6 +755,14 @@ Active la génération de fichiers FASTQ pour les UMI.
 
 Spécifie le masque de démultiplexage à utiliser.
 Plus d'informations sur la syntaxe dans la section DEMULTIPLEXING MASK SYNTAX.
+
+=item B<--trim>
+
+Active le trimming des adapters. Par défaut pour le RNAseq uniquement.
+
+=item B<--other_args>
+
+Autres argument à passer à <Bases2fastq>, à rentrer entre guillements.
 
 =back
 
