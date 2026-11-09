@@ -180,9 +180,8 @@ AnnotSV:/software/distrib/AnnotSV_2.0/bin/AnnotSV
 
 # BROAD 
 gatk4:gatk
-gatk:/data-bipd/data-pure/software/bin.biocluster//GenomeAnalysisTK.jar
-picard_path:/data-bipd/data-pure/software/bin.biocluster//picard.jar
-picard:/data-bipd/data-pure/software/bin.biocluster//picard.jar
+gatk:exec_singularity.sh gatk.sif gatk
+picard:exec_singularity.sh gatk.sif gatk
 
 
 #calling 

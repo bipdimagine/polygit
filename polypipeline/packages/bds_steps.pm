@@ -2272,51 +2272,55 @@ sub move_bam {
 
 sub rnaseq_metrics {
 	my ( $self, $hash ) = @_;
-	my $filein       = $hash->{filein};
-	$filein = $self->patient->getBamFile() unless  $filein;
-	my $name         = $self->patient()->name();
-	my $project      = $self->patient()->project;
-	my $m            = $self->patient->alignmentMethod();
-	my $project_name = $self->patient()->getProject->name();
-	my $dir_out      = $project->getCountingDir("featureCounts") . "/metrics";
-	system("mkdir $dir_out && chmod a+rwx $dir_out") unless -e $dir_out;
-
-	my $method  = $self->patient()->alignmentMethod();
-	my $fileout = $dir_out . "/$name.metrics";
-
+	my $filein			= $hash->{filein};
+	$filein				= $self->patient->getAlignmentFile() unless  $filein;
+	my $name			= $self->patient()->name();
+	my $project			= $self->patient()->project;
+	my $project_name	= $self->patient()->getProject->name();
+	my $dir_out			= $project->getCountingDir("featureCounts") . "/metrics";
+	my $fileout			= $dir_out . "/$name.metrics";
+#	
+#	system("mkdir $dir_out && chmod a+rwx $dir_out") unless -e $dir_out;
+#
+#	my $method  = $self->patient()->alignmentMethod();
+#
 	my $ppn = 2;
 	$ppn = 1 if $self->nocluster;
+#
+#	die() if $fileout eq $filein;
+#	$filein = $self->patient->getBamFileName() unless -e $filein;
+#	my $refFlat = $project->refFlat_file();
+#	warn $refFlat;
+#	
+#	#$refFlat = "/data-isilon/public-data/repository/HG38/refFlat/refFlat_no_chr.txt" if $method eq "star" ;
+#	
+#	#$refFlat = $project->refFlat_file_star() if $method eq "star" ;
+#	#$refFlat = $project->refFlat_file_dragen() if $method eq "dragen-align";
+#	my $rRNA_file = $project->rRNA_file();
+#	my $opt       = "";
+#	$opt = "RIBOSOMAL_INTERVALS=$rRNA_file" if -e $rRNA_file;
+#	unless ( -e $refFlat ) {
+#		die("can't find $refFlat $rRNA_file\nSee https://open.bioqueue.org/home/knowledge/showKnowledge/sig/ucsc-gtftogenepred#");
+#		# /software/distrib/ucsc_util/gtfToGenePred -genePredExt -geneNameAsName2 -ignoreGroupsWithoutExons gencode.v46.annotation.gtf /dev/stdout | \
+#    	# awk 'BEGIN { OFS="\t"} {print $12, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10}' > refFlat.txt
+#	}
+#
+#	my $java   = $project->buffer->software("java");
+#	my $picard = $project->buffer->software("picard");
+#
+#	my $cmd =
+#"$java -jar $picard  CollectRnaSeqMetrics I=$filein O=$fileout REF_FLAT=$refFlat STRAND=FIRST_READ_TRANSCRIPTION_STRAND $opt  ";
 
-	die() if $fileout eq $filein;
-	$filein = $self->patient->getBamFileName() unless -e $filein;
-	my $refFlat = $project->refFlat_file();
-	warn $refFlat;
-	
-	#$refFlat = "/data-isilon/public-data/repository/HG38/refFlat/refFlat_no_chr.txt" if $method eq "star" ;
-	
-	#$refFlat = $project->refFlat_file_star() if $method eq "star" ;
-	#$refFlat = $project->refFlat_file_dragen() if $method eq "dragen-align";
-	my $rRNA_file = $project->rRNA_file();
-	my $opt       = "";
-	$opt = "RIBOSOMAL_INTERVALS=$rRNA_file" if -e $rRNA_file;
-	unless ( -e $refFlat ) {
-		die("can't find $refFlat $rRNA_file\nSee https://open.bioqueue.org/home/knowledge/showKnowledge/sig/ucsc-gtftogenepred#");
-		# gtfToGenePred -genePredExt -geneNameAsName2 -ignoreGroupsWithoutExons hencode.v46.annotation.gtf /dev/stdout | \
-    	# awk 'BEGIN { OFS="\t"} {print $12, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10}' > refFlat.txt
-	}
-
-	my $java   = $project->buffer->software("java");
-	my $picard = $project->buffer->software("picard");
-
-	my $cmd =
-"$java -jar $picard  CollectRnaSeqMetrics I=$filein O=$fileout REF_FLAT=$refFlat STRAND=FIRST_READ_TRANSCRIPTION_STRAND $opt  ";
+	my $bin_dev = $self->script_dir;
+	my $version = $self->patient()->project->genome_version();
+	my $cmd = "perl $bin_dev/metrics_rnaseq.pl -project=$project_name -patient=$name -fork=$ppn -version=$version ";
 	my $type     = "metrics";
 	my $stepname = $self->patient->name . "@" . $type;
 	my $job_bds  = job_bds_tracking->new(
 		uuid         => $self->bds_uuid,
 		software     => "",
-		sample_name  => $self->patient->name(),
-		project_name => $self->patient->getProject->name,
+		sample_name  => $name,
+		project_name => $project_name,
 		cmd          => [$cmd],
 		name         => $stepname,
 		ppn          => $ppn,
@@ -5473,14 +5477,13 @@ sub bigwig {
 	my $project      = $self->patient()->project;
 	my $m            = $self->patient->alignmentMethod();
 	my $project_name = $self->patient()->getProject->name();
-	my $dir_out = $project->getAlignmentDir($m);
-	$filein = $self->patient()->getAlignFileName();
+	my $dirout       = $project->getCoverageDir();
+	$filein          = $self->patient()->getAlignFileName();
 
-	my $singularity = $project->buffer->software("singularity-run");
-	my $deeptools = $project->buffer->software("deeptools-sif");
-	my $fileout =  $filein =~ s/(b|cr)am$/bw/r;
-	my $ppn = 20;
-	my $cmd = $singularity.' '.$deeptools." bamCoverage --bam $filein --outFileName $fileout --numberOfProcessors $ppn";
+	my $fileout = $dirout . $name .'.bw';
+	my $ppn = $self->nproc;
+	my $cmd = "run_singularity.sh deeptools.sif bamCoverage --bam $filein --outFileName $fileout --numberOfProcessors $ppn";
+	#my $cmd = "$Bin/scripts/scripts_pipeline/pacbio/deeptools_nomalize.pl -project=$project_name -patient=$name -fork=$ppn"
 	warn $cmd;
 	my $type = 'bigwig';
 	my $stepname = $self->patient->name . "@" . $type;

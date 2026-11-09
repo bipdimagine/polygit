@@ -975,6 +975,12 @@ sub getFileName {
 		elsif ($step eq "deepvariant_denovo") {
 			return $self->getVariationsDir($step)."/$step.done";
 		}
+		elsif ($step eq "featureCounts-genes") {
+			return $self->getCountingDir("featureCounts").$self->name.'.count.genes.txt';
+		}
+		elsif ($step eq "featureCounts-exons") {
+			return $self->getCountingDir("featureCounts").$self->name.'.count.exons.txt';
+		}
 		
 		else {die("nothing konwn about $step ")};
 }

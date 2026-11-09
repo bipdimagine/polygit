@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use FindBin qw($Bin);
@@ -9,60 +9,54 @@ use lib "$Bin/../../../GenBo/lib/obj-nodb/packages";
 use lib "$Bin/../../../GenBo/lib/kyoto/";
 use lib "$Bin/../../../GenBo/lib/GenBoDB/writeDB";
 use lib "$Bin/../../packages";
-use PBS::Client;
+#use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
-use IO::Prompt;
-use Sys::Hostname;
-use Parallel::ForkManager;
-use Term::ANSIColor;
-use Moose;
-use MooseX::Method::Signatures;
+#use IO::Prompt;
+#use Sys::Hostname;
+#use Parallel::ForkManager;
+#use Term::ANSIColor;
+#use Moose;
+#use MooseX::Method::Signatures;
 #use bds_steps;   
 use GBuffer;
-use GenBoProject;
-
-
-  
-my $bin_cecile=qq{$Bin/scripts/scripts_db_polypipeline};
-my $bin_script_pipeline = qq{$Bin/scripts/scripts_pipeline};
+use Carp;
 
 
 my $projectName;
 my $patients_name;
-my $step;
-my $bcl_dir;
-my $run;
-my $feature_ref;
-my $no_exec;
-my $aggr_name;
-my $lane;
+my $version;
 
-
-my $limit;
 GetOptions(
-	'project=s' => \$projectName,
-	'patients=s' => \$patients_name,
+	'project=s'		=> \$projectName,
+	'patients=s'	=> \$patients_name,
+	'version=s'		=> \$version,
 );
 
- 
-
-
 my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $projectName );
+my $project = $buffer->newProject( -name => $projectName , -version => $version);
 $patients_name = $project->get_only_list_patients($patients_name);
 my $out = $project->getProjectRootPath();
 my $file = $out."/".$project->name()."_igv_session.xml";
 
+my $release = $project->annotation_genome_version;
+my $genome;
+$genome = 'hg38_1kg' if ($release =~ /^HG38/);
+$genome = 'hg19' if ($release =~ /^HG19/);
+$genome = 'mm39' if ($release =~ /^MM39/);
+$genome = 'mm10' if ($release =~ /^MM10/);
+confess ("No session genome ") unless ($genome);
+
 open (IGV, ">$file");
-print IGV '<Session genome="hg38" hasGeneTrack="true" hasSequenceTrack="true" locus="All" version="8">'."\n";
+print IGV qq{<Session genome="$genome" hasGeneTrack="true" locus="All" version="8">}."\n";
 print IGV "<Resources>\n";
 
 foreach my $patient (@{$patients_name}) {
 	my $name=$patient->name();
 	my $bam =$patient->getBamFile();
 	my $bw = $bam =~ s/.(cr|b)am$/\.bw/r;
-	$bam =~ s/\/data-(isilon|pure)\/sequencing\/ngs/https:\/\/www.polyweb.fr\/NGS\//;
+	$bw = $patient->getBigWigFile unless (-e $bw);
+	$bam =~ s/(\/data-bipd)?\/data-(isilon|pure)\/sequencing\/ngs/https:\/\/www.polyweb.fr\/NGS\//;
 	print IGV '<Resource path="'.$bam.'"'."/>\n";
 	
 	if (-e $bw) {
@@ -72,3 +66,5 @@ foreach my $patient (@{$patients_name}) {
 }
 print IGV "</Resources>\n";
 print IGV "</Session>\n";
+
+print "IGV session: ".$file."\n";

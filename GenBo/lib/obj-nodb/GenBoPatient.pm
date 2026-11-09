@@ -856,13 +856,14 @@ has 'uBams_revio' => (
 	default => sub {
 	my $self = shift;
 	my $lane = $self->getLane();
+	die("Complete 'Lane' field in PolyProject with [RunID]:[SmartCell_List]:[Barcode]") unless $lane;
 
 	my @runs = split(";",$lane);
 	my $hash;
 	foreach my $line (@runs){
 		my ($run,$smartcells,$codebare) = split(":",$line);
 		$run =~ s/\,/_/g;
-		warn $smartcells;
+		#warn $smartcells;
 		foreach my $sc (split(",",$smartcells)){
 			$hash->{$run}->{$sc} = $codebare =~ s/^BC/bc/r;
 		}
@@ -2214,10 +2215,40 @@ sub getFileName {
 			return $self->vcfFileName($step);
 		}
 		elsif ($step eq "pbmm2" or $step eq "dragen-align" or $step eq "bwa") {
-			return $self->getCramFileName();
+			return $self->getAlignFileName();
+		}
+		elsif ($step eq "star") {
+			return $self->getBamFileName();
 		}
 		elsif ($step eq "coverage"){
 			return $self->getCoverageFileName();
+		}
+		elsif ($step eq "skera") {
+			return $self->project->getAlignmentPipelineDir($step).$self->name.'.segmented.bam';
+		}
+		elsif ($step eq "lima_isoseq") {
+			return $self->project->getAlignmentPipelineDir($step).$self->name.'.fl.5p--3p.bam';
+		}
+		elsif ($step eq "isoseq_tag") {
+			return $self->project->getAlignmentPipelineDir($step).$self->name.'.flt.bam';
+		}
+		elsif ($step eq "isoseq_refine") {
+			return $self->project->getAlignmentPipelineDir($step).$self->name.'.flnc.bam';
+		}
+		elsif ($step eq "isoseq_correct") {
+			return $self->project->getAlignmentPipelineDir($step).$self->name.'.flnc-bccorr.bam';
+		}
+		elsif ($step eq "isoseq_groupdedup") {
+			return $self->project->getAlignmentPipelineDir($step).$self->name.'.dedup.bam';
+		}
+		elsif ($step eq "isoseq_collapse") {
+			return $self->project->getCallingPipelineDir($step).$self->name.'.collapsed.gff';
+		}
+		elsif ($step eq "pigeon") {
+			return $self->project->getCountingDir($step) . 'make-seurat/' . $self->name . '/filtered/isoforms_seurat/matrix.mtx';
+		}
+		elsif ($step eq "metrics") {
+			return $self->project->getCountingDir("featureCounts").'/metrics/'.$self->name.'.metrics';
 		}
 		else {die("nothing konwn about $step ")};
 }

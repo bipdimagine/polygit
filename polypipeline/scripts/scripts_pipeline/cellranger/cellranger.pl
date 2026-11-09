@@ -16,6 +16,7 @@ use Moose;
 use file_util;
 use GBuffer;
 use GenBoProject;
+use Text::CSV qw( csv );
 use Term::Menus;
 use Cwd 'abs_path';
 use File::Path qw(make_path);

@@ -39,60 +39,72 @@ my $nb=0;
 
 my $jj;
 foreach my $project_name (split(",",$arg_project_name)) {
-my $buffer = GBuffer->new();
-my $project = $buffer->newProject( -name => $project_name );
-my $groups;
-my $stforce;
-
-my $per_fam;
-my $deep;
-my $hids;
-my $yaml;
-if ($project->isGenome){
- $yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/genome.yaml";
-die("$yaml not found") unless -e $yaml;
-}
-elsif ($project->isExome){
-	$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/exome.yaml";
-}
-else {
-	die("only genome for now " );
-}
-
-
-my $config = LoadFile($yaml);
-my @steps = @{$config->{steps}};
-my @project_steps = @{$config->{project_steps}};
-my $scripts = $config->{scripts};
-warn Dumper $scripts;
-my $run; 
- foreach my $patient (@{$project->getPatients}) {
+	my $buffer = GBuffer->new();
+	my $project = $buffer->newProject( -name => $project_name );
+	my $groups;
+	my $stforce;
 	
-	my $patient_name = $patient->name();
-	foreach my $step (@steps){
-		if ($force && -e $patient->getFileName($step)){
-			unlink  $patient->getFileName($step);
+	my $per_fam;
+	my $deep;
+	my $hids;
+	my $yaml;
+	if ($project->isGenome){
+		$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/genome.yaml";
+		die("$yaml not found") unless -e $yaml;
+	}
+	elsif ($project->isExome){
+		$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/exome.yaml";
+	}
+	elsif ($project->isRnaseq){
+		if ($project->isLongRead) {
+			$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/kinnex.yaml";
+#			$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/isoseq.yaml";
 		}
-		unless (-e $patient->getFileName($step) or $force) {
-			warn Dumper $scripts->{$step};
-			my $cmd = $dir_pipeline_script.$scripts->{$step}->{script}.qq{ -project=$project_name -patient=$patient_name -fork=$fork};#."&&  $Bin/bam2cram.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce";
-			my $hh ={cmd=>$cmd,name=>"${step}#".$project->name,type=>$patient->name,cpu=>128};
-			if (exists $scripts->{$step}->{previous}){
-				my $previous_string = $scripts->{$step}->{previous};
-				foreach my $previous (split(",",$previous_string)) {
-					if (exists $hids->{$previous}){
-						push(@{$hh->{previous}}, $hids->{$previous}->{$patient->id});
+		else {	#if ($project->getRuns[0]->sequencing_method eq 'paired-end') {
+			$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/rnaseq.yaml";
+		}
+	}
+	elsif (grep {/transcriptome_10X/} map {$_->name} @{$project->getCaptures}){
+		$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/sc_kinnex.yaml";
+	}
+	else {
+		die("only genome, exome or (sc)rnaseq for now " );
+	}
+	die('No yaml') unless (-f $yaml);
+	
+	my $config = LoadFile($yaml);
+	my @steps = @{$config->{steps}};
+	my @project_steps = @{$config->{project_steps}} if ($config->{project_steps});
+	my $scripts = $config->{scripts};
+	warn Dumper $scripts;
+	my $run; 
+	foreach my $patient (@{$project->getPatients}) {
+		
+		my $patient_name = $patient->name();
+		foreach my $step (@steps){
+			if ($force && -e $patient->getFileName($step)){
+				unlink  $patient->getFileName($step);
+			}
+			unless (-e $patient->getFileName($step) or $force) {
+				my $cmd = $dir_pipeline_script.$scripts->{$step}->{script}.qq{ -project=$project_name -patient=$patient_name -fork=$fork};#."&&  $Bin/bam2cram.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce";
+				my $hh ={cmd=>$cmd,name=>"${step}#".$project->name,type=>$patient->name,cpu=>128};
+				if (exists $scripts->{$step}->{previous}){
+					my $previous_string = $scripts->{$step}->{previous};
+					foreach my $previous (split(",",$previous_string)) {
+						if (exists $hids->{$previous}){
+							push(@{$hh->{previous}}, $hids->{$previous}->{$patient->id});
+						}
 					}
 				}
+				else {
+					print colored("\n => skip $step for $patient_name \n",'magenta');
+				}
+				
+				warn Dumper $hh;
+				my $id = $slurm->add_job($hh);
+				$hids->{$step}->{$patient->id} = $id;
+				#push(@{$hids->{$step}->{$patient->id}}, $id);
 			}
-			else {
-				print colored("\n => skip $step for $patient_name \n",'magenta');
-			}
-			
-			my $id = $slurm->add_job($hh);
-			$hids->{$step}->{$patient->id} = $id;
-			#push(@{$hids->{$step}->{$patient->id}}, $id);
-		}
 		} 
 	}
 	foreach my $step (@project_steps){
@@ -111,15 +123,17 @@ my $run;
 					}
 				}
 			}
+			warn Dumper $hh;
 			my $id = $slurm->add_job($hh);
 			$hids->{$step}->{$project->id} = $id;
 		}
 	}
 }
-warn $slurm->{jobs};
+warn Dumper $slurm->{jobs};
 unless ($slurm->{jobs}){
 	print colored("\n *** Nothing to do... your carbon footprint thanks you ... ***\n",'green');
 	exit(0);
 }
+
 $slurm->print_jobs();
 $slurm->run_slurm;

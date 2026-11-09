@@ -295,7 +295,7 @@ method count_featureCounts  (Str :$filein! ){
 	my $project_name = $project->name();
 	warn "!! release = ".$project->getVersion()." !!" && sleep(5) unless ($project->getVersion() =~ /HG38_CNG|MM39|DR11/);
 	
-	my $dir_out= $project->getCountingDir("featureCounts");
+	my $dir_out = $project->getCountingDir("featureCounts");
 	my $fileout = $dir_out."/".$project_name.".count.genes.txt";
 	my $fileout2 = $dir_out."/".$project_name.".count.exons.txt";
 	my $arg = $self->argument_patient(); 
@@ -328,7 +328,7 @@ method count_featureCounts  (Str :$filein! ){
 		#warn $name.": ". Dumper $metrics;
 		if ($metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} < 0.4) {
 			warn ("ERROR $name aligned bases too low: ".sprintf("%.2f%%",$metrics->{PF_ALIGNED_BASES}/$metrics->{PF_BASES} *100)
-			."\nCheck release (current = ".$project->getVersion().") or contaminations or fastqc");
+			."\nCheck release (current = ".$project->getVersion().") or contaminations or fastqc or adapter trimming");
 			die() unless (prompt("Continue anyway ? (y/n)  ", -yes_no));
 		}
 		if ($metrics->{PCT_MRNA_BASES} < 0.2) {
