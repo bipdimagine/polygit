@@ -143,12 +143,12 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 		die( "problem different bcl dir : $bcl_dir " . $run->bcl_dir );
 	}
 	$bcl_dir     = $run->bcl_dir;
-	$dir_bcl_tmp = "/data-dragen/bcl/" . $project->getRun->run_name() . "/";
-	$dir_bcl_tmp = "/data-dragen/bcl2/" . $project->getRun->run_name() . "/" if ($big_run);
+	$dir_bcl_tmp = "/data-dragen/bcl/" . $run->run_name() . "/";
+	$dir_bcl_tmp = "/data-dragen/bcl2/" . $run->run_name() . "/" if ($big_run);
 	$dir_out = $project->project_dragen_demultiplex_path();
 	$dir_fastq = $project->dragen_fastq;
 	if ( $project->getCaptures->[0]->name =~ /^transcriptome_10X/ and not $sc ) {
-		$sc = 1 if ( prompt( "Is this project SC 10X or Parse ? Use SampleSheetSC.csv instead of the document in database ? ", -yes) );
+		$sc = 1 if ( prompt( "Is this project SC 10X or Parse ? Use SampleSheetSC.csv instead of the samplesheet in database ? ", -yes) );
 	}
 	if ($sc) {
 		die(    "No SampleSheetSC.csv: '$bcl_dir/SampleSheetSC.csv'."
