@@ -23,7 +23,7 @@ GetOptions(
 	'patient=s'	=> \$patient_name,
 	'version=s'	=> \$version,
 	'verbose'	=> \$verbose,
-) || confess("Error in command line arguments");
+) || error_exit("Error in command line arguments");
 
 confess("ERROR: -project mandatory.\n") unless ($project_name);
 confess("ERROR: -patient mandatory.\n") unless ($patient_name);
@@ -90,12 +90,12 @@ unless (-f $ploidy_estimation_file and $computed_sex) {
 	
 	$cov_chrX = $aoa->[26]->[3] if ($aoa->[26]->[2] =~ /(Average|Median) chr X coverage( \(ignore 0x regions\))? over (target region|genome)/);
 	warn 'cov chrX: '.$cov_chrX if ($verbose);
-	confess("Error parsing '$cov_metrics_file': no average chr X coverage over target region found.") unless ($cov_chrX);
+	error_exit("Error parsing '$cov_metrics_file': no average chr X coverage over target region found.") unless ($cov_chrX);
 	$cov_chrY = $aoa->[27]->[3] if ($aoa->[27]->[2] =~ /(Average|Median) chr Y coverage( \(ignore 0x regions\))? over (target region|genome)/);
 	warn 'cov chrY: '.$cov_chrY if ($verbose);
-	confess("Error parsing '$cov_metrics_file': no average/median chr Y coverage over target region found.") unless ($cov_chrY);
+	error_exit("Error parsing '$cov_metrics_file': no average/median chr Y coverage over target region found.") unless ($cov_chrY);
 	$average_cov = $aoa->[2]->[3] if ($aoa->[2]->[2] =~ /Average alignment coverage over (target region|genome)/);
-	confess("Error parsing '$cov_metrics_file': no average alignment coverage over target region.") unless ($average_cov > 0);
+	error_exit("Error parsing '$cov_metrics_file': no average alignment coverage over target region.") unless ($average_cov > 0);
 	warn 'avg cov: '.$average_cov if ($verbose);
 	$cov_SRY = $patient->coverage_SRY;
 	warn 'cov SRY: '.$cov_SRY if ($verbose);
@@ -108,20 +108,21 @@ unless (-f $ploidy_estimation_file and $computed_sex) {
 		$computed_sex_1 = 2 if ($average_cov < 5);
 		$computed_sex_1 = 1 if ($cov_SRY > 30);
 		warn 'cov SRY/average = '.$cov_SRY.'/'.$average_cov.' = '.sprintf("%.2f",$cov_SRY/$average_cov).' => '.$computed_sex_1 if ($verbose);
-		confess("ERROR $patient_name: could not compute sex: SRY cov = $cov_SRY, average cov = $average_cov") unless ($computed_sex_1);
+		error_exit("ERROR $patient_name: could not compute sex: SRY cov = $cov_SRY, average cov = $average_cov") unless ($computed_sex_1);
 	}
 	
 	my $computed_sex_2;
 	if ($cov_chrX >= 0) {
-		$computed_sex_2 = 1 if ($cov_chrX/$average_cov <= 0.7);
-		$computed_sex_2 = 2 if ($cov_chrX/$average_cov > 0.7);
-		warn 'cov chrX/average = '.$cov_chrX.'/'.$average_cov.' = '.sprintf("%.2f",$cov_chrX/$average_cov).' => '.$computed_sex_2 if ($verbose);
-		confess("ERROR $patient_name: could not compute sex: average chrX cov = $cov_chrX, average cov = $average_cov") unless ($computed_sex_2);
+		$computed_sex_3 = 1 if ($cov_chrX/$average_cov <= 0.7);
+		$computed_sex_3 = 2 if ($cov_chrX/$average_cov > 0.7);
+		warn 'cov chrX/average = '.$cov_chrX.'/'.$average_cov.' = '.sprintf("%.2f",$cov_chrX/$average_cov).' => '.$computed_sex_3 if ($verbose);
+		error_exit("ERROR $patient_name: could not compute sex: average chrX cov = $cov_chrX, average cov = $average_cov") unless ($computed_sex_3);
+#		warn("Possible anormal ploïdy for $patient_name: cov chrX / avg = ".sprintf("%.d",$cov_chrX).' / '.sprintf("%.d",$average_cov).' = '.sprintf("%.2f",$cov_chrX / $average_cov)) if ($cov_chrX / $average_cov > 1.3);
 	}
-	confess("ERROR $patient_name: could not compute sex: no median SRY or chrX cov: $cov_SRY, $cov_chrX") unless ($cov_SRY >= 0 or $cov_chrX > 0);
-	$computed_sex = $computed_sex_2 if ($computed_sex_2);
+	error_exit("ERROR $patient_name: could not compute sex: no median SRY or chrX cov: $cov_SRY, $cov_chrX") unless ($cov_SRY >= 0 or $cov_chrX > 0);
+	$computed_sex = $computed_sex_3 if ($computed_sex_3);
 	$computed_sex = $computed_sex_1 if ($computed_sex_1);
-	confess("ERROR $patient_name: could not compute sex") unless ($computed_sex);
+	error_exit("ERROR $patient_name: could not compute sex") unless ($computed_sex);
 }
 
 
@@ -169,4 +170,11 @@ elsif ($pat_sex == $computed_sex) {
     }
     print $computed_sex."\n";
     exit(0);
+}
+
+
+sub error_exit {
+	my $msg_err = @_;
+	warn $msg_err;
+	exit(3)
 }

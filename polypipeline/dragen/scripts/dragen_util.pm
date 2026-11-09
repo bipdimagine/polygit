@@ -4,13 +4,13 @@ use Data::Dumper;
 use Carp qw(confess);
 sub get_fastq_file {
 	my ($patient,$dir_pipeline, $dir_fastq,$type) = @_;
-	warn $dir_pipeline;
+	#warn $dir_pipeline;
 	my $flex;
 	$flex = 1 if ($patient->getSampleProfile =~/flex$/);
 	my $name=$patient->name();
 	$name = $patient->barcode if $flex;
 	$dir_fastq = $patient->getSequencesDirectory() unless $dir_fastq;
-	warn $dir_fastq;
+	#warn $dir_fastq;
 	my $files_pe1 = file_util::find_file_pe($patient,"",$dir_fastq,1);
 	return unless @$files_pe1;
 	my $cmd;
@@ -60,10 +60,10 @@ sub get_fastq_file {
 			system("ln -s  $dir_pipeline/".$files_rclone[1]." ".$fastq2) if $files_rclone[1] ne $name."_S1_L001_R2_001.fastq.gz";
 		}
 		else {
-		warn "cat $cmd1 > $fastq1";
-		system "cat $cmd1 > $fastq1";# unless -e $fastq1;
-		warn "cat $cmd2 > $fastq2";
-		system "cat $cmd2 > $fastq2";# unless -e $fastq2;
+			warn "cat $cmd1 > $fastq1";
+			system "cat $cmd1 > $fastq1";# unless -e $fastq1;
+			warn "cat $cmd2 > $fastq2";
+			system "cat $cmd2 > $fastq2";# unless -e $fastq2;
 		}
 	#}
 	if ($find_I1){

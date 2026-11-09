@@ -307,7 +307,7 @@ if (exists $pipeline->{align}){
 
 if (!($fastq1)) {
 	my $bamfile = $patient->getBamFileName("bwa");
-	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+	$param_align = "-b $bamfile --enable-map-align-output true ";
 }
 if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $buffer_ori = GBuffer->new();
@@ -316,8 +316,14 @@ if ($version && exists $pipeline->{align} && !($fastq1)){
 	
 	$patient_ori->{alignmentMethods} =['dragen-align','bwa'];
 	my $bamfile = $patient_ori->getBamFile();
-	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";# unless $cram;
+	$param_align = "-b $bamfile --enable-map-align-output true ";# unless $cram;
 	$param_align .= " --output-format CRAM " if $cram;
+	if($patient->getCapture->isPcr() or grep {/amplicon/} $patient->getSampleProfile){
+		$param_align .= qq{ --enable-duplicate-marking false } ;
+	}
+	else {
+		$param_align .= qq{ --enable-duplicate-marking true };
+	}
 	
 	if ($umi){
 		confess();
@@ -334,21 +340,19 @@ elsif (exists $pipeline->{align}){
 		if ($umi){
 			$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
 		}
-		elsif($patient->getCapture->isPcr()){
-			$param_align .= qq{ --enable-duplicate-marking false} ;
-		}
-		else {
-			$param_align .= qq{ --enable-duplicate-marking true };
-		}
 	}
 	else {
 		my $bamfile = $patient->getBamFileName("bwa");
-		confess("No fastq or (bwa) bam found") unless -e $bamfile;
+		confess("No fastq or bam found") unless -e $bamfile;
 		$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
-		 $param_align .= " --output-format CRAM " if $cram;
 	}
 	$param_align .= " --output-format CRAM " if $cram;
-	
+	if($patient->getCapture->isPcr() or grep {/amplicon/} $patient->getSampleProfile){
+		$param_align .= qq{ --enable-duplicate-marking false} ;
+	}
+	else {
+		$param_align .= qq{ --enable-duplicate-marking true };
+	}
 }
 else {
 	my $bam = $patient->getBamFileName();
@@ -424,10 +428,10 @@ if ($somatic ){
 
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str."$somatic_arg   $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 
-$patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
-my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
+#$patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 warn $cmd_dragen;
+my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;
 confess("Error:\n$log_error_pipeline") unless -e $ok_pipeline;
 
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
