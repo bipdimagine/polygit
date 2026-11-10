@@ -105,6 +105,9 @@ GetOptions(
 
 
 
+my $method = "dragen-calling";
+
+$method ='dragen-somatic' if $somatic;
 
 my $buffers;
 my $projects;
@@ -440,7 +443,7 @@ foreach my $project (@$projects){
 		unless($rna) {
 		
 		if (exists $hsteps->{gvcf}){	
-		 	$h->{prod}->{gvcf} = $patient->gvcfFileName("dragen-calling");
+		 	$h->{prod}->{gvcf} = $patient->gvcfFileName("$method");
 		 	$h->{pipeline}->{gvcf} = "$dir_pipeline/".$prefix.".hard-filtered.gvcf.gz";
 			$h->{exists_file}->{gvcf} = 1 if -e $h->{prod}->{gvcf};
 			$h->{exists_file_pipeline}->{gvcf} = 1 if -e $h->{pipeline}->{gvcf};
@@ -451,7 +454,7 @@ foreach my $project (@$projects){
 		
 		if (exists $hsteps->{vcf}){
 			my $latest_dragen_calling;
-		 	$h->{prod}->{vcf} = $patient->getVariationsFileName("dragen-calling");
+		 	$h->{prod}->{vcf} = $patient->getVariationsFileName("$method");
 		 	$h->{pipeline}->{vcf} = "$dir_pipeline/".$prefix.".hard-filtered.vcf.gz";
 			$h->{exists_file}->{vcf} = 1 if -e $h->{prod}->{vcf};
 			$h->{exists_file_pipeline}->{vcf} = 1 if -e $h->{pipeline}->{vcf};
@@ -920,11 +923,11 @@ foreach my $project (@$projects){
  foreach my $p (@$patients) {
  	my $nname = $p->name."_".$project_name;
  	$lims->{$nname}->{genotype} = "PLANNED" ;
- 	my $dir_out= $project->getVariationsDir("dragen-calling");
+ 	my $dir_out= $project->getVariationsDir("$method");
  	my $f = $dir_out."/".$p->name.".vcf.gz";
  	$lims->{$nname}->{genotype} = "SKIP" if -e $f; 
  	next if -e $f;
- 	next unless -e $p->gvcfFileName("dragen-calling");
+ 	next unless -e $p->gvcfFileName("$method");
  	push(@ps,$p->name);
  	push(@ps1,$p->name."_".$project_name);
  }
