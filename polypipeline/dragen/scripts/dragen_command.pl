@@ -98,7 +98,6 @@ my $project = $buffer->newProject( -name => $projectName , -version =>$version);
  $ssh->login("$username");
 
 
-die() if $somatic;
 my $tm = "/staging/tmp/";
 
 if ($project->isGenome){
@@ -429,7 +428,7 @@ my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 warn $cmd_dragen;
 confess("Error:\n$log_error_pipeline") unless -e $ok_pipeline;
-
+die($log_error_pipeline) if $exit != 0;
 #system("ssh pnitschk\@10.200.27.109 ". $cmd." >$dir_pipeline/dragen.stdout 2>$dir_pipeline/dragen.stderr");
 #system("ssh pnitschk\@10.200.27.109 rm $fastq1 $fastq2");
 #my ($out,$err,$exit) = $ssh->cmd("$cmd") ;#unless -e $bam_pipeline;
