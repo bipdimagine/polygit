@@ -47,12 +47,17 @@ if (-e $cram_prod and not $force) {
 my $ref_index = $project->getGenomeIndex("pbmm2").'/all.mmi';
 unless (-e $bam_out){
 my $cmd = qq{cd $dir_out && run_singularity.sh pacbio_analysis.sif pbmm2 align $ref_index $ubam_file $bam_out --sort --strip --preset HIFI -j $fork};
-
 print $cmd."\n";
 system("$cmd") unless -e $bam_out;
 die() unless -e $bam_out;
 }
-
+my $ref =$project->genomeFasta();
+my $cmd2 = "cd $dir_out && samtools view -C -T $ref -o $cram_prod $bam_out -@ $fork && samtools index  $cram_prod -@ $fork";
+system("$cmd2") unless -e $cram_prod;
+die() unless -e $cram_prod;
+ my $filename = $cram_prod;
+ $filename =~ s/cram/idxstats/;
+system("samtools idxstats $cram_prod  -\@ $fork  > $filename");
 exit(0);
 
 
