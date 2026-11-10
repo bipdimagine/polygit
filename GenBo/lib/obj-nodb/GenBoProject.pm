@@ -5772,7 +5772,7 @@ has maskImpactText => (
 			'phase',              'frameshift',
 			'essential_splicing', 'nonsynonymous',
 			'nonframeshift',      'splice_site',
-			'predicted_splice_site', 'predicted_promoter_ai'
+			'predicted_splice_site', 'ncrna','predicted_promoter_ai'
 		];
 
 		#$maskCodingText->{moderate} = $maskCodingText->{medium};
