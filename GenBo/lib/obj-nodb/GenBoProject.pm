@@ -3255,11 +3255,11 @@ sub setRuns {
 	my $res   = $query->getRuns( $self->id );
 	my %hids;
 	foreach my $h (@$res) {
+		
 		$h->{name} = "run_" . $h->{id};
 		$hids{ $h->{id} } = undef;
 		$h->{project} = $self;
 		next if exists $self->{objects}->{runs}->{ $h->{id} };
-		
 		$self->{objects}->{runs}->{ $h->{id} } = new GenBoRun($h);
 	}
 	return \%hids;
