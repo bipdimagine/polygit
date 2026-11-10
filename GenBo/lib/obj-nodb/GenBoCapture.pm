@@ -641,7 +641,7 @@ has hotspots => (
 	default => sub {
 		my $self = shift;
 		my $file = $self->hotspots_filename(); 
-		return [] unless -e $self->hotspots_filename();
+		return {} unless -e $self->hotspots_filename();
 		open (PLEX,$self->hotspots_filename()) ;
 		my $hotspots;
 		#my $motif ={
