@@ -62,7 +62,8 @@ else {
 
 my $config = LoadFile($yaml);
 my @steps = @{$config->{steps}};
-my @project_steps = @{$config->{project_steps}};
+my @project_steps = ();
+@project_steps = @{$config->{project_steps}} if $config->{project_steps};
 my $scripts = $config->{scripts};
 warn Dumper $scripts;
 my $run; 
