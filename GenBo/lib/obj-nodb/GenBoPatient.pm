@@ -2951,17 +2951,22 @@ sub is_multiplex_ok {
 
 
 
+
 sub hotspot {
 	my ($self, $fork) = @_;
 	$fork = 1 if not $fork;
 	my $res;
 	return if $self->isNoAlign();
-	my $file = $self->getCapture->hotspots_filename;
-	return if not -e $file;
+	my $file;
+	#if ($self->project->isGenome){
+	#	 $file = $self->project->capture_dir . "/hotspot/genome.bed";#$self->getCapture->hotspots_filename;
+	#}
+	#else {
+	$file = $self->getCapture->hotspots_filename;
+	##return if not -e $file;
+	#}
 	my $bam = $self->getAlignmentFile();
 	my $h = $self->getCapture->hotspots;
-	
-	my $tmp = "/data-beegfs/tmp/";
 	my $t =time;
 	
 	my $nb   = int( scalar(keys %{$h}) / $fork + 1 );
@@ -2969,24 +2974,6 @@ sub hotspot {
 	
 	my $iter = natatime( $nb, keys %{$h} );
 	my $hrun;
-	$pm->run_on_finish(
-		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
-
-			unless ( defined($h) or $exit_code > 0 ) {
-				print
-				  qq|No message received from child process $exit_code $pid!\n|;
-				die();
-				return;
-			}
-			foreach my $gid (sort keys %{$h->{res}}) {
-				foreach my $hgid (@{$h->{res}->{$gid}}) {
-					push(@{$res->{$gid}}, $hgid);
-				}
-			}
-		}
-	);
-	$self->project->buffer->dbh_deconnect();
 	my $bam_obj = Bio::DB::HTS->new(-bam => $bam,-fasta => $self->project->genomeFasta);
 	
 	
@@ -3011,8 +2998,6 @@ sub hotspot {
 			$hash->{'C'} = 0;
 			$hash->{'INS'} = 0;
 			$hash->{'DEL'} = 0;
-			
-			
 			
 			
 			
