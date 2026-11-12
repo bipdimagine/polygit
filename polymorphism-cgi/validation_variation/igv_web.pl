@@ -39,7 +39,7 @@ if ($project->getVersion() =~  /HG19/) {
 	$fasta_index_url = "/NGS/genome/HG19_MT/fasta/all.fa.fai";
 	if ($project->gencode_version() ne '-1') {
 		$gencode_name = 'Gencode-v'.$project->gencode_version();
-		$gencode_url = "/NGS/repository/HG38/annotations/gencode.v".$project->gencode_version().'/gtf/';
+		$gencode_url = "/NGS/repository/HG19/annotations/gencode.v".$project->gencode_version().'/gtf/';
 		$gencode_url .= 'gencode.v'.$project->gencode_version().'.annotation.gtf.gz';
 	}
 }
