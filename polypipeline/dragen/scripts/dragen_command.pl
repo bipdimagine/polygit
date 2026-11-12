@@ -340,11 +340,13 @@ elsif (exists $pipeline->{align}){
 		$param_align = "-b $bamfile --enable-map-align-output true ";
 	}
 	$param_align .= " --output-format CRAM " if $cram;
-	if($patient->getCapture->isPcr() or grep {/amplicon/} $patient->getSampleProfile){
-		$param_align .= qq{ --enable-duplicate-marking false} ;
-	}
-	else {
-		$param_align .= qq{ --enable-duplicate-marking true };
+	unless ($umi) {
+		if($patient->getCapture->isPcr() or grep {/amplicon/} $patient->getSampleProfile){
+			$param_align .= qq{ --enable-duplicate-marking false} ;
+		}
+		else {
+			$param_align .= qq{ --enable-duplicate-marking true };
+		}
 	}
 }
 else {
