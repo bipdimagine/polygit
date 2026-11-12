@@ -1406,7 +1406,6 @@ sub report_check_mapping_sex {
 			my @lines = split(/\n/, $mapping_output);
 			my $last_line = $lines[-1] || "Error";
 			my ($mapping_val, $dup_val) = split(/\t/, $last_line);
-			chomp ($mapping_val, $dup_val);
 			my $exit_mapping = $? >> 8;  # Récupère le vrai code de sortie
             
             if ($exit_mapping == 0) {

@@ -101,7 +101,6 @@ my $all_patients = $project->getPatients;
 die("Project $projectName is empty: no patient in project $projectName") unless (scalar @$all_patients);
 my $patients = $project->get_only_list_patients($patients_name);
 die("No patient $patients_name in project $projectName") unless $patients;
-my @patient_names = map{$_->name} @$patients;
 
 # Vérification des options
 my ($kit, $chem);
@@ -148,6 +147,7 @@ if( grep {/sublib|com|all/} @steps) {
 # Dragen demultiplex
 #-----------------------------
 if (grep {/^demultiplex|^demux/} @steps) {
+	my @patient_names = map{$_->name} @$patients;
 	my $cmd_demux = "$Bin/../scripts_pipeline/cellranger/cellranger_samplesheet.pl -project $projectName -mismatch $mismatch";
 	$cmd_demux .= "-no_exec " if ($no_exec);
 	warn($cmd_demux);
@@ -259,7 +259,7 @@ if (grep {/^sublib(rar(y|ies))?|^all$/} @steps) {
 	my @error;
 	my $analysis_summary = '';
 	#my $analysis_summary = join(' ', map{$dir.'sublibraries/'.$_->name.'/all-sample_analysis_summary.html'} sort {$a->name cmp $b->name} @$patients);
-	foreach my $sublib (sort @patient_names) {
+	foreach my $sublib (sort {$a->name cmp $b->name} @$patients) {
 		#sublibraries/Sublibrary_1/all-sample_analysis_summary.html
 		my $file = $dir.'sublibraries/'.$sublib.'/all-sample_analysis_summary.html';
 		$analysis_summary .= $file.' ' if (-e $file);
@@ -343,6 +343,7 @@ if (grep {/^comb(ine)?|^all$/} @steps) {
 # TAR
 #-----------------------------
 if (grep {/^tar$|^all$/} @steps) {
+	my @patient_names = map{$_->name} @$patients;
 	my $cmd_tar = "cd $dir/comb && tar -cvzf ../$projectName.tar.gz *";
 	warn($cmd_tar);
 	my $exit = system($cmd_tar) unless ($no_exec);
@@ -356,6 +357,7 @@ if (grep {/^tar$|^all$/} @steps) {
 # CP to SingleCell shared directory
 #-----------------------------
 if (grep {/^cp$/} @steps) {
+	my @patient_names = map{$_->name} @$patients;
 	my $dirout = '/data-bipd' if ($buffer->biocluster);
 	$dirout .= "/data-pure/SingleCell/$projectName/";
 	my $cmd_cp = "rsync -a $dir/comb/* $dirout ";
@@ -371,6 +373,7 @@ if (grep {/^cp$/} @steps) {
 # CP analysis summaries
 #-----------------------------
 if (grep {/^cp(_analysis|_web)?_summar(y|ies)$|^all$/} @steps) {
+	my @patient_names = map{$_->name} @$patients;
 	my $dirout = '/data-bipd' if ($buffer->biocluster);
 	$dirout .= "/data-pure/SingleCell/$projectName/";
 	my $cmd_cp = "rsync -a $dir/comb/*_analysis_summary.html $dirout ";
@@ -455,7 +458,7 @@ Optionnels:
 					cp_summaries -> copie les analysis_summary.html (de l'étape comb) dans le répertoire partagé de la SingleCell
 					all = sublib, comb, tar, cp_summaries
 					par défaut: sublib, comb
-	run <s>				Numéro du run si le projet en contient plusieurs (utilisé pour récupérer le plan de plaque)
+	run <s>				Numéro du run si le projet en contient plusieurs (utilisé pour récupérer la plan de plaque)
 	sample_list <s>			Liste des échantillons et de leurs puis correspondants, séparés par un espace.
 	sample_table <s>		Fichier excel Parse contenant le plan de plaque.
 					Si sample_table et sample_list sont omis, utilise le document dans la base de donnée comme plan de plaque
@@ -465,8 +468,8 @@ Optionnels:
 					Le fichier csv doit suivre le format suivant:
 					gene_id,gene_name
 					ENSG00000003096,KLHL13
-	cpu <i>				Nombre de cpu à utiliser, défaut: 40, 128 sur le biocluster
-	reuse				Re-utilise les fichiers existant si trouvés (sinon génère de nouveau)
+	cpu <i>				Nombre de cpu à utiliser, défaut: 40
+	reuse				Re-utilise les fichiers existant si trouvés (vs génère de nouveau)
 	no_exec				Ne pas exécuter les commandes
 	dry_run				Initialise et reporte le status puis s'arrête
 	other_options			Autres options pour split-pipe, à écrire entre guillemets

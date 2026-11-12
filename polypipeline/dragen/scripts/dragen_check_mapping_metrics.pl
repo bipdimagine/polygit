@@ -52,10 +52,7 @@ my $dir_stats_dragen = $patient->project->getAlignmentStatsDir("dragen-align");
 my $mapping_metrics_file_2 = $dir_stats_dragen."/$patient_name.mapping_metrics.csv";
 my $mapping_metrics_file = $mapping_metrics_file_2 if (-e $mapping_metrics_file_2);
 $mapping_metrics_file = $mapping_metrics_file_1 if (-e $mapping_metrics_file_1);
-unless (-e $mapping_metrics_file) {
-	warn("ERROR: No mapping metrics file found: '$mapping_metrics_file_1' or '$mapping_metrics_file_2'");
-	exit(3);
-}
+confess("ERROR: No mapping metrics file found: '$mapping_metrics_file_1' or '$mapping_metrics_file_2'") unless (-e $mapping_metrics_file);
 open(my $file, '<', $mapping_metrics_file) or confess ("ERROR: Could not open file '$mapping_metrics_file': $!");
 my $duplicate;
 my $mapping;
@@ -72,10 +69,7 @@ while (my $line = readline($file)) {
 	}
 }
 close($file);
-unless ($duplicate and $mapping) {
-	warn("Error parsing '$mapping_metrics_file':/nno number of mapped reads and/or duplicate marked reads found.");
-	exit(3);
-}
+confess("Error parsing '$mapping_metrics_file':/nno number of mapped reads and/or duplicate marked reads found.") unless ($duplicate and $mapping);
 warn ("$patient_name: mapping = $mapping%, duplicates = $duplicate%") if ($verbose);
 
 

@@ -1,10 +1,9 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 use strict;
 use FindBin qw($Bin);
 use Getopt::Long;
-#use POSIX;
-#use Proc::Simple;
+use POSIX;
 use Data::Dumper;
 use String::ProgressBar;
 use Term::StatusBar;
@@ -25,9 +24,6 @@ my $limit;
 my $noprint;
 my $row =0;
 my $nodelete;
-my $job_name;
-my $begin;
-my $time;
 GetOptions(
 	'cpu=s' => \$cpus,
 	'cmd=s' => \$cmd,
@@ -36,9 +32,6 @@ GetOptions(
 	'row=s' => \$row,
 	'nodelete=s' => \$nodelete,
 	'noprint=s' => \$noprint,
-	'name=s' => \$job_name,
-	'begin=s' => \$begin,
-	'time=s' => \$time,
 );
 chdir '/data-beegfs/tmp/' 
   or die "Impossible de changer de répertoire: $!";
@@ -160,13 +153,13 @@ while (keys %$runnings_jobs ){
 		
 		$hstatus->{$stat}->{$jobid} ++;
 		if (lc($stat) eq "failed"){
-			system("mv slurm-".$jobid.".out"." slurm-".$jobid.".failed")
+			system("mv slurm-".$jobid."out"." slurm-".$jobid."failed")
 		}
 		if (lc($stat) eq "completed"){
 			delete $runnings_jobs->{$jobid};
 			unlink "slurm-".$jobid.".out" unless $nodelete;
 			$completed->{$jobid} ++;
-			unlink "slurm-".$jobid.".out";
+			unlink "slurm-".$jobid."out";
 			if (@$commands){
 				my $cmd = shift(@$commands);
 				run_cmd($cmd);
@@ -183,7 +176,7 @@ while (keys %$runnings_jobs ){
 		elsif (lc($stat) eq "cancel"){
 			delete $runnings_jobs->{$jobid};
 			$cancel->{$jobid} ++;
-			unlink "slurm-".$jobid.".out" unless $nodelete;;
+			unlink "slurm-".$jobid."out" unless $nodelete;;
 			$status->update()  ;
 		}
 		else {
@@ -238,7 +231,7 @@ DESTROY {
 sub end {
 	foreach my $c (keys %$runnings_jobs){
 		$cancel->{$c} ++;
-		unlink "slurm-".$c.".out";
+		unlink "slurm-".$c."out";
 		system("scancel ".$c);
 	}
 	my $fail = scalar(keys %$failed) +scalar(keys %$cancel);
@@ -298,8 +291,7 @@ close (ERROR);
 print  colored(['red'], scalar(keys %$cancel)." : CANCEL \n");
 print  colored(['red '], scalar(keys %$failed)." : FAILED \n");
  print color('reset');
-#print "list of error jobs are here " . abs_path("job.$t.error") . "\n\n";
-print "list of error jobs are here " . $ENV{'PWD'} . "/job.$t.error\n\n";
+print "list of erro jobs are here job.$t.error\n\n";
 
 exit(1);
 }	
@@ -314,9 +306,6 @@ sub run_cmd {
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=$cpus
 };
-	$script .= qq{#SBATCH -J $job_name\n} if defined $job_name;
-	$script .= qq{#SBATCH --time $time\n} if $time;
-	$script .= qq{#SBATCH --begin $begin\n} if $begin;
 	my $run = $script."\n  ".$cmd->{cmd}."\n";
 
 	open(TOTO,">$file") or die();

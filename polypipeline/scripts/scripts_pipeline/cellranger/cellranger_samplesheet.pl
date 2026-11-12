@@ -6,15 +6,32 @@ use lib "$Bin/../../../../GenBo/lib/";
 use lib "$Bin/../../../../GenBo/lib/GenBoDB";
 use lib "$Bin/../../../../GenBo/lib/obj-nodb/";
 use lib "$Bin/../../../packages";
+#use Logfile::Rotate;
+#use Cwd;
+#use PBS::Client;
 use Getopt::Long;
 use Data::Dumper;
 use IO::Prompt;
+#use Sys::Hostname;
 use Parallel::ForkManager;
 use Term::ANSIColor;
+#use Moose;
+#use MooseX::Method::Signatures;
+#use bds_steps;   
 use file_util;
+#use Class::Inspector;
+#use Digest::MD5::File ;
 use GBuffer;
 use GenBoProject;
+#use colored; 
+#use Config::Std;
+#use Text::Table;
+#use Time::Local 'timelocal';
+#use File::Temp qw/ tempfile tempdir /;
 use Term::Menus;
+#use Proc::Simple;
+#use Storable;
+#use JSON::XS;
 use XML::Simple qw(:strict);
 use Cwd 'abs_path';
 use File::Path qw(make_path);
@@ -26,19 +43,15 @@ use autodie qw(system open);
 my $projectNames;
 my $patients_name;
 my $mismatch = 1;
-#my $multi;
 my $no_exec;
 my $rc;
-my $run_name;
 my $help;
 
 GetOptions(
 	'projects=s'				=> \$projectNames,
 	'mismatches=i'				=> \$mismatch,
-#	'multi|flex'				=> \$multi,
 	'no_exec'					=> \$no_exec,
 	'rc!'						=> \$rc,
-	'run=s'						=> \$run_name,
 	'help'						=> \$help,
 ) || die("Error in command line arguments\n");
 
@@ -46,7 +59,6 @@ usage() if $help;
 die("-project argument is mandatory") unless ($projectNames);
 die("-mismatches can be 0, 1, 2.") unless ($mismatch =~ /^[012]$/);
 warn "mismatch(es)=$mismatch";
-#warn '-multi' if ($multi);
 
 my $run;
 my $projects;
@@ -57,22 +69,8 @@ foreach my $projectName (split(",",$projectNames)){
 	push(@$projects, $project);
 	my $runs = $project->getRuns();
 #	warn scalar @{$run->getProjects};
-	if ( scalar(@$runs) > 1 ) {
-		unless ($run_name) {
-			warn colored( ['bright_red on_black'], "Hey ! You have " . scalar(@$runs) . " runs in the project $projectName. Choose one and add -run on the command line") . "\n";
-			foreach my $run (@$runs) {
-				warn colored( ['bright_green on_black'], $run->plateform_run_name ) . " " . colored( ['bright_blue on_black'], $run->date ) . "\n";
-			}
-			die();
-		}
-		($run) = grep { $_->plateform_run_name eq $run_name } @$runs;
-		die( "unable to find $run_name " . $projectName ) unless $run;
-	}
-	else {
-		$run = $runs->[0];
-	}
-#	die("More than one run") if (scalar @$runs > 1 or ($run and $runs->[0]->id ne $run->id));
-#	$run = $runs->[0];
+	die("More than one run") if (scalar @$runs > 1 or ($run and $runs->[0]->id ne $run->id));
+	$run = $runs->[0];
 }
 warn 'Run: '. $run->plateform_run_name;
 my $machine = $run->infosRun->{machine};
@@ -249,7 +247,6 @@ warn 'Sample Sheet: '.$samplesheet;
 my $cmd = "$Bin/../../../dragen/scripts/dragen_demultiplex.pl -project=$projectNames -mismatch=$mismatch -sc -delete";
 #my $cmd = "dragen_demultiplex.sh -project=$projectNames -mismatch=$mismatch -sc -delete";
 $cmd .= " -keep_umi -fastq_index" if ($run->sequencing_method eq 'atac');
-$cmd .= " -run $run_name " if ($run_name);
 warn $cmd;
 if ($run->sequencing_method eq 'atac') {
 	print colored("For scATACseq, use mask ", 'bold');

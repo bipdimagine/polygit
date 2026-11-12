@@ -103,7 +103,6 @@ if ($choose_transcriptome or ($transcriptome and not -f $transcriptome.'/genes/g
 		}
 	}
 }
-
 #my $transcriptome_gex ;
 #opendir(my $dh, $transcriptome_dir) || die "Can't opendir '$transcriptome_dir': $!";
 #my @transcriptomes_gex = sort { -M $transcriptome_dir.$a <=> -M $transcriptome_dir.$b } grep {-d $transcriptome_dir.$_ && /refdata-(cellranger-|gex-)GRC/} readdir($dh);
@@ -124,13 +123,12 @@ foreach my $pat (@$patients) {
 		next;
 	}
 	my $index = $project->getGenomeIndex($pat->alignmentMethod);
-	$transcriptome = $index unless ($transcriptome);
 	$transcriptome = (qx/realpath $transcriptome/) if (-l $transcriptome);
 	chomp $transcriptome;
 	my $gtf = $transcriptome.'/genes/genes.gtf';
 	confess("'$gtf' does not exist") unless (-f $gtf);
 	
-	system("add_calling_method.sh -project=$projectName -patient=$pname -method=velocyto") unless (grep (/velocyto/, @{$pat->getCallingMethods}));
+	system("add_calling_method.sh -project=$projectName -patient=$pname -method=velocyto") unless (grep (/velocyto/, @{$pat->getCallingMethods}) or $buffer->biocluster);
 	
 	my $dir_pat;
 	my $cmd;

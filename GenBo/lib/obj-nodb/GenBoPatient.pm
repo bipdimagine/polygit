@@ -856,14 +856,13 @@ has 'uBams_revio' => (
 	default => sub {
 	my $self = shift;
 	my $lane = $self->getLane();
-	die("Complete 'Lane' field in PolyProject with [RunID]:[SmartCell_List]:[Barcode]") unless $lane;
 
 	my @runs = split(";",$lane);
 	my $hash;
 	foreach my $line (@runs){
 		my ($run,$smartcells,$codebare) = split(":",$line);
 		$run =~ s/\,/_/g;
-		#warn $smartcells;
+		warn $smartcells;
 		foreach my $sc (split(",",$smartcells)){
 			$hash->{$run}->{$sc} = $codebare =~ s/^BC/bc/r;
 		}
@@ -1557,6 +1556,7 @@ has callingSRMethods => (
 			project_id   => $self->getProject->id,
 			type => "SR"
 		);
+		warn Dumper $lMethods;
 		return $lMethods;
 	},
 );
@@ -2215,40 +2215,10 @@ sub getFileName {
 			return $self->vcfFileName($step);
 		}
 		elsif ($step eq "pbmm2" or $step eq "dragen-align" or $step eq "bwa") {
-			return $self->getAlignFileName();
-		}
-		elsif ($step eq "star") {
-			return $self->getBamFileName();
+			return $self->getCramFileName();
 		}
 		elsif ($step eq "coverage"){
 			return $self->getCoverageFileName();
-		}
-		elsif ($step eq "skera") {
-			return $self->project->getAlignmentPipelineDir($step).$self->name.'.segmented.bam';
-		}
-		elsif ($step eq "lima_isoseq") {
-			return $self->project->getAlignmentPipelineDir($step).$self->name.'.fl.5p--3p.bam';
-		}
-		elsif ($step eq "isoseq_tag") {
-			return $self->project->getAlignmentPipelineDir($step).$self->name.'.flt.bam';
-		}
-		elsif ($step eq "isoseq_refine") {
-			return $self->project->getAlignmentPipelineDir($step).$self->name.'.flnc.bam';
-		}
-		elsif ($step eq "isoseq_correct") {
-			return $self->project->getAlignmentPipelineDir($step).$self->name.'.flnc-bccorr.bam';
-		}
-		elsif ($step eq "isoseq_groupdedup") {
-			return $self->project->getAlignmentPipelineDir($step).$self->name.'.dedup.bam';
-		}
-		elsif ($step eq "isoseq_collapse") {
-			return $self->project->getCallingPipelineDir($step).$self->name.'.collapsed.gff';
-		}
-		elsif ($step eq "pigeon") {
-			return $self->project->getCountingDir($step) . 'make-seurat/' . $self->name . '/filtered/isoforms_seurat/matrix.mtx';
-		}
-		elsif ($step eq "metrics") {
-			return $self->project->getCountingDir("featureCounts").'/metrics/'.$self->name.'.metrics';
 		}
 		else {die("nothing konwn about $step ")};
 }
@@ -2982,17 +2952,22 @@ sub is_multiplex_ok {
 
 
 
+
 sub hotspot {
 	my ($self, $fork) = @_;
 	$fork = 1 if not $fork;
 	my $res;
 	return if $self->isNoAlign();
-	my $file = $self->getCapture->hotspots_filename;
-	return if not -e $file;
+	my $file;
+	#if ($self->project->isGenome){
+	#	 $file = $self->project->capture_dir . "/hotspot/genome.bed";#$self->getCapture->hotspots_filename;
+	#}
+	#else {
+	$file = $self->getCapture->hotspots_filename;
+	##return if not -e $file;
+	#}
 	my $bam = $self->getAlignmentFile();
 	my $h = $self->getCapture->hotspots;
-	
-	my $tmp = "/data-beegfs/tmp/";
 	my $t =time;
 	
 	my $nb   = int( scalar(keys %{$h}) / $fork + 1 );
@@ -3000,24 +2975,6 @@ sub hotspot {
 	
 	my $iter = natatime( $nb, keys %{$h} );
 	my $hrun;
-	$pm->run_on_finish(
-		sub {
-			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $h ) = @_;
-
-			unless ( defined($h) or $exit_code > 0 ) {
-				print
-				  qq|No message received from child process $exit_code $pid!\n|;
-				die();
-				return;
-			}
-			foreach my $gid (sort keys %{$h->{res}}) {
-				foreach my $hgid (@{$h->{res}->{$gid}}) {
-					push(@{$res->{$gid}}, $hgid);
-				}
-			}
-		}
-	);
-	$self->project->buffer->dbh_deconnect();
 	my $bam_obj = Bio::DB::HTS->new(-bam => $bam,-fasta => $self->project->genomeFasta);
 	
 	
@@ -3042,8 +2999,6 @@ sub hotspot {
 			$hash->{'C'} = 0;
 			$hash->{'INS'} = 0;
 			$hash->{'DEL'} = 0;
-			
-			
 			
 			
 			

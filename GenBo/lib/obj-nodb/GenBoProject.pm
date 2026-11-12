@@ -975,12 +975,6 @@ sub getFileName {
 		elsif ($step eq "deepvariant_denovo") {
 			return $self->getVariationsDir($step)."/$step.done";
 		}
-		elsif ($step eq "featureCounts-genes") {
-			return $self->getCountingDir("featureCounts").$self->name.'.count.genes.txt';
-		}
-		elsif ($step eq "featureCounts-exons") {
-			return $self->getCountingDir("featureCounts").$self->name.'.count.exons.txt';
-		}
 		
 		else {die("nothing konwn about $step ")};
 }
@@ -3261,11 +3255,11 @@ sub setRuns {
 	my $res   = $query->getRuns( $self->id );
 	my %hids;
 	foreach my $h (@$res) {
+		
 		$h->{name} = "run_" . $h->{id};
 		$hids{ $h->{id} } = undef;
 		$h->{project} = $self;
 		next if exists $self->{objects}->{runs}->{ $h->{id} };
-		
 		$self->{objects}->{runs}->{ $h->{id} } = new GenBoRun($h);
 	}
 	return \%hids;
@@ -5778,7 +5772,7 @@ has maskImpactText => (
 			'phase',              'frameshift',
 			'essential_splicing', 'nonsynonymous',
 			'nonframeshift',      'splice_site',
-			'predicted_splice_site', 'predicted_promoter_ai'
+			'predicted_splice_site', 'ncrna','predicted_promoter_ai'
 		];
 
 		#$maskCodingText->{moderate} = $maskCodingText->{medium};

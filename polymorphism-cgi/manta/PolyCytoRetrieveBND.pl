@@ -29,7 +29,8 @@ my $listOfGenes = $cgi->param('genes');
 my $omim      = $cgi->param('omim');
 my $transmis = $cgi->param('transmission');
 my $scoreEvent = $cgi->param('score_event');
-my $select_best = $cgi->param('select_best');
+my $select_best = $cgi->param('score_event');
+
 #
 
 my $type;
@@ -88,6 +89,7 @@ my $quality;
 my $d = $dejavu;
 $d = 10000 if ($dejavu eq 'all');
 my $sql =qq{select * from '$parquet_file' where patient = $patient_id and nb_dejavu_patients <= $d ; };
+
 if (-e $qualtiy_file){
 $quality =1;
 $sql = qq{select * from '$qualtiy_file' where patient = $patient_id and nb_dejavu_patients <= $d and dv1 < 5 and dv2 < 5   and bl1 < 0.95 and bl2 <0.95; };
@@ -108,15 +110,16 @@ my $cmd = qq{duckdb -json -c "$sql"};
 my $res =`$cmd`;
 my $array_ref = [];
 $array_ref  = decode_json $res if $res;
-	
+
 #my $sth = $dbh->prepare($sql);
 #$sth->execute();
 $dejavu =20;
 #	while (my $row = @{$array_ref}) {
 	foreach my $row ( @{$array_ref}) {
-	 my $sv = $rocks->get($row->{id});
+		
+	my $sv = $rocks->get($row->{id});
 	next unless $sv;
-	if ($select_best < 2) {
+	if ($scoreEvent < 2) {
 	my $support = $sv->{pr2} + $sv->{sr2};
 	next if $support < 8;
 	next if  $sv->{sr2} < 2;
@@ -132,9 +135,11 @@ $dejavu =20;
 		next if $sv->{gq} < 20  ;
 	}
 	}
+	
 	 #$sv->{sr1}."/".$sv->{sr2};
 	# next if $sv->{dejavu}->{nb_patients} > $dejavu;
 	 delete $sv->{score};
+	
 	 getScoreEvent($sv);
 	  my $hash;
 	my $name = "t(".$sv->{chrom1}.",".$sv->{chrom2}.")(".$sv->{cytoband1}.",".$sv->{cytoband2}.")";

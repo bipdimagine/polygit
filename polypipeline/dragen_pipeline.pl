@@ -67,6 +67,7 @@ my $define_steps;
 my $step;
 my $dir_dragen = "/data-dragen/run";
 
+my $somatic;
 
 my $limit;
 GetOptions(
@@ -74,6 +75,7 @@ GetOptions(
 	'patients=s' => \$patients_name,
 	'step=s'=> \$step,
 	'type=s' => \$type,
+	'somatic=s' => \$somatic,
 	#'low_calling=s' => \$low_calling,
 );
 
