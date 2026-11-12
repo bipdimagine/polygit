@@ -123,7 +123,6 @@ function check_new_hgmd_clinvar(first_elem, release) {
     		}
     		if (key == 'html_table') {
     			document.getElementById("content_res").innerHTML = val;
-    			update_date_user_connection_index(this_user_name);
     		}
     		if (key == 'current_version') {
     			document.getElementById("hgmd_current_version").innerHTML = "<b><i>" + val + "</b></i>";
@@ -171,15 +170,6 @@ function check_new_hgmd_clinvar(first_elem, release) {
 		}
 		else {
 			document.getElementById("img_dont_show_me_again").setAttribute("src", "images/polyicons/cross.png");
-		}
-		is_new_hgmd_running = 0;
-		launch_new_hgmd = 0;
-		is_new_polybtf_for_username(this_user_name);
-		if(document.getElementById("nb_new_proj_pathogenic_1")){
-			count_nb_projects_new_pathogenics();
-		}
-		if (value_dont_show_dialog_again_index == 0) {
-			open_new_hgmd_var();
 		}
     });
 }
@@ -384,114 +374,16 @@ function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
 }
 
-function is_new_polybtf_for_username(this_user_name) {
-	var is_new_polybtf = 0;
-	var url = url_path + "json_output_nodb/get_last_date_connection_for_user.pl?user_name=" + this_user_name + "&is_new_polybtf=1";
-    job_new_hgmd_clinvar = $.getJSON( url, function( data ) {
-    	$.each( data, function( key, val ) {
-    		if (key == this_user_name) {
-    			if (val == 1) {  is_new_polybtf = 1; }
-    			else { is_new_polybtf = 0; }
-    		}
-    		else { is_new_polybtf = 0; }
-		});
-		
-		
-		var color_hgmd = "#222222";
-		var l_colors = ['red', '#D35400', '#27AE60', '#669AE1', '#FFCA3A'];
-		
-		if (is_new_polybtf == 1) {
-			color_hgmd = l_colors[getRandomInt(5)];
-		}
-		
-//		if (is_new_polybtf == 1 && parseInt(date_last_days) <= 15) { color_hgmd = 'red'; }
-//		else if (is_new_polybtf == 1 && parseInt(date_last_days) <= 20) { color_hgmd = 'orange'; }
-//		else if (is_new_polybtf == 1 && parseInt(date_last_days) <= 30) { color_hgmd = 'green'; }
-		document.getElementById("span_polybtf_wait").innerHTML = "";
-		document.getElementById("span_polybtf_date_release").innerHTML = "<font style='color:white;font-size:18px;'>&nbsp;&nbsp;&nbsp;<span class='glyphicon glyphicon-arrow-right' font style='color:white;font-size:17px;' aria-hidden='true'></span>&nbsp;&nbsp;&nbsp;<b>Latest update " + date_release_hgmd + ", " + date_last_days + " days ago</b></font>";
-		document.getElementById("span_polybtf_button").innerHTML = "&nbsp;&nbsp;&nbsp;<span class='glyphicon glyphicon-arrow-right' font style='color:white;font-size:17px;' aria-hidden='true'></span>&nbsp;&nbsp;&nbsp;<button style='font-size:12px;vertical-align:text-bottom;color:" + color_hgmd + ";background-color:white;border-radius:8px;' onclick='open_new_hgmd_var(resume_new_hgmd);'><u><i>View " + resume_new_hgmd + " (potential) New Variants</u></i></button>";
-		
-		
-		
-		
-		if (color_hgmd) {
-			document.getElementById("div_toolbar_polybtf").style.backgroundColor = color_hgmd;
-			document.getElementById("span_polybtf_news").style.color = 'white';
-		}
-		
-    });
-}
-
-function update_date_user_connection_index(this_user_name) {
-	var url = url_path + "json_output_nodb/add_last_date_connection_for_user.pl?user_name=" + this_user_name;
-    job_new_hgmd_clinvar = $.getJSON( url, function( data ) {
-    	$.each( data, function( key, val ) {
-    		if (key == 'ok') {
-    			//check_if_user_already_see_popup_new_pathogenic(dojo.cookie("username"));
-				//document.getElementById("img_dont_show_me_again").setAttribute("src", "images/polyicons/12-em-check.png");
-				dijit.byId('waiting_general').hide();
-    			//alert('OK, understood ! Next time, I will be invisible !');
-    		}
-		});
-    });
-}
 
 var date_last_connection = '';
 var value_dont_show_dialog_again_index = 0;
 function dont_show_dialog_again_index() {
     dijit.byId('waiting_general').show();
-	document.getElementById("img_dont_show_me_again").setAttribute("src", "images/polyicons/wait18trans.gif");
-	if (value_dont_show_dialog_again_index == 0) {
-		if (date_last_connection == '') {
-			var url = url_path + "json_output_nodb/add_last_date_connection_for_user.pl?user_name=" + dojo.cookie("username");
-		    job_new_hgmd_clinvar = $.getJSON( url, function( data ) {
-		    	$.each( data, function( key, val ) {
-		    		if (key == 'ok') {
-		    			check_if_user_already_see_popup_new_pathogenic(dojo.cookie("username"));
-						document.getElementById("img_dont_show_me_again").setAttribute("src", "images/polyicons/12-em-check.png");
-    					dijit.byId('waiting_general').hide();
-		    			alert('OK, understood ! Next time, I will be invisible !');
-		    		}
-				});
-		    });
-		}
-		value_dont_show_dialog_again_index = 1;
-	}
-	else {
-		if (date_last_connection == '') {}
-		else {
-			var url = url_path + "json_output_nodb/delete_last_date_connection_for_user.pl?user_name=" + dojo.cookie("username");
-		    job_new_hgmd_clinvar = $.getJSON( url, function( data ) {
-		    	$.each( data, function( key, val ) {
-		    		if (key == 'ok') {
-		    			check_if_user_already_see_popup_new_pathogenic(dojo.cookie("username"));
-						document.getElementById("img_dont_show_me_again").setAttribute("src", "images/polyicons/cross.png");
-    					dijit.byId('waiting_general').hide();
-		    			alert('YES! With Pleasure !! Next time, I will appear ! ');
-		    		}
-				});
-		    });
-		}
-		value_dont_show_dialog_again_index = 0;
-	}
+    value_dont_show_dialog_again_index = 0;
 }
 
 function check_if_user_already_see_popup_new_pathogenic(user_name) {
-	var url = url_path + "json_output_nodb/get_last_date_connection_for_user.pl?user_name=" + user_name;
-    job_new_hgmd_clinvar = $.getJSON( url, function( data ) {
-    	$.each( data, function( key, val ) {
-    		if (key == user_name) {
-    			value_dont_show_dialog_again_index = 1;
-    			date_last_connection = val;
-    			return;
-    		}
-    		else {
-    			value_dont_show_dialog_again_index = 0;
-    			date_last_connection = '';
-    			return;
-    		}
-		});
-    });
+	return;
 }
 
 function collapse(name){
