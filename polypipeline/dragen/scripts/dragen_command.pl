@@ -333,12 +333,6 @@ elsif (exists $pipeline->{align}){
 		if ($umi){
 			$param_align .= qq{ --umi-enable true   --umi-library-type random-simplex  --umi-min-supporting-reads 1 --vc-enable-umi-germline true};
 		}
-		elsif($patient->getCapture->isPcr()){
-			$param_align .= qq{ --enable-duplicate-marking false} ;
-		}
-		else {
-			$param_align .= qq{ --enable-duplicate-marking true };
-		}
 	}
 	else {
 		my $bamfile = $patient->getBamFileName("bwa");
