@@ -112,33 +112,15 @@ unless (-f $ploidy_estimation_file and $computed_sex) {
 	}
 	
 	my $computed_sex_2;
-#	if ($cov_chrX > 0) {
-##		$computed_sex_2 = 2;
-##		$computed_sex_2 = 1 if ($cov_chrY/$cov_chrX >= 0.3);
-#		$computed_sex_2 = 1 if ($cov_chrX > 300 and $cov_chrY/$cov_chrX > 0.8);
-#		$computed_sex_2 = 2 if ($cov_chrY/$cov_chrX < 0.05);
-#		$computed_sex_2 = 1 if ($cov_chrY/$cov_chrX > 0.1);
-#		$computed_sex_2 = 2 if ($cov_chrY < 5);
-#		$computed_sex_2 = 1 if ($cov_chrY > 30);
-#		
-#		warn 'cov chrY/chrX = '.sprintf("%.2f",$cov_chrY).'/'.sprintf("%.2f",$cov_chrX).' = '.sprintf("%.2f",$cov_chrY/$cov_chrX).' => '.$computed_sex_2 if ($verbose);
-#		error_exit("ERROR $patient_name: could not compute sex: Average chr Y coverage = $cov_chrY, Average chr X coverage = $cov_chrX") unless ($computed_sex_2);
-#	}
 	my $computed_sex_3;
-#	if ($cov_chrX >= 0 and $cov_SRY < 0) {
 	if ($cov_chrX >= 0) {
 		$computed_sex_3 = 1 if ($cov_chrX/$average_cov <= 0.7);
 		$computed_sex_3 = 2 if ($cov_chrX/$average_cov > 0.7);
 		warn 'cov chrX/average = '.$cov_chrX.'/'.$average_cov.' = '.sprintf("%.2f",$cov_chrX/$average_cov).' => '.$computed_sex_3 if ($verbose);
 		error_exit("ERROR $patient_name: could not compute sex: average chrX cov = $cov_chrX, average cov = $average_cov") unless ($computed_sex_3);
-#		warn("Possible anormal ploïdy for $patient_name: cov chrX / avg = ".sprintf("%.d",$cov_chrX).' / '.sprintf("%.d",$average_cov).' = '.sprintf("%.2f",$cov_chrX / $average_cov)) if ($cov_chrX / $average_cov > 1.3);
 	}
 	error_exit("ERROR $patient_name: could not compute sex: no median SRY or chrX cov: $cov_SRY, $cov_chrX") unless ($cov_SRY >= 0 or $cov_chrX > 0);
-#	error_exit("$patient_name computed sexes using avg cov chrY/chrX vs SRY cov/avg cov are differents: $computed_sex_1 vs $computed_sex_2.") if ($computed_sex_1 and $computed_sex_2 and $computed_sex_1 != $computed_sex_2);
-#	error_exit("$patient_name computed sexes using avg cov SRY/avg vs chrX/avg cov are differents: $cov_SRY/$average_cov = ".sprintf("%.2f",$cov_SRY/$average_cov)
-#		." => $computed_sex_1 vs $cov_chrX/$average_cov = ".sprintf("%.2f",$cov_chrX/$average_cov)." => $computed_sex_3.") if ($computed_sex_1 and $computed_sex_3 and $computed_sex_1 != $computed_sex_3);
 	$computed_sex = $computed_sex_3 if ($computed_sex_3);
-#	$computed_sex = $computed_sex_2 if ($computed_sex_2);
 	$computed_sex = $computed_sex_1 if ($computed_sex_1);
 	error_exit("ERROR $patient_name: could not compute sex") unless ($computed_sex);
 }
