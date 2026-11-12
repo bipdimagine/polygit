@@ -724,11 +724,8 @@ function launch_web_igv_add_bam_and_locus(project, name, file, locus){
 var previous_bams = new Array();
 var igv_genome;
 
-function launch_web_igv_js(project, patients_names, bams_files, locus, genome_url){
-	url_fasta = undefined;
-	if (genome_url && genome_url.match(/fa/)) {
-		url_fasta = genome_url;
-	}
+function launch_web_igv_js(project, patients_names, bams_files, locus){
+	patients_names = patients_names.replaceAll(';', ',');
 	var locus2 = locus.replace(':', ';');
 	locus2 = locus2.replace('-', ';');
 	var lTmp = locus2.split(';');
@@ -740,7 +737,6 @@ function launch_web_igv_js(project, patients_names, bams_files, locus, genome_ur
 	if (bams_files.match(/,/)) { list_bams_files = bams_files.split(','); }
 	else if (bams_files.match(/;/)) { list_bams_files = bams_files.split(';'); }
 	else { list_bams_files.push(bams_files); }
-	view_web_igv_bam("dialog_igv", "div_igv", locus, bams_files, patients_names);
 	
 	var i_bam = 0;
 	for (i in list_bams_files ) {
@@ -756,6 +752,9 @@ function launch_web_igv_js(project, patients_names, bams_files, locus, genome_ur
 		i_bam++;
 	}
 	displayInIGVLocus(chr+":"+start+"-"+end);
+	
+	var url_viewer = window.location.origin + "/cgi-bin/polymorphism-cgi/validation_variation/igv_web.pl?position=" + locus + "&project=" + projectName + "&patients=" + patients_names;
+	var myWindow = window.open(url_viewer,"_blank",""); 
 }
 
 function LoadIGVPatient_editor (patients, bams) {
