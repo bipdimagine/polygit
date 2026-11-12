@@ -44,7 +44,7 @@ my $probe_set;
 my $add_image;
 my $loupe_alignment;
 my $cpu = 20;
-$cpu = 32 if (`hostname` =~ /^master/);
+$cpu = 64 if (`hostname` =~ /^master/);
 my $begin;
 my $force;
 my $project_version;
@@ -212,7 +212,7 @@ if (grep(/count|^all$|velocyto/i, @steps) and $choose_transcriptome){
 		}
 	}
 }
-
+warn Dumper $htranscriptome;
 
 	
 #------------------------------
@@ -816,7 +816,7 @@ if (grep(/count|^all$/i, @steps)){
 	}
 
 
-	my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=1 ";
+	my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=1"; # -name $projectName";
 	$cmd2 .= "-begin $begin " if $begin;
 	warn $cmd2;
 	sleep(5) unless ($no_exec);
@@ -875,6 +875,8 @@ if (grep(/aggr/, @steps)){
 		}
 		close AGGR_CSV;
 		print JOBS_AGGR "cd $dir ; $exec aggr --id=$id --csv=$aggr_csv";
+#		warn ("cat $aggr_file | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu");
+#		system ("cat $aggr_file | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu") unless $no_exec;
 		warn ("cat $aggr_file | run_cluster.pl -cpu=$cpu");
 		system ("cat $aggr_file | run_cluster.pl -cpu=$cpu") unless $no_exec;
 		die("Error while running cellranger aggr") unless (-d $id);
@@ -890,6 +892,7 @@ if (grep(/aggr/, @steps)){
 		my $aggr_csv_vdj = $dir."/aggr_vdj.csv";
 		if (-e $aggr_csv_vdj) {
 			my $overwrite = prompt("'aggr_vdj.csv' already exists. Overwrite the file ?  ",-yes);
+#			print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu'") unless ($overwrite);
 			print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'") unless ($overwrite);
 			print JOBS_AGGR "cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj" unless ($overwrite);
 			die("'$aggr_csv_vdj' already exists") unless ($overwrite);
@@ -903,6 +906,7 @@ if (grep(/aggr/, @steps)){
 		close (AGGR_CSV_VDJ);
 		print("--------------------\n");
 		print("Fill the 'donor' and 'origin' columns for each vdj sample in '$aggr_csv_vdj'.\n");
+#		print("Then run 'echo \"cd $dir && $exec aggr --id=$id --csv=$aggr_csv_vdj\" | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu'\n");
 		print("Then run 'echo \"cd $dir && $exec aggr --id=$id --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'\n");
 		print("Then make an archive: 'tar -czf $dir/$projectName\_aggr.tar.gz $dir/aggregation_*/web_summary.html $dir/aggregation_*/count/cloupe.cloupe $dir/aggregation_*/count/*_bc_matrix/* $dir/aggregation_*/*/vloupe.vloupe'\n\n");
 	}
@@ -931,6 +935,7 @@ if (grep(/aggr_vdj/, @steps)) {
 	my $aggr_csv_vdj = $dir."/aggr_vdj.csv";
 	if (-e $aggr_csv_vdj) {
 		my $overwrite = prompt("'aggr_vdj.csv' already exists. Overwrite the file ?  ",-yes);
+#		print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj\" | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu'") unless ($overwrite);
 		print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'") unless ($overwrite);
 		die("'$aggr_csv_vdj' already exists") unless ($overwrite);
 	}
@@ -945,6 +950,7 @@ if (grep(/aggr_vdj/, @steps)) {
 	close (AGGR_CSV_VDJ);
 	print "--------------------\n";
 	print "Fill the 'donor' and 'origin' columns for each vdj sample in '$dir$aggr_csv_vdj'.\n";
+#	print "Then run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu'";
 	print "Then run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'";
 	print "Then make an archive: 'tar -czf $dir/$projectName\_aggr.tar.gz $dir/aggregation_*/web_summary.html $dir/aggregation_*/count/cloupe.cloupe $dir/aggregation_*/count/*_bc_matrix/* $dir/aggregation_*/*/vloupe.vloupe'";
 }
