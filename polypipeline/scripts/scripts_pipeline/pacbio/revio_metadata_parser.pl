@@ -28,7 +28,7 @@ use Term::Menus;
 # Arguments
 # ---------------------------------------------------------------------------
 my @run_dir_names;
-my $plateform;
+my $plateform = 'BROUSSAIS';
 
 GetOptions(
 	'runs=s{1,}'	=> \@run_dir_names,
@@ -43,7 +43,10 @@ my $base_dir = '/data-pure/raw-data/PACBIO/REVIO/';
 # ---------------------------------------------------------------------------
 # Si aucune plateforme fournie : menu interactif de sélection
 # ---------------------------------------------------------------------------
-unless ($plateform) {
+if ($plateform and -d $base_dir.$plateform) {
+	$base_dir = $base_dir.$plateform.'/';
+}
+else {
 	my @available = sort {$a cmp $b} grep { -d "$base_dir/$_" } do {
 		opendir(my $dh, $base_dir) or die "Impossible d'ouvrir $base_dir : $!\n";
 		grep { /^[^\.]/ } readdir($dh);
@@ -64,6 +67,7 @@ unless ($plateform) {
 
 	$base_dir .= $selected[0].'/';
 }
+
 
 # ---------------------------------------------------------------------------
 # Si aucun run fourni : menu interactif de sélection
@@ -94,7 +98,7 @@ unless (@run_dir_names) {
 	die("Bye") if $selected[0] eq ']quit[';
 
 	@run_dir_names = @selected;
-	print "\n";
+	print "\n\n";
 }
 
 # ---------------------------------------------------------------------------
