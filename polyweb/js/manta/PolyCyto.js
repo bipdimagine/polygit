@@ -2009,12 +2009,17 @@ function launch_web_igv_start_and_end(value)
     displayInIGVLocus(locus);
 	
 	// pour lancer web_igv
-	var url_viewer = "PolyCyto_IGV_Viewer.html?titre=" + titre + "&locusstart=" + locusstart + "&locusend=" + locusend + "&bamfile=" + bamfile + "&patient_name=" + patient_name + "&taille=" + taille;
-	url_viewer = url_viewer.replace('bamfile=https://www.polyweb.fr','bamfile=');
-	if (url_gene_bed) { url_viewer += "&genes_bed=" + url_gene_bed; }
-	if (url_fasta) { url_viewer += "&fasta=" + url_fasta; }
-	var myWindow = window.open(url_viewer,"_blank",""); 
+//	var url_viewer = "PolyCyto_IGV_Viewer.html?titre=" + titre + "&locusstart=" + locusstart + "&locusend=" + locusend + "&bamfile=" + bamfile + "&patient_name=" + patient_name + "&taille=" + taille;
+//	url_viewer = url_viewer.replace('bamfile=https://www.polyweb.fr','bamfile=');
+//	if (url_gene_bed) { url_viewer += "&genes_bed=" + url_gene_bed; }
+//	if (url_fasta) { url_viewer += "&fasta=" + url_fasta; }
+//	var myWindow = window.open(url_viewer,"_blank",""); 
  
+ 	var regex = /(NGS[\w-]+)/;
+	var results = bamfile.match(regex);
+ 
+	var url_viewer = window.location.origin + "/cgi-bin/polymorphism-cgi/validation_variation/igv_web.pl?position=" + locusstart + "&position2=" + locusend + "&project=" + results[0] + "&patients=" + patient_name;
+	var myWindow = window.open(url_viewer,"_blank",""); 
 	
  }
  

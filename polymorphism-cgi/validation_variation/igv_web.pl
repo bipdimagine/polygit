@@ -22,6 +22,7 @@ my $cgi = new CGI();
 
 my $project_name = $cgi->param("project");
 my $position = $cgi->param("position");
+my $position2 = $cgi->param("position2");
 my @patients_name = split(",",$cgi->param("patients"));
 my $buffer = GBuffer->new();
 my $project = $buffer->newProject( -name => $project_name );
@@ -29,7 +30,13 @@ my $project = $buffer->newProject( -name => $project_name );
 my ($genome, $genome_id, $genome_name, $fasta_url, $fasta_index_url, $gencode_url, $gencode_name);
 
 my $locus;
-$locus = qq{locus: "$position",};
+if ($position2) {
+	$locus = qq{locus: "$position $position2",};
+}
+else {
+	$locus = qq{locus: "$position",};
+}
+
 
 if ($project->getVersion() =~  /HG19/) {
 	$genome = 'hg19';
@@ -37,11 +44,11 @@ if ($project->getVersion() =~  /HG19/) {
 	$genome_name = "HG19_MT";
 	$fasta_url = "/NGS/genome/HG19_MT/fasta/all.fa";
 	$fasta_index_url = "/NGS/genome/HG19_MT/fasta/all.fa.fai";
-	if ($project->gencode_version() ne '-1') {
-		$gencode_name = 'Gencode-v'.$project->gencode_version();
-		$gencode_url = "/NGS/repository/HG19/annotations/gencode.v".$project->gencode_version().'/gtf/';
-		$gencode_url .= 'gencode.v'.$project->gencode_version().'.annotation.gtf.gz';
-	}
+#	if ($project->gencode_version() ne '-1') {
+#		$gencode_name = 'Gencode-v'.$project->gencode_version();
+#		$gencode_url = "/NGS/repository/HG19/annotations/gencode.v".$project->gencode_version().'/gtf/';
+#		$gencode_url .= 'gencode.v'.$project->gencode_version().'.annotation.gtf.gz';
+#	}
 }
 elsif ($project->getVersion() =~  /HG38/) {
 	$genome = 'hg38';
@@ -49,12 +56,12 @@ elsif ($project->getVersion() =~  /HG38/) {
 	$genome_name = "HG38";
 	$fasta_url = "/NGS/genome/HG38_DRAGEN/fasta/all.fa";
 	$fasta_index_url = "/NGS/genome/HG38_DRAGEN/fasta/all.fa.fai";
-	if ($project->gencode_version() ne '-1') {
-		$gencode_name = 'Gencode-v'.$project->gencode_version();
-		$gencode_url = "/NGS/repository/HG38/annotations/gencode.v".$project->gencode_version().'/gtf/';
-		$gencode_url .= 'gencode.v'.$project->gencode_version().'.annotation.gtf.gz';
-		
-	}
+#	if ($project->gencode_version() ne '-1') {
+#		$gencode_name = 'Gencode-v'.$project->gencode_version();
+#		$gencode_url = "/NGS/repository/HG38/annotations/gencode.v".$project->gencode_version().'/gtf/';
+#		$gencode_url .= 'gencode.v'.$project->gencode_version().'.annotation.gtf.gz';
+#		
+#	}
 }
 else {
 	$genome = lc($project->getVersion());
@@ -154,31 +161,8 @@ foreach my $name (@patients_name) {
 				showAlignments: true,
           },
 	};
-	
-#	foreach my $vcf_file (@{$patient->getVariationsFiles()}) {
-#		$vcf_file =~ s/.+ngs\///;
-#		$vcf_file = "/NGS/".$vcf_file;
-#		my $text_name = $patient->name().' Variants';
-#		$html .= qq{
-#			 {
-#					format: 'vcf',
-#					url: '$vcf_file',
-#					name: '$text_name',
-#					height: 60,
-#	          },
-#		};
-#	}
 }
 	
-if ($gencode_url) {
-	$html .= qq{
-		 {
-				format: 'gtf',
-				url: '${gencode_url}',
-				name: '${gencode_name}',
-          },
-	};
-}
 
 $html .= qq{
 	          ]
