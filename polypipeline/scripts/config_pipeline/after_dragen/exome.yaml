@@ -6,14 +6,9 @@ steps:
 
   - melt
 
-  - wisecondor
-
-  - calling_wisecondor
-
 project_steps:
 
   - deepvariant_denovo
-  - dude
 
 scripts:
 
@@ -38,12 +33,6 @@ scripts:
   wisecondor:
 
     script: wisecondor/wisecondor.pl
-
-  calling_wisecondor:
-
-    script: wisecondor/calling_wisecondor.pl
-
-    previous: wisecondor
 
   dude:
 
