@@ -18,13 +18,16 @@ my $pipeline_name;
 my $patients_names;
 my $fork = 64;
 
+my $version;
 my $force;
 GetOptions(
-	'project=s'		=> \$arg_project_name,
-	'pipeline=s'	=> \$pipeline_name,
+
+	'project=s' => \$arg_project_name,
+	'pipeline=s' => \$pipeline_name,
 	'patients=s'	=> \$patients_names,
-	'force=s' 		=> \$force,
-) or die ("Error in command line arguments");
+	'force=s' => \$force,
+	'version=s' => \$version,
+) or confess ("Error in command line arguments");
 
 my $slurm = slurm->new();
 my $jobs;
@@ -52,6 +55,7 @@ foreach my $project_name (split(",",$arg_project_name)) {
 			$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/kinnex.yaml";
 #			$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/isoseq.yaml";
 		}
+
 		else {	#if ($project->sequencing_method eq 'paired-end') {
 			$yaml = "$Bin/scripts/config_pipeline/${pipeline_name}/rnaseq.yaml";
 		}
@@ -86,16 +90,22 @@ foreach my $project_name (split(",",$arg_project_name)) {
 					warn "unlink $out";
 					if (-d $out) {
 						system ("rm $out/* && rmdir $out");
+
 					}
 					else {
 						unlink $out;
 					}
 				die("Can't remove $out") if -e $out;
 				}
+				else {
+					print colored("\n => skip $step for $patient_name \n",'magenta');
+				}
+				
 			}
-			if (not -e $patient->getFileName($step) or $force) {
+
+			if (not -e $patient->getFileName($step)) {
 				my $cmd = $dir_pipeline_script.$scripts->{$step}->{script}.qq{ -project=$project_name -patient=$patient_name -fork=$fork};#."&&  $Bin/bam2cram.pl -project=$project_name -patient=$patient_name -fork=$fork $stforce";
-				$cmd .= " -force=1" if ($force);
+				$cmd .= qq{ -version=$version} if $version;
 				my $hh ={cmd=>$cmd,name=>"${step}#".$project->name,type=>$patient->name,cpu=>128};
 				if (exists $scripts->{$step}->{previous}){
 					my $previous_string = $scripts->{$step}->{previous};
@@ -115,13 +125,15 @@ foreach my $project_name (split(",",$arg_project_name)) {
 				#push(@{$hids->{$step}->{$patient->id}}, $id);
 			}
 		}
+
 	}
 	foreach my $step (@project_steps){
-		unless (-e $project->getFileName($step) or $force ){
+		unless (-e $project->getFileName($step)  ){
 			if ($force) {
 				unlink $project->getFileName($step);
 			}
 			my $cmd = $dir_pipeline_script.$scripts->{$step}->{script}.qq{ -project=$project_name -fork=$fork $stforce};
+			$cmd .= qq{ -version=$version} if $version;
 			my $hh ={cmd=>$cmd,name=>"${step}#".$project->name,type=>$project->name,cpu=>128};
 			if (exists $scripts->{$step}->{previous}) {
 				my $previous = $scripts->{$step}->{previous};
@@ -143,5 +155,6 @@ unless ($slurm->{jobs}){
 	print colored("\n *** Nothing to do... your carbon footprint thanks you ... ***\n",'green');
 	exit(0);
 }
+
 $slurm->print_jobs();
 $slurm->run_slurm;

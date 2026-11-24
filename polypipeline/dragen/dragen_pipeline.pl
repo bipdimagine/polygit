@@ -400,6 +400,7 @@ foreach my $project (@$projects){
 		my $dir_pipeline = $patient->getDragenDirName("pipeline");
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
+		warn $h->{align_dragen}->{file};
 		#warn  $patient->name()." ".$h->{align_dragen}->{file};
 		$h->{rna} = 0;
 		

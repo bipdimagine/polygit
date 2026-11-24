@@ -306,17 +306,23 @@ if (exists $pipeline->{align}){
 
 if (!($fastq1)) {
 	my $bamfile = $patient->getBamFileName("bwa");
-	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+	$param_align = "-b $bamfile --enable-map-align-output true ";
 }
 if ($version && exists $pipeline->{align} && !($fastq1)){
 	my $buffer_ori = GBuffer->new();
 	my $project_ori = $buffer_ori->newProject( -name => $projectName );
 	my $patient_ori = $project_ori->getPatient($patients_name);
 	
-	$patient_ori->{alignmentMethods} =['dragen-align','bwa'];
+	$patient_ori->{alignmentMethods} =['bwa','dragen-align','eland'];
 	my $bamfile = $patient_ori->getBamFile();
-	$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";# unless $cram;
+	$param_align = "-b $bamfile --enable-map-align-output true ";# unless $cram;
 	$param_align .= " --output-format CRAM " if $cram;
+	if($patient->getCapture->isPcr() or grep {/amplicon/} $patient->getSampleProfile){
+		$param_align .= qq{ --enable-duplicate-marking false } ;
+	}
+	else {
+		$param_align .= qq{ --enable-duplicate-marking true };
+	}
 	
 	if ($umi){
 		confess();
@@ -422,6 +428,7 @@ if ($somatic ){
 
 
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str."$somatic_arg   $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
+
 
 $patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
