@@ -124,7 +124,6 @@ var url_cache_variation_vector = url_path+json_out+"/variations_json_vector.pl";
 var url_cache_variation_excel_vector = url_path+json_out+"/polyquery.pl";
 var url_cache_transcripts = url_path+json_out+"/transcripts_json.pl";
 var url_cache_patient = url_path+json_out+"/fast_patients_json.pl";
-var url_stat_polyweb =url_path+json_out+"/stats_polyweb.pl";
 
 var is_cache =  url_path+"isCache.pl";
 //var url_cache_graph = "/cgi-bin/cache_graph.pl";

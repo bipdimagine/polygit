@@ -73,7 +73,6 @@ my $hsex1 = {
 };
 my $CSS = qq{
 	<style type="text/css"> 
-	\@import "compass/css3";
  
 
 * {

@@ -343,14 +343,16 @@ elsif (exists $pipeline->{align}){
 	else {
 		my $bamfile = $patient->getBamFileName("bwa");
 		confess("No fastq or bam found") unless -e $bamfile;
-		$param_align = "-b $bamfile --enable-map-align-output true --enable-duplicate-marking true ";
+		$param_align = "-b $bamfile --enable-map-align-output true ";
 	}
 	$param_align .= " --output-format CRAM " if $cram;
-	if($patient->getCapture->isPcr() or grep {/amplicon/} $patient->getSampleProfile){
-		$param_align .= qq{ --enable-duplicate-marking false} ;
-	}
-	else {
-		$param_align .= qq{ --enable-duplicate-marking true };
+	unless ($umi) {
+		if($patient->getCapture->isPcr() or grep {/amplicon/} $patient->getSampleProfile){
+			$param_align .= qq{ --enable-duplicate-marking false} ;
+		}
+		else {
+			$param_align .= qq{ --enable-duplicate-marking true };
+		}
 	}
 }
 else {
@@ -400,7 +402,7 @@ if (exists $pipeline->{cnv}){
 
 my $param_sv = "";
 if (exists $pipeline->{sv}){
-	$param_sv = qq{   --enable-sv true };
+	$param_sv = qq{   --enable-sv true }; # --sv-skip-artifact-early-exit=true 
 	unless ($project->isGenome) {
 	 $param_sv .= " --sv-exome true ";
 	}
@@ -427,7 +429,8 @@ if ($somatic ){
 
 $cmd_dragen .= $param_umi." ".$param_align." ".$param_calling." ".$param_gvcf." ".$param_vcf." ".$param_cnv." ".$param_bed." ".$param_sv." ".$param_phased." ".$param_str."$somatic_arg   $pangenome >$log_pipeline 2>$log_error_pipeline  && touch $ok_pipeline ";
 
-#$patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
+
+$patient->update_software_version("$dragen",$cmd_dragen,$dragen_version);
 warn qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"};
 warn $cmd_dragen;
 my $exit = system(qq{$Bin/../run_dragen.pl -cmd=\"$cmd_dragen\"}) ;#unless -e $f1;

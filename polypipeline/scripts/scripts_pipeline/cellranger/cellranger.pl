@@ -16,6 +16,7 @@ use Moose;
 use file_util;
 use GBuffer;
 use GenBoProject;
+use Text::CSV qw( csv );
 use Term::Menus;
 use Cwd 'abs_path';
 use File::Path qw(make_path);
@@ -44,6 +45,7 @@ my $add_image;
 my $loupe_alignment;
 my $cpu = 20;
 $cpu = 64 if (`hostname` =~ /^master/);
+my $begin;
 my $force;
 my $project_version;
 my $help;
@@ -68,6 +70,7 @@ GetOptions(
 	'add_image'										=> \$add_image,
 	'loupe_alignment|json'							=> \$loupe_alignment,
 	'cpu=i'											=> \$cpu,
+	'begin=s'										=> \$begin,
 	'no_exec'										=> \$no_exec,
 	'force'											=> \$force,
 	'version=s'										=> \$project_version,
@@ -209,7 +212,7 @@ if (grep(/count|^all$|velocyto/i, @steps) and $choose_transcriptome){
 		}
 	}
 }
-
+warn Dumper $htranscriptome;
 
 	
 #------------------------------
@@ -399,15 +402,16 @@ if (grep(/count|^all$/i, @steps)){
 		my ($pat, $cmd) = @_;
 		chomp $cmd;
 		my $name = $pat->name;
+		my $bc = $pat->barcode;
 		my $tmp_fastq = $tmp.'fastq/';
 		make_path($tmp_fastq, { mode => 0775 }) unless (-d "$tmp_fastq");
 		my $seq_dir = $pat->getSequencesDirectory;
-		my $cmd1 = "cp $seq_dir$name*.fastq.gz $tmp_fastq && ";
+		my $cmd1 = "rsync $seq_dir$name*.fastq.gz $tmp_fastq && ";
 		my $adt = 'ADT_'.$name;
-		$cmd1 = "cp $seq_dir$name\_*.fastq.gz $seq_dir/ADT_$name\_*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
+		$cmd1 = "rsync $seq_dir$name\_*.fastq.gz $seq_dir/$adt\_*.fastq.gz $tmp_fastq && " if (grep (/$adt/, @patient_names));
 		my $cmd2;
 		$cmd2 = "&& mkdir $dir$name --mode=775 " unless (-d $dir.$name);
-		$cmd2 .= "&& cp -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
+		$cmd2 .= "&& rsync -r $tmp$name/outs/* $tmp$name/_versions $tmp$name/_cmdline $dir$name/ ";
 #		make_path("$dir$name", { mode => 0775 }) unless (-d "$dir$name");
 #		$cmd2 .= "&& rm $dir$name/possorted_bam.bam $dir$name/possorted_bam.bam.bai" if ($exec eq 'cellranger-atac' and $create_bam eq 'false');
 		$pat->update_software_version($exec_type, $cmd, $version_nb) unless ($no_exec);
@@ -424,13 +428,15 @@ if (grep(/count|^all$/i, @steps)){
 		warn "EXP/NUCLEI: ".join(',',map($_->name,@exp));
 		foreach my $e (@exp){
 			my $name = $e->name;
+			my $bc = $e->barcode;
 #			warn 'EXP: '.$name;
 			my $group = $e->somatic_group();
 			my $fastq = $e->getSequencesDirectory;
 			my $transcriptome = $index;
+			confess("'$transcriptome' doesn't exists") unless (-e $transcriptome);
 			$transcriptome = (qx/realpath $index/) if (-l $index);
 			chomp $transcriptome;
-			$transcriptome = '/data-isilon/public-data/10X/HG38/refdata-gex-GRCh38-2020-A' if ($project->description =~ /at?traction/i);
+			$transcriptome = '/data-bipd/data-pure/public-data/10X/HG38/refdata-gex-GRCh38-2020-A' if ($project->description =~ /at?traction/i);
 			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
 			my $cmd = "cd $tmp && $exec count --id=$name --sample=$name --fastqs=$fastq --create-bam=$create_bam --transcriptome=$transcriptome --jobmode slurm ";
 			$cmd .= " --include-introns true " if ($type eq "nuclei" or lc($group) eq "nuclei"); # true par défaut
@@ -459,15 +465,16 @@ if (grep(/count|^all$/i, @steps)){
 #			my $egroup = uc($e->somatic_group());
 			my $lib_file = $dir.$name."_library.csv";
 			open(LIB,">$lib_file") or die "impossible $lib_file";
-			my @adt = grep {$_->family() eq $efam && $_->name() =~ $name && uc($_->somatic_group()) eq "ADT"} @{$patients};
+			my @adt = grep {$_->family() eq $efam && uc($_->somatic_group()) eq "ADT"} @{$patients};
 			warn ("no associated ADT library") if scalar(@adt)==0 ;
-			next() if scalar(@adt)==0 ; 
+			next() if scalar(@adt == 0) ; 
 			my $adt_name = $adt[0]->name();
 			my $lib = "fastqs,sample,library_type\n".$tmp.'fastq/,'.$name.",Gene Expression\n";
 			$lib .= $tmp.'fastq/'.",".$adt_name.",Antibody Capture\n";
 			print LIB $lib;
 			close(LIB);
 			my $transcriptome = $index;
+			confess("'$transcriptome' doesn't exists") unless (-e $transcriptome);
 			$transcriptome = qx/realpath $index/ if (-l $index);
 			chomp $transcriptome;
 			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
@@ -475,6 +482,8 @@ if (grep(/count|^all$/i, @steps)){
 			$cmd .= " --chemistry $chemistry " if ($chemistry);
 			$cmd .= "\n";
 			$cmd = full_cmd($e, $cmd);
+			my $cmd_cp_fastq = "rsync ".$exp[0]->getSequencesDirectory."$adt_name*.fastq.gz $tmp/fastq/ && ";
+			$cmd = $cmd_cp_fastq . $cmd;
 			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
 			warn $cmd_cellranger[0];
 			print JOBS_ADT $cmd;
@@ -496,6 +505,7 @@ if (grep(/count|^all$/i, @steps)){
 #			my $vgroup = uc($v->somatic_group());
 			my $fastq = $v->getSequencesDirectory;
 			my $transcriptome = $index.'_vdj';
+			confess("'$transcriptome' doesn't exists") unless (-e $transcriptome);
 			$transcriptome = qx/realpath $index"_vdj"/ if (-l $index);
 			chomp $transcriptome;
 			$transcriptome = $htranscriptome->{vdj} if ($choose_transcriptome);
@@ -624,12 +634,12 @@ if (grep(/count|^all$/i, @steps)){
 			
 			my $fastq = $s->getSequencesDirectory;
 			my $transcriptome = $index;
+			confess("'$transcriptome' doesn't exists") unless (-e $transcriptome);
 			$transcriptome = qx/realpath $index/ if (-l $index);
 			chomp $transcriptome;
 			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
 			
 			unless($probe_set and -f $probe_set) {
-				#todo adapter pour biocluster
 				$probe_set = "/software/distrib/$exec/$exec-$version_nb/probe_sets/";
 				$probe_set = "/data-bipd/data-pure/software/distrib/$exec/$exec-$version_nb/probe_sets/" if ($buffer->biocluster);;
 				opendir(my $dh, $probe_set) || die "Can't opendir '$probe_set': $!";
@@ -710,10 +720,11 @@ if (grep(/count|^all$/i, @steps)){
 			my $fastq = $a->getSequencesDirectory;
 #			$exec = "cellranger-atac" if $type eq "atac";
 			my $transcriptome = $index.'_atac';
+			confess("'$transcriptome' doesn't exists") unless (-e $transcriptome);
 			$transcriptome = qx/realpath $index"_atac"/ if (-l $index);
 			chomp $transcriptome;
+			$transcriptome = '/data-bipd/data-pure/public-data/10X/HG38/refdata-cellranger-arc-GRCh38-2020-A-2.0.0' if ($project->description =~ /at?traction/i);
 			$transcriptome = $htranscriptome->{atac} if ($choose_transcriptome);
-			$transcriptome = '/data-isilon/public-data/10X/HG38/refdata-cellranger-arc-GRCh38-2020-A-2.0.0' if ($project->description =~ /at?traction/i);
 			die("No transcriptome") unless ($transcriptome);
 			my $cmd = "cd $tmp && $exec count --sample=$vname --id=$vname --fastqs=$fastq --reference=$transcriptome --jobmode slurm ";
 			$cmd = full_cmd($a, $cmd);
@@ -738,6 +749,7 @@ if (grep(/count|^all$/i, @steps)){
 			my $efam = $e->family();
 			my $egroup = uc($e->somatic_group());
 			my $transcriptome = $index;
+			confess("'$transcriptome' doesn't exists") unless (-e $transcriptome);
 			$transcriptome = qx/realpath $index/ if (-l $index);
 			chomp $transcriptome;
 			$transcriptome = $htranscriptome->{gex} if ($choose_transcriptome);
@@ -782,6 +794,7 @@ if (grep(/count|^all$/i, @steps)){
 			confess("More than 1 GEX found for $afam: ".join(', ',map{$_->name} @exp)) unless scalar(@exp);
 			my $ename = $exp[0]->name();
 			my $transcriptome = $index.'_arc';
+			confess("'$transcriptome' doesn't exists") unless (-e $transcriptome);
 			$transcriptome = qx/realpath $index"_arc"/ if (-l $index);
 			chomp $transcriptome;
 			$transcriptome = $htranscriptome->{atac} if ($choose_transcriptome);
@@ -793,9 +806,10 @@ if (grep(/count|^all$/i, @steps)){
 			$lib .= $tmp.'fastq/'.",".$aname.",Chromatin Accessibility\n";
 			print LIB $lib;
 			close(LIB);
-			my $cmd_cp_fastq = "cp ".$exp[0]->getSequencesDirectory."$ename*.fastq.gz $tmp/fastq/ && ";
-			my $cmd = $cmd_cp_fastq."cd $tmp && $exec count --id=$aname --reference=$transcriptome  --libraries=$lib_file --create-bam=$create_bam --jobmode slurm ";
+			my $cmd_cp_fastq = "rsync ".$exp[0]->getSequencesDirectory."$ename*.fastq.gz $tmp/fastq/ && ";
+			my $cmd = "cd $tmp && $exec count --id=$aname --reference=$transcriptome  --libraries=$lib_file --create-bam=$create_bam --jobmode slurm ";
 			$cmd = full_cmd($a, $cmd);
+			$cmd = $cmd_cp_fastq . $cmd;
 			my @cmd_cellranger = grep {/^$exec/} split (/ +&& +/, $cmd);
 			warn $cmd_cellranger[0];
 			print JOBS_ARC $cmd;
@@ -804,7 +818,8 @@ if (grep(/count|^all$/i, @steps)){
 	}
 
 
-	my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=1 ";
+	my $cmd2 = "cat $dir/jobs*.txt | run_cluster.pl -cpu=1"; # -name $projectName";
+	$cmd2 .= "-begin $begin " if $begin;
 	warn $cmd2;
 	sleep(5) unless ($no_exec);
 	my $exit = system ($cmd2) unless ($no_exec);
@@ -816,6 +831,7 @@ if (grep(/count|^all$/i, @steps)){
 	foreach my $patient (@{$patients}) {
 		next if ($patient->somatic_group =~ /^ADT$/i);
 		my $file = $dir.$patient->name."/web_summary.html";
+		$file = $dir.$patient->family."/web_summary.html" if ($patient->somatic_group =~ /arc/);
 		$web_summaries .= $file.' ' if (-e $file);
 		push(@error, $file) unless (-e $file or $no_exec);
 	}
@@ -861,6 +877,8 @@ if (grep(/aggr/, @steps)){
 		}
 		close AGGR_CSV;
 		print JOBS_AGGR "cd $dir ; $exec aggr --id=$id --csv=$aggr_csv";
+#		warn ("cat $aggr_file | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu");
+#		system ("cat $aggr_file | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu") unless $no_exec;
 		warn ("cat $aggr_file | run_cluster.pl -cpu=$cpu");
 		system ("cat $aggr_file | run_cluster.pl -cpu=$cpu") unless $no_exec;
 		die("Error while running cellranger aggr") unless (-d $id);
@@ -876,6 +894,7 @@ if (grep(/aggr/, @steps)){
 		my $aggr_csv_vdj = $dir."/aggr_vdj.csv";
 		if (-e $aggr_csv_vdj) {
 			my $overwrite = prompt("'aggr_vdj.csv' already exists. Overwrite the file ?  ",-yes);
+#			print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu'") unless ($overwrite);
 			print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'") unless ($overwrite);
 			print JOBS_AGGR "cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj" unless ($overwrite);
 			die("'$aggr_csv_vdj' already exists") unless ($overwrite);
@@ -889,6 +908,7 @@ if (grep(/aggr/, @steps)){
 		close (AGGR_CSV_VDJ);
 		print("--------------------\n");
 		print("Fill the 'donor' and 'origin' columns for each vdj sample in '$aggr_csv_vdj'.\n");
+#		print("Then run 'echo \"cd $dir && $exec aggr --id=$id --csv=$aggr_csv_vdj\" | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu'\n");
 		print("Then run 'echo \"cd $dir && $exec aggr --id=$id --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'\n");
 		print("Then make an archive: 'tar -czf $dir/$projectName\_aggr.tar.gz $dir/aggregation_*/web_summary.html $dir/aggregation_*/count/cloupe.cloupe $dir/aggregation_*/count/*_bc_matrix/* $dir/aggregation_*/*/vloupe.vloupe'\n\n");
 	}
@@ -917,6 +937,7 @@ if (grep(/aggr_vdj/, @steps)) {
 	my $aggr_csv_vdj = $dir."/aggr_vdj.csv";
 	if (-e $aggr_csv_vdj) {
 		my $overwrite = prompt("'aggr_vdj.csv' already exists. Overwrite the file ?  ",-yes);
+#		print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj\" | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu'") unless ($overwrite);
 		print ("If 'aggr_vdj.csv' is completed, you can run 'echo \"cd $dir ; $exec aggr --id=$id --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'") unless ($overwrite);
 		die("'$aggr_csv_vdj' already exists") unless ($overwrite);
 	}
@@ -931,6 +952,7 @@ if (grep(/aggr_vdj/, @steps)) {
 	close (AGGR_CSV_VDJ);
 	print "--------------------\n";
 	print "Fill the 'donor' and 'origin' columns for each vdj sample in '$dir$aggr_csv_vdj'.\n";
+#	print "Then run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | $Bin/../../../../polyscripts/system_utility/run_cluster.pl -name cellranger -cpu=$cpu'";
 	print "Then run 'echo \"cd $dir ; $exec aggr --id=$id\_VDJ --csv=$aggr_csv_vdj\" | run_cluster.pl -cpu=$cpu'";
 	print "Then make an archive: 'tar -czf $dir/$projectName\_aggr.tar.gz $dir/aggregation_*/web_summary.html $dir/aggregation_*/count/cloupe.cloupe $dir/aggregation_*/count/*_bc_matrix/* $dir/aggregation_*/*/vloupe.vloupe'";
 }
@@ -972,8 +994,10 @@ if (grep(/tar|archive|^all$/i, @steps)){
 	$cmd_tar .= "-create_bam " if ($create_bam and $create_bam ne 'false');
 	$cmd_tar .= "-all_vdj " if ($all_vdj);
 	$cmd_tar .= "-archive_name $archive_name " if ($archive_name);
-	$cmd_tar .= "-no_exec " if ($no_exec);
 	$cmd_tar .= "-version $project_version " if ($project_version);
+	$cmd_tar .= "-force " if ($force);
+	$cmd_tar .= "-no_exec " if ($no_exec);
+	warn $cmd_tar;
 	system($cmd_tar);
 }
 
