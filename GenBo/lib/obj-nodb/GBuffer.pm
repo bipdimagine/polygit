@@ -733,6 +733,15 @@ has public_data_root => (
 		return $d;
 	},
 );
+has change_release => (
+	is		=> 'rw',
+	lazy => 1,
+	default => sub {
+		return undef;
+	
+	},
+);
+
 sub newProject {
 	my $self = shift;
 	my $args = _checkArguments(@_);
@@ -741,14 +750,14 @@ sub newProject {
 	my $test = 0;
 	if (exists $args->{-test}){ $test = 1; }
 	if (exists $args->{-name}){ $name = $args->{-name}; }
-	if (exists $args->{-release}){ $release = $args->{-release}; }
-	if (exists $args->{-version}){ $release = $args->{-version}; }
+	if (exists $args->{-release}){ $release = $args->{-release};  $self->change_release($release)}
+	if (exists $args->{-version}){ $release = $args->{-version};  $self->change_release($release) }
 	my $project = GenBoProject -> new ( name	=> $name,
 										release	=> $release,
 										#version=>$release,
 										test	=> $test,
 										buffer	=> $self );
-	
+	 
 	$self->genome_version($project->genome_version);	
 	if ($project->gencode_version =~ /M/) {
 		$self->annotation_version($project->annotation_version);

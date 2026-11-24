@@ -400,6 +400,7 @@ foreach my $project (@$projects){
 		my $dir_pipeline = $patient->getDragenDirName("pipeline");
 		my $prefix = $patient->name;
 		$h->{align_dragen}->{file}  = $patient->getBamFileName("dragen-align");
+		warn $h->{align_dragen}->{file};
 		#warn  $patient->name()." ".$h->{align_dragen}->{file};
 		$h->{rna} = 0;
 		
@@ -1406,6 +1407,7 @@ sub report_check_mapping_sex {
 			my @lines = split(/\n/, $mapping_output);
 			my $last_line = $lines[-1] || "Error";
 			my ($mapping_val, $dup_val) = split(/\t/, $last_line);
+			chomp ($mapping_val, $dup_val);
 			my $exit_mapping = $? >> 8;  # Récupère le vrai code de sortie
             
             if ($exit_mapping == 0) {

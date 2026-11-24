@@ -71,23 +71,27 @@ if  (-e $snf) {
 	
 }
 my $cmd_sniffles = qq{$singularity sniffles.sif sniffles --input ${bam_out} --snf $snf --vcf $snf_vcf --threads $fork };
-unless (-e $snf_vcf_gz){
-system("$cmd_sniffles") unless -e $snf;
+warn $cmd_sniffles;
+
+#unless (-e $snf_vcf_gz){
+system("$cmd_sniffles");# unless -e $snf;
+
 die() unless -e $snf;
 
-system("bgzip -f $snf_vcf && tabix -f -p vcf $snf_vcf_gz ")  ;
+#system("bgzip -f $snf_vcf && tabix -f -p vcf $snf_vcf_gz ")  ;
 
-}
+
+
 my $snf_json  = $dir_out."/".$patient->name.".snf.json";
 my $cmd_sniffles2 = qq{$singularity snf2json.sif snf2json $snf $snf_json };
-
+warn $cmd_sniffles2;
 system("$cmd_sniffles2")  unless -e $snf_json;
 
 my $cmd_spectre = qq{$singularity spectre.sif spectre CNVCaller --coverage $mosdepth_file --sample-id $pname --output-dir $dir_out --reference $ref  --snfj $snf_json --metadata /data-bipd/data-pure/public-data/genome/HG38_DRAGEN/fasta/all.spectre.mdr --min-cnv-len 30000  --threads $fork};
 #my $cmd = qq{$singularity $deeptools bamCoverage -b $align -o $outf  -p $fork --binSize 50 --normalizeUsing None --extendReads 0 --minMappingQuality 10};
 warn $cmd_spectre;
 my $spectre_vcf_gz = $patient->getVariationsFileName("spectre");
-
+ 
 system($cmd_spectre);
 my $vf = $dir_out."/".$pname.".vcf.gz";
 die($vf) unless (-e $vf);
