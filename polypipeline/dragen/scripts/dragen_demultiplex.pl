@@ -95,6 +95,9 @@ foreach my $project_name ( split( ",", $project_names ) ) {
 		$run->fastq_dir();
 	}
 	warn $run->name();
+	unless ($run->machine_constructor eq 'ILLUMINA') {
+		die("Run not from Illumina machine") unless prompt("Your run is not from an Illumina machine, but from ".$run->machine.' ('.$run->machine_constructor."). Are you sure you're using the right script ? (y/n)  ", -yes_no);
+	}
 
 	#die() if scalar(@$runs)> 1;
 	#warn
