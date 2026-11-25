@@ -662,6 +662,8 @@ sub check_variants_from_gene {
 						$h_var_pos->{$chr_id}->{$start}->{$var_allele}->{pos19} = $h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{pos19};
 						
 						foreach my $pid (keys %{$h_dv_rocks_ids->{$chr_id}->{$rocks_id}}) {
+							next if ref($h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{$pid}) ne 'HASH';
+							next if not exists $h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{$pid}->{chr19};
 							my $chr19 = $h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{$pid}->{chr19};
 							my $pos19 = $h_dv_rocks_ids->{$chr_id}->{$rocks_id}->{$pid}->{pos19};
 							$hres->{lift}->{$var->start()}->{chr19} = $chr19;
