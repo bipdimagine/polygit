@@ -82,6 +82,43 @@ th {
     font-weight: bold;
     background-color: #ffe0e0;
 }
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+th.sortable:hover {
+    background: #d6e4f0;
+}
+
+/* Indicateur de tri par défaut : deux petits triangles CSS */
+th.sortable::after {
+    content: "";
+    display: inline-block;
+    margin-left: 6px;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #999;
+    border-bottom: 4px solid #999;
+    opacity: 0.7;
+}
+
+/* Tri croissant */
+th.sortable.sorted-asc::after {
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid #333;
+    opacity: 1;
+}
+
+/* Tri décroissant */
+th.sortable.sorted-desc::after {
+    border-top: 5px solid #333;
+    border-bottom: 5px solid transparent;
+    opacity: 1;
+}
 </style>
 <script type="text/javascript" src="js/polyjs/include.polyviewer.js"></script>
 </head>
@@ -101,170 +138,324 @@ th {
 
 <script>
 
-function escapeHTML(str) {
-    return String(str ?? '').replace(/[&<>"']/g, function(c) {
-        return {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-        }[c];
-    });
-}
 
-// Compare reference and sequence position by position.
-// Assumes both sequences have the same length and are aligned.
-function compareSequences(reference, sequence, grnaStart = 12, grnaLength = 20) {
+	function escapeHTML(str) {
+	    return String(str ?? '').replace(/[&<>"']/g, function(c) {
+	        return {
+	            '&': '&amp;',
+	            '<': '&lt;',
+	            '>': '&gt;',
+	            '"': '&quot;',
+	            "'": '&#39;'
+	        }[c];
+	    });
+	}
 
-    reference = String(reference || '');
-    sequence = String(sequence || '');
-    let refHTML = '';
-    let seqHTML = '';
+	// Compare reference and sequence position by position
+	function compareSequences(reference, sequence, grnaStart = 12, grnaLength = 20) {
 
-    const maxLength = Math.max(reference.length, sequence.length);
+	    reference = String(reference || '');
+	    sequence = String(sequence || '');
 
-    for (let i = 0; i < maxLength; i++) {
+	    let refHTML = '';
+	    let seqHTML = '';
 
-        const r = reference[i] || '-';
-        const s = sequence[i] || '-';
+	    const maxLength = Math.max(reference.length, sequence.length);
 
-        const inGuide = i >= grnaStart - 1 &&
-                       i < grnaStart - 1 + grnaLength;
-		const inPam  = i >= grnaStart - 1 + grnaLength &&
-					                         i < grnaStart - 1 + grnaLength +3;
-        const different = r !== s;
+	    for (let i = 0; i < maxLength; i++) {
 
-        let refClass = '';
-        let seqClass = '';
-		if (inPam) {
-			refClass += ' pam';
-			 seqClass += ' pam';
-		}
-        if (inGuide) {
-            refClass += ' grna';
-            seqClass += ' grna';
-        }
+	        const r = reference[i] || '-';
+	        const s = sequence[i] || '-';
 
-        if (different) {
-            refClass += ' seq-ref';
-            seqClass += ' seq-diff';
-        }
+	        const inGuide = i >= grnaStart - 1 &&
+	                        i < grnaStart - 1 + grnaLength;
 
-        refHTML += `<span class="${refClass.trim()}">${escapeHTML(r)}</span>`;
-        seqHTML += `<span class="${seqClass.trim()}">${escapeHTML(s)}</span>`;
-    }
+	        const inPam = i >= grnaStart - 1 + grnaLength &&
+	                      i < grnaStart - 1 + grnaLength + 3;
 
-    return `
-        <div class="sequence-line">
-            <b>Ref:</b> ${refHTML}
-        </div>
-        <div class="sequence-line">
-            <b>Seq:</b> ${seqHTML}
-        </div>
-    `;
-}
+	        const different = r !== s;
 
-function generateTable(data) {
+	        let refClass = '';
+	        let seqClass = '';
 
-    const table = document.getElementById('resultTable');
-    const thead = table.querySelector('thead');
-    const tbody = table.querySelector('tbody');
+	        if (inPam) {
+	            refClass += ' pam';
+	            seqClass += ' pam';
+	        }
 
-    const patients = data.patients || [];
-    const rows = data.rows || [];
+	        if (inGuide) {
+	            refClass += ' grna';
+	            seqClass += ' grna';
+	        }
 
-    // Header
-	let header = `
-	    <tr>
-	        <th>chr</th>
-	        <th>start</th>
-	        <th>end</th>
-			<th>strand</th>
-			<th>grna</th>
-	        <th>nb_sample</th>
-	        <th>UCSC</th>
-	`;
+	        if (different) {
+	            refClass += ' seq-ref';
+	            seqClass += ' seq-diff';
+	        }
 
-    patients.forEach(patient => {
-        header += `<th>${escapeHTML(patient)}</th>`;
-    });
+	        refHTML += `<span class="${refClass.trim()}">${escapeHTML(r)}</span>`;
+	        seqHTML += `<span class="${seqClass.trim()}">${escapeHTML(s)}</span>`;
+	    }
 
-    header += `
-            <th>reference / sequence</th>
-            <th>annotations</th>
-        </tr>
-    `;
+	    return `
+	        <div class="sequence-line">
+	            <b>Ref:</b> ${refHTML}
+	        </div>
+	        <div class="sequence-line">
+	            <b>Seq:</b> ${seqHTML}
+	        </div>
+	    `;
+	}
 
-    thead.innerHTML = header;
 
-    // Rows
-    tbody.innerHTML = '';
-    rows.forEach(row => {
+	// Data and sorting state
+	let originalRows = [];
+	let patientsList = [];
 
-        let html = `
-            <tr>
-                <td>${escapeHTML(row.chr)}</td>
-                <td>${escapeHTML(row.start)}</td>
-                <td>${escapeHTML(row.end)}</td>
-				<td>${escapeHTML(row.strand)}</td>
-				<td>${escapeHTML(row.grna)}</td>
-                <td>${escapeHTML(row.nb_sample)}</td>
-        `;
-		
-		const ucscUrl =
-		    'https://genome.ucsc.edu/cgi-bin/hgTracks?db='+row.genome+'&position=' +
-		    encodeURIComponent(row.chr + ':' + row.start + '-' + row.end);
+	let sortColumn = null;
+	let sortDirection = 1;
 
-		html += `
-		    <td>
-		        <a href="${ucscUrl}" target="_blank" rel="noopener">
-		            UCSC
-		        </a>
-		    </td>
-		`;
 
-        (row.patients || []).forEach(value => {
-            html += `<td>${escapeHTML(value)}</td>`;
-        });
-        html += `
-            <td class="sequence-cell">
-                ${compareSequences(row.reference, row.sequence)}
-            </td>
-            <td class="annotations">
-                ${escapeHTML(row.annotations)}
-            </td>
-        `;
+	// Generate table header
+	function generateHeader(patients) {
 
-        html += '</tr>';
+	    const thead = document.querySelector('#resultTable thead');
 
-        tbody.insertAdjacentHTML('beforeend', html);
-    });
+	    let header = `
+	        <tr>
+	            <th class="sortable" data-column="chr">chr</th>
+	            <th class="sortable" data-column="start">start</th>
+	            <th class="sortable" data-column="end">end</th>
+	            <th class="sortable" data-column="strand">strand</th>
+	            <th class="sortable" data-column="grna">grna</th>
+	            <th class="sortable" data-column="nb_sample">nb_sample</th>
+	            <th>UCSC</th>
+	    `;
 
-    document.getElementById('status').textContent =
-        rows.length + ' sequences found';
-}
+	    patients.forEach((patient, index) => {
+	        header += `
+	            <th class="sortable" data-column="patient_${index}">
+	                ${escapeHTML(patient)}
+	            </th>
+	        `;
+	    });
 
-// URL de ton script Perl
-const params =
-			        new URLSearchParams(window.location.search);
-PROJECT = params.get("project");
-const url = url_path+'validation_variation/offtarget.pl?project='+PROJECT;
-//const url = 'https://www.polyweb.fr/NGS/NGS2026_11005//MM39/offtarget.json';
-fetch(url)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('HTTP error ' + response.status);
-        }
-        return response.json();
-    })
-    .then(data => generateTable(data))
-    .catch(error => {
-        document.getElementById('status').textContent =
-            'Error loading data: ' + error;
-    });
+	    header += `
+	        <th class="sortable" data-column="sequence">
+	            reference / sequence
+	        </th>
+	        <th class="sortable" data-column="annotations">
+	            annotations
+	        </th>
+	        </tr>
+	    `;
 
-</script>
+	    thead.innerHTML = header;
+	}
+
+
+	// Display rows
+	function displayRows(rows) {
+
+	    const tbody = document.querySelector('#resultTable tbody');
+
+	    tbody.innerHTML = '';
+
+	    rows.forEach(row => {
+
+	        let html = `
+	            <tr>
+	                <td>${escapeHTML(row.chr)}</td>
+	                <td>${escapeHTML(row.start)}</td>
+	                <td>${escapeHTML(row.end)}</td>
+	                <td>${escapeHTML(row.strand)}</td>
+	                <td>${escapeHTML(row.grna)}</td>
+	                <td>${escapeHTML(row.nb_sample)}</td>
+	        `;
+
+	        const ucscUrl =
+	            'https://genome.ucsc.edu/cgi-bin/hgTracks?db=' +
+	            encodeURIComponent(row.genome) +
+	            '&position=' +
+	            encodeURIComponent(row.chr + ':' + row.start + '-' + row.end);
+
+	        html += `
+	            <td>
+	                <a href="${ucscUrl}" target="_blank" rel="noopener">
+	                    UCSC
+	                </a>
+	            </td>
+	        `;
+
+	        (row.patients || []).forEach(value => {
+	            html += `<td>${escapeHTML(value)}</td>`;
+	        });
+
+	        html += `
+	            <td class="sequence-cell">
+	                ${compareSequences(row.reference, row.sequence)}
+	            </td>
+	            <td class="annotations">
+	                ${escapeHTML(row.annotations)}
+	            </td>
+	        `;
+
+	        html += '</tr>';
+
+	        tbody.insertAdjacentHTML('beforeend', html);
+	    });
+
+	    document.getElementById('status').textContent =
+	        rows.length + ' sequences found';
+	}
+
+
+	// Get value used for sorting
+	function getSortValue(row, column) {
+
+	    if (column === 'chr') {
+	        return row.chr;
+	    }
+
+	    if (column === 'start') {
+	        return Number(row.start);
+	    }
+
+	    if (column === 'end') {
+	        return Number(row.end);
+	    }
+
+	    if (column === 'nb_sample') {
+	        return Number(row.nb_sample);
+	    }
+
+	    if (column === 'strand') {
+	        return row.strand;
+	    }
+
+	    if (column === 'grna') {
+	        return row.grna;
+	    }
+
+	    if (column === 'sequence') {
+	        return row.sequence;
+	    }
+
+	    if (column === 'annotations') {
+	        return row.annotations;
+	    }
+
+	    // Patient columns
+	    if (column.startsWith('patient_')) {
+
+	        const index = Number(column.replace('patient_', ''));
+
+	        return (row.patients || [])[index] ?? '';
+	    }
+
+	    return '';
+	}
+
+
+	// Sort data
+	function sortRows(column) {
+
+	    // Clicking the same column reverses the order
+	    if (sortColumn === column) {
+	        sortDirection *= -1;
+	    } else {
+	        sortColumn = column;
+	        sortDirection = 1;
+	    }
+
+	    const sortedRows = [...originalRows].sort((a, b) => {
+
+	        let valueA = getSortValue(a, column);
+	        let valueB = getSortValue(b, column);
+
+	        // Numeric sorting
+	        if (
+	            ['start', 'end', 'nb_sample'].includes(column) &&
+	            !isNaN(valueA) &&
+	            !isNaN(valueB)
+	        ) {
+	            return (valueA - valueB) * sortDirection;
+	        }
+
+	        // Natural sorting: chr2 before chr10, etc.
+	        return String(valueA ?? '').localeCompare(
+	            String(valueB ?? ''),
+	            'fr',
+	            {
+	                numeric: true,
+	                sensitivity: 'base'
+	            }
+	        ) * sortDirection;
+	    });
+
+	    displayRows(sortedRows);
+
+		// Update sorting indicators
+		document.querySelectorAll('#resultTable th.sortable').forEach(th => {
+
+		    th.classList.remove('sorted-asc', 'sorted-desc');
+
+		    if (th.dataset.column === sortColumn) {
+		        th.classList.add(
+		            sortDirection === 1 ? 'sorted-asc' : 'sorted-desc'
+		        );
+		    }
+		});
+	}
+
+	// Generate complete table
+	function generateTable(data) {
+
+	    patientsList = data.patients || [];
+	    originalRows = data.rows || [];
+
+	    generateHeader(patientsList);
+
+	    displayRows(originalRows);
+
+	    // Click on headers to sort
+	    document.querySelector('#resultTable thead').onclick = function(event) {
+
+	        const th = event.target.closest('th.sortable');
+
+	        if (!th) return;
+
+	        sortRows(th.dataset.column);
+	    };
+
+	    document.getElementById('status').textContent =
+	        originalRows.length + ' sequences found';
+	}
+
+
+	// Load data from Perl script
+	const params = new URLSearchParams(window.location.search);
+
+	PROJECT = params.get("project");
+
+	const url = url_path +
+	    'validation_variation/offtarget.pl?project=' +
+	    encodeURIComponent(PROJECT);
+
+	fetch(url)
+	    .then(response => {
+	        if (!response.ok) {
+	            throw new Error('HTTP error ' + response.status);
+	        }
+	        return response.json();
+	    })
+	    .then(data => generateTable(data))
+	    .catch(error => {
+	        document.getElementById('status').textContent =
+	            'Error loading data: ' + error;
+	    });
+
+	</script>
 
 </body>
 </html>

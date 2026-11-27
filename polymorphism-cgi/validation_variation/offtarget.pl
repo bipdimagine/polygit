@@ -97,6 +97,8 @@ close $IN;
 
 open (BED ,"$bed");
 my $dejavu;
+my $controls = {1825=>1 , 1629=>1,1827=>1};
+
 while (my $line = <BED>){
 	chomp ($line);
 	my ($chr,$start,$end,$pname,@a ) = split(" ",$line);
@@ -124,6 +126,7 @@ while (my $line = <BED>){
 		$dejavu->{$res[0]}->{sequence} = $res[0];
 		my $m = int($res[8]*10);
 		$m /= 10;
+		
 		$dejavu->{$res[0]}->{patients}->{$patient_name} = $res[7]." (".$m."%)";
 		
 		#warn join("\t",$chr,$start,$end,$res[0],$res[1],$res[6],$res[7],$res[8])."\n";
@@ -134,21 +137,30 @@ while (my $line = <BED>){
 }
 
 close(BED);
-my @patients = map { $_->name } @{$project->getPatients};
+my @patients = grep {!(exists $controls->{$_})} map { $_->name } @{$project->getPatients};
 
 my @rows;
+#KO 1637 , 1628,1826,1824 
+#HE 1323 1833 1624 
+#CONTROL: 1825 1629 1827 
 
-foreach my $d (sort { $a->{chr} cmp $b->{chr}} values %$dejavu) {
-	warn Dumper $d;
+foreach my $d (sort { $a->{chr} cmp $b->{chr} ||  $a->{start} cmp $b->{start}} values %$dejavu) {
 	my $key = $d->{sequence};
    # my $d = $dejavu->{$key};
 
     my @patient_values;
-
+	 my $nbp ;
+	 my $co;
+	 foreach my $c (keys %$controls){
+			$co ++ if exists $d->{patients}->{$c};
+		}
+		next if $co;
     foreach my $p (@patients) {
-
+		
         if (exists $d->{patients}->{$p}) {
+			
             push @patient_values, $d->{patients}->{$p};
+            $nbp++;
         }
         else {
             push @patient_values, '-';
@@ -171,7 +183,7 @@ foreach my $d (sort { $a->{chr} cmp $b->{chr}} values %$dejavu) {
         chr         => $d->{chr},
         start       => $d->{start},
         end         => $d->{end},
-        nb_sample   => scalar(@patient_values),
+        nb_sample   => $nbp,
         patients    => \@patient_values,
         reference   => $ref,
         sequence    => $key,
@@ -181,6 +193,7 @@ foreach my $d (sort { $a->{chr} cmp $b->{chr}} values %$dejavu) {
         strand =>  $annot->{$d->{chr}.$d->{start}.$d->{end}}->{strand},
     };
 }
+
 
 my $data = {
     patients => \@patients,
