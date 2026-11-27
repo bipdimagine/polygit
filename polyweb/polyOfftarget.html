@@ -1,0 +1,270 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>offtarget sequences</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 5px 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+th {
+    background: #eee;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.sequence-cell {
+    text-align: left;
+    white-space: nowrap;
+    font-family: monospace;
+}
+
+.sequence-line {
+    line-height: 1.6;
+}
+
+.seq-diff {
+    color: #d62728;
+    font-weight: bold;
+    background: #ffe0e0;
+}
+
+.seq-ref {
+    color: #1b7f36;
+    font-weight: bold;
+    background: #e0f5e5;
+}
+
+.annotations {
+    text-align: left;
+    min-width: 200px;
+}
+
+#status {
+    margin-bottom: 10px;
+}
+.grna {
+    background-color: #dbeafe;
+}
+.pam {
+    background-color: #feeafe;
+}
+
+.seq-ref {
+    color: #d62728;
+    font-weight: bold;
+}
+
+.seq-diff {
+    color: #d62728;
+    font-weight: bold;
+    background-color: #ffe0e0;
+}
+</style>
+<script type="text/javascript" src="js/polyjs/include.polyviewer.js"></script>
+</head>
+
+<body>
+
+<h2>Offtarget Crispresso</h2>
+
+<div id="status">Loading...</div>
+
+<div class="table-container">
+<table id="resultTable">
+    <thead></thead>
+    <tbody></tbody>
+</table>
+</div>
+
+<script>
+
+function escapeHTML(str) {
+    return String(str ?? '').replace(/[&<>"']/g, function(c) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[c];
+    });
+}
+
+// Compare reference and sequence position by position.
+// Assumes both sequences have the same length and are aligned.
+function compareSequences(reference, sequence, grnaStart = 12, grnaLength = 20) {
+
+    reference = String(reference || '');
+    sequence = String(sequence || '');
+    let refHTML = '';
+    let seqHTML = '';
+
+    const maxLength = Math.max(reference.length, sequence.length);
+
+    for (let i = 0; i < maxLength; i++) {
+
+        const r = reference[i] || '-';
+        const s = sequence[i] || '-';
+
+        const inGuide = i >= grnaStart - 1 &&
+                       i < grnaStart - 1 + grnaLength;
+		const inPam  = i >= grnaStart - 1 + grnaLength &&
+					                         i < grnaStart - 1 + grnaLength +3;
+        const different = r !== s;
+
+        let refClass = '';
+        let seqClass = '';
+		if (inPam) {
+			refClass += ' pam';
+			 seqClass += ' pam';
+		}
+        if (inGuide) {
+            refClass += ' grna';
+            seqClass += ' grna';
+        }
+
+        if (different) {
+            refClass += ' seq-ref';
+            seqClass += ' seq-diff';
+        }
+
+        refHTML += `<span class="${refClass.trim()}">${escapeHTML(r)}</span>`;
+        seqHTML += `<span class="${seqClass.trim()}">${escapeHTML(s)}</span>`;
+    }
+
+    return `
+        <div class="sequence-line">
+            <b>Ref:</b> ${refHTML}
+        </div>
+        <div class="sequence-line">
+            <b>Seq:</b> ${seqHTML}
+        </div>
+    `;
+}
+
+function generateTable(data) {
+
+    const table = document.getElementById('resultTable');
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+
+    const patients = data.patients || [];
+    const rows = data.rows || [];
+
+    // Header
+	let header = `
+	    <tr>
+	        <th>chr</th>
+	        <th>start</th>
+	        <th>end</th>
+			<th>strand</th>
+			<th>grna</th>
+	        <th>nb_sample</th>
+	        <th>UCSC</th>
+	`;
+
+    patients.forEach(patient => {
+        header += `<th>${escapeHTML(patient)}</th>`;
+    });
+
+    header += `
+            <th>reference / sequence</th>
+            <th>annotations</th>
+        </tr>
+    `;
+
+    thead.innerHTML = header;
+
+    // Rows
+    tbody.innerHTML = '';
+    rows.forEach(row => {
+
+        let html = `
+            <tr>
+                <td>${escapeHTML(row.chr)}</td>
+                <td>${escapeHTML(row.start)}</td>
+                <td>${escapeHTML(row.end)}</td>
+				<td>${escapeHTML(row.strand)}</td>
+				<td>${escapeHTML(row.grna)}</td>
+                <td>${escapeHTML(row.nb_sample)}</td>
+        `;
+		
+		const ucscUrl =
+		    'https://genome.ucsc.edu/cgi-bin/hgTracks?db='+row.genome+'&position=' +
+		    encodeURIComponent(row.chr + ':' + row.start + '-' + row.end);
+
+		html += `
+		    <td>
+		        <a href="${ucscUrl}" target="_blank" rel="noopener">
+		            UCSC
+		        </a>
+		    </td>
+		`;
+
+        (row.patients || []).forEach(value => {
+            html += `<td>${escapeHTML(value)}</td>`;
+        });
+        html += `
+            <td class="sequence-cell">
+                ${compareSequences(row.reference, row.sequence)}
+            </td>
+            <td class="annotations">
+                ${escapeHTML(row.annotations)}
+            </td>
+        `;
+
+        html += '</tr>';
+
+        tbody.insertAdjacentHTML('beforeend', html);
+    });
+
+    document.getElementById('status').textContent =
+        rows.length + ' sequences found';
+}
+
+// URL de ton script Perl
+const params =
+			        new URLSearchParams(window.location.search);
+PROJECT = params.get("project");
+const url = url_path+'validation_variation/offtarget.pl?project='+PROJECT;
+//const url = 'https://www.polyweb.fr/NGS/NGS2026_11005//MM39/offtarget.json';
+fetch(url)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('HTTP error ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => generateTable(data))
+    .catch(error => {
+        document.getElementById('status').textContent =
+            'Error loading data: ' + error;
+    });
+
+</script>
+
+</body>
+</html>
